@@ -1,25 +1,18 @@
 import React, { useState } from "react";
 
-// Component imports
+// Import sections
 import FoodPageHeader from "./sections/FoodPageHeader";
-import FoodFilters from "./sections/FoodFilters";
-import FoodTable from "./sections/FoodTable";
-import FoodPagination from "./sections/FoodPagination";
-
-// Dialog imports
-import AddFoodDialog from "./components/AddFoodDialog";
-import EditFoodDialog from "./components/EditFoodDialog";
-import DeleteFoodDialog from "./components/DeleteFoodDialog";
+import FoodListSection from "./sections/FoodListSection";
+import FoodDialogsSection from "./sections/FoodDialogsSection";
 
 // Custom hook
 import { useFoods } from "./hooks/useFoods";
 
 export default function FoodsPage() {
     // Dialog states
-    const [addDialogOpen, setAddDialogOpen] = useState(false);
-    const [editDialogOpen, setEditDialogOpen] = useState(false);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [selectedFood, setSelectedFood] = useState(null);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [editFoodData, setEditFoodData] = useState(null);
+    const [deleteFoodId, setDeleteFoodId] = useState(null);
 
     // Use custom hook for food data management
     const {
@@ -39,74 +32,38 @@ export default function FoodsPage() {
         refreshData,
     } = useFoods();
 
-    const handleEdit = (food) => {
-        setSelectedFood(food);
-        setEditDialogOpen(true);
-    };
-
-    const handleDelete = (food) => {
-        setSelectedFood(food);
-        setDeleteDialogOpen(true);
-    };
-
-    const handleSuccess = () => {
-        refreshData(); // Revalidate the data
-    };
-
     return (
         <div className="space-y-6">
             {/* Header Section */}
-            <FoodPageHeader onAddFood={() => setAddDialogOpen(true)} />
+            <FoodPageHeader onAddFood={() => setIsAddDialogOpen(true)} />
 
-            {/* Filters Section */}
-            <FoodFilters
+            {/* Food List Section (includes filters, table, and pagination) */}
+            <FoodListSection
+                foods={foods}
+                restaurantMap={restaurantMap}
+                isLoading={isLoading}
+                error={error}
+                pagination={pagination}
+                page={page}
+                setPage={setPage}
                 searchTerm={searchTerm}
-                setSearchTerm={handleSearch}
                 statusFilter={statusFilter}
-                setStatusFilter={handleStatusFilter}
                 categoryFilter={categoryFilter}
-                setCategoryFilter={handleCategoryFilter}
+                handleSearch={handleSearch}
+                handleStatusFilter={handleStatusFilter}
+                handleCategoryFilter={handleCategoryFilter}
+                setEditFoodData={setEditFoodData}
+                setDeleteFoodId={setDeleteFoodId}
             />
 
-            {/* Table Section */}
-            <div>
-                <FoodTable
-                    foods={foods}
-                    restaurantMap={restaurantMap}
-                    isLoading={isLoading}
-                    error={error}
-                    pagination={pagination}
-                    handleEdit={handleEdit}
-                    handleDelete={handleDelete}
-                />
-
-                {/* Pagination */}
-                <FoodPagination
-                    pagination={pagination}
-                    page={page}
-                    setPage={setPage}
-                />
-            </div>
-
-            {/* Dialogs */}
-            <AddFoodDialog
-                open={addDialogOpen}
-                onOpenChange={setAddDialogOpen}
-                onSuccess={handleSuccess}
-            />
-
-            <EditFoodDialog
-                open={editDialogOpen}
-                onOpenChange={setEditDialogOpen}
-                foodData={selectedFood}
-                onSuccess={handleSuccess}
-            />
-
-            <DeleteFoodDialog
-                open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                food={selectedFood}
-                onSuccess={handleSuccess}
+            <FoodDialogsSection
+                isAddDialogOpen={isAddDialogOpen}
+                setIsAddDialogOpen={setIsAddDialogOpen}
+                editFoodData={editFoodData}
+                setEditFoodData={setEditFoodData}
+                deleteFoodId={deleteFoodId}
+                setDeleteFoodId={setDeleteFoodId}
+                refreshData={refreshData}
             />
         </div>
     );

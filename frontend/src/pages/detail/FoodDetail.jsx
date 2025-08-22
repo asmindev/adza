@@ -13,6 +13,7 @@ import FoodRating from "./FoodRating";
 import FoodReviews from "./FoodReviews";
 import { UserContext } from "@/contexts/UserContextDefinition";
 import { useRateFood, useSubmitReview, useToggleFavorite } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
 
 export default function FoodDetail({ foodId, onRateFood }) {
     console.log("Rendering FoodDetail for foodId:", foodId);
@@ -159,10 +160,10 @@ export default function FoodDetail({ foodId, onRateFood }) {
                     <div className="flex justify-center gap-4">
                         <Link
                             to="/"
-                            className="inline-flex items-center px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 transition-colors"
+                            className="inline-flex items-center px-4 py-2"
                         >
                             <ArrowLeft size={18} className="mr-2" />
-                            Kembali ke Makanan
+                            <span>Kembali ke Makanan</span>
                         </Link>
                         <button
                             onClick={() => revalidateFood()}
@@ -222,12 +223,9 @@ export default function FoodDetail({ foodId, onRateFood }) {
                         Kami tidak dapat menemukan makanan yang Anda cari.
                         Mungkin telah dipindahkan atau dihapus.
                     </p>
-                    <Link
-                        to="/"
-                        className="inline-flex items-center px-4 py-2 bg-accent text-accent-foreground rounded-md hover:bg-accent/90 transition-colors"
-                    >
+                    <Link to="/" className="inline-flex items-center px-4 py-2">
                         <ArrowLeft size={18} className="mr-2" />
-                        Kembali ke Makanan
+                        <span>Kembali ke Makanan</span>
                     </Link>
                 </motion.div>
             </div>
@@ -255,10 +253,7 @@ export default function FoodDetail({ foodId, onRateFood }) {
                 transition={{ duration: 0.5 }}
                 className="mb-6"
             >
-                <Link
-                    to="/"
-                    className="inline-flex items-center text-accent hover:text-accent/90 mb-6 transition-colors"
-                >
+                <Link to="/" className="inline-flex items-center px-4 py-2">
                     <ArrowLeft size={18} className="mr-1" />
                     <span>Kembali ke Makanan</span>
                 </Link>

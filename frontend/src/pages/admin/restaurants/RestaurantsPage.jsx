@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 
-// Import custom hooks
-
 // Import sections
 import RestaurantPageHeader from "./components/RestaurantPageHeader";
 import RestaurantListSection from "./sections/RestaurantListSection";

@@ -73,7 +73,7 @@ export default function AddFoodDialog({ open, onOpenChange, onSuccess }) {
         if (!open) {
             setImages([]);
         }
-    }, [open]);
+    }, [open, form]);
 
     // Dropzone setup
     const onDrop = useCallback((acceptedFiles) => {
@@ -202,7 +202,7 @@ export default function AddFoodDialog({ open, onOpenChange, onSuccess }) {
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange} className="max-w-3xl">
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Tambah Makanan Baru</DialogTitle>

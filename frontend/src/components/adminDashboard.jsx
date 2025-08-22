@@ -20,6 +20,7 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link } from "react-router";
+import ThemeSwitcher from "./ui/ThemeSwitcher";
 
 // Menu groups for better organization
 const menuGroups = [
@@ -145,9 +146,12 @@ export function AppSidebar() {
 
                 {/* Footer */}
                 <div className="mt-auto border-t p-4">
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <div className="h-2 w-2 rounded-full bg-green-500 relative after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:left-1/2 after:-translate-x-1/2 after:w-2 after:h-2 after:bg-green-500 after:rounded-full after:animate-ping"></div>
-                        <span>Sistem Online</span>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            <div className="h-2 w-2 rounded-full bg-green-500 relative after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:left-1/2 after:-translate-x-1/2 after:w-2 after:h-2 after:bg-green-500 after:rounded-full after:animate-ping"></div>
+                            <span>Sistem Online</span>
+                        </div>
+                        <ThemeSwitcher />
                     </div>
                 </div>
             </SidebarContent>

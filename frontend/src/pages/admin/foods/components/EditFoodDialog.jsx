@@ -42,8 +42,8 @@ export default function EditFoodDialog({
     onSuccess,
 }) {
     const [images, setImages] = useState([]);
-    const [deletedImageIds, setDeletedImageIds] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Fetch restaurants for selection
     const { data: restaurantsData } = useSWR(
@@ -72,9 +72,9 @@ export default function EditFoodDialog({
         },
     });
 
-    // Reset form and images when food data changes
+    // Reset form when food data changes
     useEffect(() => {
-        if (foodData) {
+        if (foodData && open) {
             form.reset({
                 name: foodData.name || "",
                 description: foodData.description || "",
@@ -85,47 +85,47 @@ export default function EditFoodDialog({
                 status: foodData.status || "active",
             });
 
-            // Initialize images from food data
+            // Set existing images
             if (foodData.images && foodData.images.length > 0) {
                 const existingImages = foodData.images.map((img, index) => ({
                     id: img.id,
                     url: img.image_url,
                     preview: img.image_url,
-                    status: "existing",
-                    isMain: img.is_main,
-                    existingIndex: index,
+                    status: "success",
+                    isMain: img.is_main || index === 0,
+                    isExisting: true, // Flag to identify existing images
                 }));
-
                 setImages(existingImages);
-            } else if (foodData.main_image) {
-                // Legacy: if only main_image is available
-                setImages([
-                    {
-                        id: foodData.main_image.id,
-                        url: foodData.main_image.image_url,
-                        preview: foodData.main_image.image_url,
-                        status: "existing",
-                        isMain: true,
-                        existingIndex: 0,
-                    },
-                ]);
             } else {
                 setImages([]);
             }
-
-            // Reset removed image IDs
-            setDeletedImageIds([]);
         }
-    }, [foodData, form]);
+    }, [foodData, form, open]);
 
-    // Clear deletedImageIds when dialog is closed
+    // Clear images when dialog is closed
     useEffect(() => {
         if (!open) {
-            setDeletedImageIds([]);
+            // Reset all states immediately when dialog closes
+            setIsUploading(false);
+            setIsSubmitting(false);
+            setImages([]);
+            form.reset();
         }
-    }, [open]);
+    }, [open, form]);
 
-    // File dropzone setup for new images
+    // Cleanup effect for component unmount
+    useEffect(() => {
+        return () => {
+            // Cleanup any object URLs to prevent memory leaks
+            images.forEach((image) => {
+                if (image.file && image.preview) {
+                    URL.revokeObjectURL(image.preview);
+                }
+            });
+        };
+    }, [images]);
+
+    // Dropzone setup
     const onDrop = useCallback((acceptedFiles) => {
         setIsUploading(true);
 
@@ -133,9 +133,10 @@ export default function EditFoodDialog({
         const newImages = acceptedFiles.map((file) => ({
             file,
             preview: URL.createObjectURL(file),
-            status: "new", // 'new' for newly uploaded files
+            status: "pending",
             progress: 0,
             isMain: false,
+            isExisting: false,
         }));
 
         // Simulate upload process
@@ -166,7 +167,7 @@ export default function EditFoodDialog({
             !url ||
             !url.match(/^https?:\/\/.+\.(jpeg|jpg|png|gif|webp)(\?.*)?$/i)
         ) {
-            toast.error("Please enter a valid image URL");
+            toast.error("Mohon masukkan URL gambar yang valid");
             return;
         }
 
@@ -174,14 +175,10 @@ export default function EditFoodDialog({
             const newImage = {
                 url,
                 preview: url,
-                status: "new_url", // 'new_url' for new URL-based images
-                isMain: prev.length === 0, // Make it main if it's the first image
+                status: "success",
+                isMain: prev.length === 0,
+                isExisting: false,
             };
-
-            if (prev.length === 0) {
-                newImage.isMain = true;
-            }
-
             return [...prev, newImage];
         });
 
@@ -201,18 +198,11 @@ export default function EditFoodDialog({
 
     // Remove image
     const handleRemoveImage = (index) => {
-        const imageToRemove = images[index];
-
-        // If removing an existing image, add its ID to deletedImageIds
-        if (imageToRemove.status === "existing" && imageToRemove.id) {
-            setDeletedImageIds((prev) => [...prev, imageToRemove.id]);
-        }
-
         setImages((prev) => {
             const filtered = prev.filter((_, i) => i !== index);
 
             // If we removed the main image, set a new one
-            if (imageToRemove.isMain && filtered.length > 0) {
+            if (prev[index].isMain && filtered.length > 0) {
                 const newMainIndex = index < filtered.length ? index : 0;
                 filtered[newMainIndex].isMain = true;
             }
@@ -220,40 +210,36 @@ export default function EditFoodDialog({
             return filtered;
         });
 
-        // Revoke object URL to prevent memory leaks
-        if (imageToRemove.file) {
-            URL.revokeObjectURL(imageToRemove.preview);
+        // Revoke object URL to prevent memory leaks (only for new uploads)
+        if (images[index].file) {
+            URL.revokeObjectURL(images[index].preview);
         }
     };
 
-    const isSubmitting = form.formState.isSubmitting;
-
     async function onSubmit(data) {
+        // Validasi terlebih dahulu
+        if (images.length === 0) {
+            toast.warning("Silakan tambahkan minimal satu gambar");
+            return;
+        }
+
+        if (!data.restaurant_id) {
+            toast.warning("Silakan pilih restoran");
+            return;
+        }
+
+        // Set loading state
+        setIsSubmitting(true);
+
         try {
-            if (images.length === 0) {
-                toast.warning("Silakan tambahkan minimal satu gambar");
-                return;
-            }
-
-            if (!data.restaurant_id) {
-                toast.warning("Silakan pilih restoran");
-                return;
-            }
-
-            // Prepare the images data for the API
-            const imagesData = {
-                new_images: images
-                    .filter(
-                        (img) =>
-                            img.status === "new" || img.status === "new_url"
-                    )
-                    .map((img) => ({
-                        image_url: img.url || "", // URL for remote images
-                        file: img.file || null, // File object for uploaded files
-                        is_main: img.isMain,
-                    })),
-                deleted_image_ids: deletedImageIds,
-            };
+            // Prepare the images data
+            const imagesData = images.map((img) => ({
+                id: img.id || null, // Include ID for existing images
+                image_url: img.url || "",
+                file: img.file || null,
+                is_main: img.isMain,
+                isExisting: img.isExisting || false,
+            }));
 
             // Add images to form data
             const formData = {
@@ -261,24 +247,56 @@ export default function EditFoodDialog({
                 images: imagesData,
             };
 
+            // Submit data
             await apiService.foods.update(foodData.id, formData);
             toast.success("Makanan berhasil diperbarui");
-            // onOpenChange(false);
-            if (onSuccess) onSuccess();
+
+            // Important: Call success first to update data
+            if (onSuccess) {
+                onSuccess();
+            }
+
+            // Reset form (do this before closing dialog)
+            form.reset();
+            setImages([]);
+
+            // Close dialog (after reset)
+            onOpenChange(false);
         } catch (error) {
             toast.error(
                 error.message || "Gagal memperbarui makanan. Silakan coba lagi."
             );
+        } finally {
+            // Always reset loading state
+            setIsSubmitting(false);
         }
     }
 
+    const handleCancel = () => {
+        // Reset state before closing
+        setIsSubmitting(false);
+        setIsUploading(false);
+        form.reset();
+
+        // Clean up images
+        images.forEach((image) => {
+            if (image.file && image.preview) {
+                URL.revokeObjectURL(image.preview);
+            }
+        });
+        setImages([]);
+
+        // Then close dialog
+        onOpenChange(false);
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Edit Makanan</DialogTitle>
                     <DialogDescription>
-                        Perbarui detail makanan dan gambar.
+                        Perbarui informasi makanan di bawah ini.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -289,15 +307,83 @@ export default function EditFoodDialog({
                     >
                         {/* Food Images Section */}
                         <div className="space-y-2">
-                            <FormLabel>Food Images</FormLabel>
+                            <FormLabel>Gambar Makanan</FormLabel>
+
+                            {/* Dropzone */}
+                            <div
+                                {...getRootProps()}
+                                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                                    isDragActive
+                                        ? "border-primary bg-primary/5"
+                                        : "border-gray-300 hover:border-primary/50"
+                                }`}
+                            >
+                                <input {...getInputProps()} />
+                                <div className="flex flex-col items-center justify-center space-y-2">
+                                    <Upload className="h-8 w-8 text-gray-400" />
+                                    {isDragActive ? (
+                                        <p className="text-sm text-gray-600">
+                                            Letakkan gambar di sini...
+                                        </p>
+                                    ) : (
+                                        <>
+                                            <p className="text-sm text-gray-600">
+                                                Tarik & letakkan gambar di sini,
+                                                atau klik untuk memilih
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                Mendukung: JPG, PNG, GIF, WEBP
+                                                (maks 5MB)
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* URL Input */}
+                            <div className="flex items-center space-x-2 mt-2">
+                                <FormField
+                                    control={form.control}
+                                    name="imageUrl"
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Atau masukkan URL gambar: https://example.com/image.jpg"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() =>
+                                        handleAddUrl(form.getValues("imageUrl"))
+                                    }
+                                >
+                                    Tambah URL
+                                </Button>
+                            </div>
+
+                            {/* Loading indicator */}
+                            {isUploading && (
+                                <div className="flex items-center justify-center p-4">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                    <span className="ml-2 text-sm text-gray-600">
+                                        Mengunggah...
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Image Previews */}
                             {images.length > 0 && (
-                                <ScrollArea className="h-60 w-full rounded-md border p-2 mb-2">
+                                <ScrollArea className="h-60 w-full rounded-md border p-2">
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                         {images.map((image, index) => (
                                             <div
-                                                key={index}
+                                                key={image.id || index}
                                                 className={`group relative rounded-md overflow-hidden border ${
                                                     image.isMain
                                                         ? "ring-2 ring-primary"
@@ -306,7 +392,9 @@ export default function EditFoodDialog({
                                             >
                                                 <img
                                                     src={image.preview}
-                                                    alt={`Preview ${index + 1}`}
+                                                    alt={`Pratinjau ${
+                                                        index + 1
+                                                    }`}
                                                     className="h-32 w-full object-cover"
                                                     onError={(e) => {
                                                         e.target.onerror = null;
@@ -333,7 +421,7 @@ export default function EditFoodDialog({
                                                         >
                                                             <ImagePlus className="h-4 w-4" />
                                                             <span className="sr-only">
-                                                                Set as main
+                                                                Jadikan utama
                                                             </span>
                                                         </Button>
                                                         <Button
@@ -349,7 +437,7 @@ export default function EditFoodDialog({
                                                         >
                                                             <X className="h-4 w-4" />
                                                             <span className="sr-only">
-                                                                Remove
+                                                                Hapus
                                                             </span>
                                                         </Button>
                                                     </div>
@@ -357,94 +445,19 @@ export default function EditFoodDialog({
 
                                                 {image.isMain && (
                                                     <div className="absolute top-0 left-0 bg-primary text-white text-xs px-1 py-0.5">
-                                                        Main
+                                                        Utama
                                                     </div>
                                                 )}
 
-                                                {image.status ===
-                                                    "existing" && (
-                                                    <div className="absolute bottom-0 right-0 bg-blue-500 text-white text-xs px-1 py-0.5">
-                                                        Existing
-                                                    </div>
-                                                )}
-
-                                                {image.status === "new" && (
-                                                    <div className="absolute bottom-0 right-0 bg-green-500 text-white text-xs px-1 py-0.5">
-                                                        New
+                                                {image.isExisting && (
+                                                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 py-0.5">
+                                                        Tersimpan
                                                     </div>
                                                 )}
                                             </div>
                                         ))}
                                     </div>
                                 </ScrollArea>
-                            )}
-
-                            {/* Dropzone */}
-                            <div
-                                {...getRootProps()}
-                                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                                    isDragActive
-                                        ? "border-primary bg-primary/5"
-                                        : "border-gray-300 hover:border-primary/50"
-                                }`}
-                            >
-                                <input {...getInputProps()} />
-                                <div className="flex flex-col items-center justify-center space-y-2">
-                                    <Upload className="h-8 w-8 text-gray-400" />
-                                    {isDragActive ? (
-                                        <p className="text-sm text-gray-600">
-                                            Drop the images here...
-                                        </p>
-                                    ) : (
-                                        <>
-                                            <p className="text-sm text-gray-600">
-                                                Add more images: drop files here
-                                                or click to select
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                Supports: JPG, PNG, GIF, WEBP
-                                                (max 5MB)
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* URL Input */}
-                            <div className="flex items-center space-x-2 mt-2">
-                                <FormField
-                                    control={form.control}
-                                    name="imageUrl"
-                                    render={({ field }) => (
-                                        <FormItem className="flex-1">
-                                            <FormControl>
-                                                <Input
-                                                    placeholder="Or enter image URL: https://example.com/image.jpg"
-                                                    {...field}
-                                                />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() =>
-                                        handleAddUrl(form.getValues("imageUrl"))
-                                    }
-                                >
-                                    Add URL
-                                </Button>
-                            </div>
-
-                            {/* Loading indicator */}
-                            {isUploading && (
-                                <div className="flex items-center justify-center p-4">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                                    <span className="ml-2 text-sm text-gray-600">
-                                        Uploading...
-                                    </span>
-                                </div>
                             )}
                         </div>
 
@@ -601,7 +614,7 @@ export default function EditFoodDialog({
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => onOpenChange(false)}
+                                onClick={handleCancel}
                                 disabled={isSubmitting || isUploading}
                             >
                                 Batal

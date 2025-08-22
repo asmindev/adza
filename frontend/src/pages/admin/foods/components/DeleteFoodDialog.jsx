@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -15,20 +15,20 @@ import apiService from "@/lib/api";
 export default function DeleteFoodDialog({
     open,
     onOpenChange,
-    food,
+    foodId,
     onSuccess,
 }) {
-    const [isDeleting, setIsDeleting] = React.useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDelete = async () => {
-        if (!food?.id) return;
+        if (!foodId) return;
 
         setIsDeleting(true);
         try {
-            await apiService.foods.delete(food.id);
+            await apiService.foods.delete(foodId);
             toast.success("Makanan berhasil dihapus");
+            onSuccess?.();
             onOpenChange(false);
-            if (onSuccess) onSuccess();
         } catch (error) {
             toast.error(error.message || "Gagal menghapus makanan");
         } finally {
@@ -40,10 +40,12 @@ export default function DeleteFoodDialog({
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        Apakah Anda yakin ingin menghapus?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        Ini akan menghapus permanen item makanan ini dan semua
-                        data terkait. Tindakan ini tidak dapat dibatalkan.
+                        Tindakan ini tidak dapat dibatalkan. Ini akan secara
+                        permanen menghapus makanan ini dari database.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -52,8 +54,8 @@ export default function DeleteFoodDialog({
                     </AlertDialogCancel>
                     <AlertDialogAction
                         onClick={handleDelete}
-                        disabled={isDeleting}
                         className="bg-red-600 hover:bg-red-700"
+                        disabled={isDeleting}
                     >
                         {isDeleting ? "Menghapus..." : "Hapus"}
                     </AlertDialogAction>

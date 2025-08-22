@@ -13,7 +13,7 @@ export default function FoodPageHeader({ onAddFood }) {
                     Kelola koleksi makanan Anda
                 </p>
             </div>
-            <Button onClick={onAddFood}>
+            <Button onClick={onAddFood} className={"text-base dark:text-white"}>
                 <Plus className="h-4 w-4 mr-2" />
                 Tambah Makanan
             </Button>

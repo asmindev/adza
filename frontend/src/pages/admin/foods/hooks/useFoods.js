@@ -84,8 +84,13 @@ export const useFoods = (initialPage = 1, initialPageSize = 50) => {
     };
 
     // Handle refresh after operations
-    const refreshData = () => {
-        mutate();
+    const refreshData = async () => {
+        try {
+            // Force a revalidation (ignore cache)
+            await mutate(undefined, { revalidate: true });
+        } catch (error) {
+            console.error("Error refreshing data:", error);
+        }
     };
 
     return {

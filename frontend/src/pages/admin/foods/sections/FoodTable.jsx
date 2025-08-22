@@ -189,27 +189,34 @@ export default function FoodTable({
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
+                                                            disabled={isLoading}
                                                         >
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuItem
-                                                            onClick={() =>
-                                                                handleEdit(food)
-                                                            }
+                                                            onSelect={(e) => {
+                                                                e.preventDefault();
+                                                                handleEdit(
+                                                                    food
+                                                                );
+                                                            }}
+                                                            disabled={isLoading}
                                                         >
                                                             <Edit className="mr-2 h-4 w-4" />
                                                             Edit
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
-                                                            onClick={() =>
+                                                            onSelect={(e) => {
+                                                                e.preventDefault();
                                                                 handleDelete(
                                                                     food
-                                                                )
-                                                            }
+                                                                );
+                                                            }}
                                                             className="text-destructive"
+                                                            disabled={isLoading}
                                                         >
                                                             <Trash2 className="mr-2 h-4 w-4" />
                                                             Hapus
