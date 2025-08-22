@@ -1,8 +1,8 @@
 import React from "react";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import UserProvider from "@/contexts/UserContext";
-import RootLayout from "@/components/layout/RootLayout";
-import DashboardLayout from "@/components/layout/AdminLayout";
+import RootLayout from "@/layout/RootLayout";
+import DashboardLayout from "@/layout/AdminLayout";
 import HomePage from "@/pages/home/HomePage";
 import FoodDetailPage from "@/pages/detail/FoodDetailPage";
 import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
@@ -16,6 +16,7 @@ import UserProfile from "./pages/profile/UserProfile";
 import FoodsPage from "./pages/admin/foods/FoodsPage";
 import UsersPage from "./pages/admin/users/UsersPage";
 import AdminRestaurantsPage from "./pages/admin/restaurants/RestaurantsPage";
+import SettingsPage from "./pages/admin/settings/SettingsPage";
 const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
 
 // Create the router configuration with React Router v7
@@ -99,6 +100,14 @@ export default function App() {
             element: (
                 <DashboardLayout>
                     <AdminRestaurantsPage />
+                </DashboardLayout>
+            ),
+        },
+        {
+            path: "/dashboard/settings",
+            element: (
+                <DashboardLayout>
+                    <SettingsPage />
                 </DashboardLayout>
             ),
         },

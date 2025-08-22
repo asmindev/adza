@@ -10,7 +10,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import apiService from "@/dashboard/services/api";
+import apiService from "@/services/api";
 
 export default function DeleteFoodDialog({
     open,

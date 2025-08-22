@@ -7,12 +7,12 @@ from app.utils import db_logger as logger
 
 class ReviewService:
     @staticmethod
-    def get_food_reviews(food_id):
-        return ReviewRepository.get_by_food_id(food_id)
+    def get_food_reviews(food_id, page=1, limit=10):
+        return ReviewRepository.get_by_food_id(food_id, page=page, limit=limit)
 
     @staticmethod
-    def get_user_reviews(user_id):
-        return ReviewRepository.get_by_user_id(user_id)
+    def get_user_reviews(user_id, page=1, limit=10):
+        return ReviewRepository.get_by_user_id(user_id, page=page, limit=limit)
 
     @staticmethod
     def get_review(user_id, food_id):

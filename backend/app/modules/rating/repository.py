@@ -6,12 +6,32 @@ from sqlalchemy import func
 
 class FoodRatingRepository:
     @staticmethod
-    def get_by_food_id(food_id):
-        """Get all ratings for a specific food"""
-        logger.debug(f"Mengambil rating untuk makanan dengan ID: {food_id}")
-        ratings = FoodRating.query.filter_by(food_id=food_id).all()
-        logger.info(f"Berhasil mengambil {len(ratings)} rating untuk makanan {food_id}")
-        return ratings
+    def get_by_food_id(food_id, page=1, limit=10):
+        """Get all ratings for a specific food with pagination"""
+        logger.debug(
+            f"Mengambil rating untuk makanan dengan ID: {food_id}, page={page}, limit={limit}"
+        )
+
+        query = FoodRating.query.filter_by(food_id=food_id)
+
+        # Get total count for pagination
+        total_count = query.count()
+
+        # Apply pagination
+        ratings = query.order_by(FoodRating.created_at.desc()).paginate(
+            page=page, per_page=limit, error_out=False
+        )
+
+        logger.info(
+            f"Berhasil mengambil {len(ratings.items)} rating untuk makanan {food_id} (total {total_count})"
+        )
+        return {
+            "items": ratings.items,
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "pages": ratings.pages,
+        }
 
     @staticmethod
     def get_by_user_id(user_id):
@@ -109,10 +129,32 @@ RatingRepository = FoodRatingRepository
 
 class RestaurantRatingRepository:
     @staticmethod
-    def get_by_restaurant_id(restaurant_id):
-        logger.debug(f"Mengambil rating untuk restaurant dengan ID: {restaurant_id}")
-        ratings = RestaurantRating.query.filter_by(restaurant_id=restaurant_id).all()
-        return ratings
+    def get_by_restaurant_id(restaurant_id, page=1, limit=10):
+        """Get all ratings for a specific restaurant with pagination"""
+        logger.debug(
+            f"Mengambil rating untuk restaurant dengan ID: {restaurant_id}, page={page}, limit={limit}"
+        )
+
+        query = RestaurantRating.query.filter_by(restaurant_id=restaurant_id)
+
+        # Get total count for pagination
+        total_count = query.count()
+
+        # Apply pagination
+        ratings = query.order_by(RestaurantRating.created_at.desc()).paginate(
+            page=page, per_page=limit, error_out=False
+        )
+
+        logger.info(
+            f"Berhasil mengambil {len(ratings.items)} rating untuk restaurant {restaurant_id} (total {total_count})"
+        )
+        return {
+            "items": ratings.items,
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "pages": ratings.pages,
+        }
 
     @staticmethod
     def get_by_user_id(user_id):

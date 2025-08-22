@@ -37,12 +37,14 @@ class RestaurantService:
             raise e
 
     @staticmethod
-    def get_all_restaurants(n: int = 20) -> list:
-        """Get all restaurants"""
+    def get_all_restaurants(page=1, limit=20, search=None):
+        """Get all restaurants with pagination and search"""
         try:
-            restaurants = RestaurantRepository.get_all(n)
-            logger.info(f"Restaurant service: Retrieved {len(restaurants)} restaurants")
-            return restaurants
+            result = RestaurantRepository.get_all(page=page, limit=limit, search=search)
+            logger.info(
+                f"Restaurant service: Retrieved {len(result['items'])} restaurants (total {result['total']})"
+            )
+            return result
         except Exception as e:
             logger.error(f"Restaurant service: Error retrieving restaurants - {str(e)}")
             raise e

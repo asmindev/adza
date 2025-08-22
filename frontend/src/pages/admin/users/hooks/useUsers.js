@@ -1,29 +1,37 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import apiService from "../services/api";
+import apiService from "@/services/api";
+import { useDebounce } from "@/hooks/useDebounce";
 
-export const useRestaurants = () => {
+export const useUsers = () => {
     const [pageIndex, setPageIndex] = useState(0);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
     const [sorting, setSorting] = useState([]);
 
-    // Fetch restaurants with SWR using real API
+    // Apply debounce to search term to prevent excessive API calls
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+    // Fetch users with SWR
     const { data, error, mutate } = useSWR(
-        [`/restaurants`, pageIndex, pageSize, searchTerm],
+        [`/users`, pageIndex, pageSize, debouncedSearchTerm],
         () =>
-            apiService.restaurants.getAll(pageIndex + 1, pageSize, searchTerm),
+            apiService.users.getAll(
+                pageIndex + 1,
+                pageSize,
+                debouncedSearchTerm
+            ),
         {
             revalidateOnFocus: false,
             onError: (err) => {
-                toast.error(err.message || "Gagal mengambil data restoran");
+                toast.error(err.message || "Gagal mengambil data pengguna");
             },
         }
     );
 
-    const restaurants = data?.data?.data?.restaurants || [];
-    const totalCount = data?.data?.data?.count || 0;
+    const users = data?.data?.data?.users || [];
+    const totalCount = users?.length;
     const totalPages = Math.ceil(totalCount / pageSize);
     const isLoading = !data && !error;
 
@@ -40,7 +48,7 @@ export const useRestaurants = () => {
 
     return {
         // Data
-        restaurants,
+        users,
         totalCount,
         totalPages,
         isLoading,

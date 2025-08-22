@@ -68,14 +68,48 @@ def create_food():
 
 @food_blueprint.route("/foods", methods=["GET"])
 def get_foods():
-    logger.info("GET /foods - Mengambil semua makanan")
-    limit = request.args.get("limit", default=20, type=int)
+    logger.info("GET /foods - Mengambil semua makanan dengan pagination")
 
-    # Get all foods with their images and average ratings
-    foods = FoodService.get_all_foods_with_details(limit=limit)
+    # Get query parameters with defaults
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 20, type=int)
+    search = request.args.get("search", None, type=str)
 
-    logger.info(f"Berhasil mengambil {len(foods)} makanan")
-    return jsonify({"error": False, "data": {"foods": foods}}), 200
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 20
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}, search={search}")
+
+    # Get foods with pagination
+    result = FoodService.get_all_foods_with_details(
+        page=page, limit=limit, search=search
+    )
+
+    foods = result["items"]
+    logger.info(f"Berhasil mengambil {len(foods)} makanan dari total {result['total']}")
+
+    # Return paginated response
+    return (
+        jsonify(
+            {
+                "error": False,
+                "data": {
+                    "foods": foods,
+                    "pagination": {
+                        "page": result["page"],
+                        "limit": result["limit"],
+                        "total": result["total"],
+                        "pages": result["pages"],
+                    },
+                },
+            }
+        ),
+        200,
+    )
 
 
 @food_blueprint.route("/foods/<string:food_id>", methods=["GET"])
@@ -197,12 +231,22 @@ def delete_food(food_id):
 def search_foods():
     logger.info("GET /foods/search - Mencari makanan")
 
+    # Get query parameters
     category = request.args.get("category", type=str)
+    page = request.args.get("page", 1, type=int)
     limit = request.args.get("limit", default=10, type=int)
 
-    logger.debug(f"Parameter pencarian: category={category}, limit={limit}")
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 10
 
-    search_results = FoodService.search_foods(category=category, limit=limit)
+    logger.debug(
+        f"Parameter pencarian: category={category}, page={page}, limit={limit}"
+    )
+
+    search_results = FoodService.search_foods(category=category, page=page, limit=limit)
 
     logger.info(f"Berhasil menemukan {len(search_results)} makanan")
     return jsonify({"error": False, "data": {"foods": search_results}}), 200

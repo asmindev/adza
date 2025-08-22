@@ -10,27 +10,27 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import apiService from "@/dashboard/services/api";
+import apiService from "@/services/api";
 
-export default function DeleteFoodDialog({
+export default function DeleteUserDialog({
     open,
     onOpenChange,
-    foodId,
+    userId,
     onSuccess,
 }) {
     const [isDeleting, setIsDeleting] = React.useState(false);
 
     const handleDelete = async () => {
-        if (!foodId) return;
+        if (!userId) return;
 
         setIsDeleting(true);
         try {
-            await apiService.foods.delete(foodId);
-            toast.success("Makanan berhasil dihapus");
+            await apiService.users.delete(userId);
+            toast.success("Pengguna berhasil dihapus");
             onOpenChange(false);
             if (onSuccess) onSuccess();
         } catch (error) {
-            toast.error(error.message || "Gagal menghapus makanan");
+            toast.error(error.message || "Gagal menghapus pengguna");
         } finally {
             setIsDeleting(false);
         }
@@ -42,8 +42,8 @@ export default function DeleteFoodDialog({
                 <AlertDialogHeader>
                     <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Ini akan menghapus permanen item makanan ini dan semua
-                        data terkait. Tindakan ini tidak dapat dibatalkan.
+                        Ini akan menghapus permanen pengguna dan semua data
+                        terkait. Tindakan ini tidak dapat dibatalkan.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

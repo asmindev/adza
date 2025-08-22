@@ -8,13 +8,33 @@ rating_blueprint = Blueprint("rating", __name__)
 
 @rating_blueprint.route("/foods/<string:food_id>/ratings", methods=["GET"])
 def get_food_ratings(food_id):
-    """Get all ratings for a specific food"""
-    logger.info(f"GET /foods/{food_id}/ratings - Mengambil semua rating makanan")
+    """Get all ratings for a specific food with pagination"""
+    logger.info(
+        f"GET /foods/{food_id}/ratings - Mengambil rating makanan dengan pagination"
+    )
 
-    ratings = FoodRatingService.get_food_ratings(food_id)
+    # Get query parameters with defaults
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 10
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}")
+
+    # Get ratings with pagination
+    result = FoodRatingService.get_food_ratings(food_id, page=page, limit=limit)
     avg_rating = FoodRatingService.get_food_average_rating(food_id)
 
-    logger.info(f"Berhasil mengambil {len(ratings)} rating untuk makanan {food_id}")
+    logger.info(
+        f"Berhasil mengambil {len(result['items'])} rating untuk makanan {food_id} dari total {result['total']}"
+    )
+
+    # Return paginated response
     return (
         jsonify(
             {
@@ -22,8 +42,14 @@ def get_food_ratings(food_id):
                 "data": {
                     "food_id": food_id,
                     "average_rating": avg_rating,
-                    "rating_count": len(ratings),
-                    "ratings": [rating.to_dict() for rating in ratings],
+                    "rating_count": result["total"],
+                    "ratings": result["items"],
+                    "pagination": {
+                        "page": result["page"],
+                        "limit": result["limit"],
+                        "total": result["total"],
+                        "pages": result["pages"],
+                    },
                 },
             }
         ),
@@ -162,17 +188,35 @@ def delete_rating(user_id, food_id):
 # Restaurant Rating endpoints
 @rating_blueprint.route("/restaurants/<string:restaurant_id>/ratings", methods=["GET"])
 def get_restaurant_ratings(restaurant_id):
-    """Get all ratings for a specific restaurant"""
+    """Get all ratings for a specific restaurant with pagination"""
     logger.info(
-        f"GET /restaurants/{restaurant_id}/ratings - Mengambil semua rating restaurant"
+        f"GET /restaurants/{restaurant_id}/ratings - Mengambil rating restaurant dengan pagination"
     )
 
-    ratings = RestaurantRatingService.get_restaurant_ratings(restaurant_id)
+    # Get query parameters with defaults
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 10
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}")
+
+    # Get ratings with pagination
+    result = RestaurantRatingService.get_restaurant_ratings(
+        restaurant_id, page=page, limit=limit
+    )
     stats = RestaurantRatingService.get_restaurant_rating_stats(restaurant_id)
 
     logger.info(
-        f"Berhasil mengambil {len(ratings)} rating untuk restaurant {restaurant_id}"
+        f"Berhasil mengambil {len(result['items'])} rating untuk restaurant {restaurant_id} dari total {result['total']}"
     )
+
+    # Return paginated response
     return (
         jsonify(
             {
@@ -181,7 +225,13 @@ def get_restaurant_ratings(restaurant_id):
                     "restaurant_id": restaurant_id,
                     "average_rating": stats["average_rating"],
                     "rating_count": stats["total_ratings"],
-                    "ratings": [rating.to_dict() for rating in ratings],
+                    "ratings": [rating.to_dict() for rating in result["items"]],
+                    "pagination": {
+                        "page": result["page"],
+                        "limit": result["limit"],
+                        "total": result["total"],
+                        "pages": result["pages"],
+                    },
                 },
             }
         ),

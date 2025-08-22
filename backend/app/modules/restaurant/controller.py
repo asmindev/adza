@@ -63,25 +63,31 @@ def create_restaurant():
 
 @restaurant_blueprint.route("/restaurants", methods=["GET"])
 def get_restaurants():
-    """Get all restaurants with optional filters"""
+    """Get all restaurants with optional filters and pagination"""
     logger.info("GET /restaurants - Retrieving restaurants")
 
     # Check query parameters
     active_only = request.args.get("active", "").lower() == "true"
-    search_name = request.args.get("search")
+    search = request.args.get("search", None, type=str)
     latitude = request.args.get("latitude", type=float)
     longitude = request.args.get("longitude", type=float)
     radius = request.args.get("radius", default=5, type=float)
-    limit = request.args.get("limit", default=20, type=int)
+
+    # Pagination parameters
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 20, type=int)
+
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 20
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}, search={search}")
 
     try:
-        if search_name:
-            # Search by name
-            restaurants = RestaurantService.search_restaurants(search_name)
-            logger.info(
-                f"Search results for '{search_name}': {len(restaurants)} restaurants"
-            )
-        elif latitude is not None and longitude is not None:
+        if latitude is not None and longitude is not None:
             # Search by location
             restaurants = RestaurantService.get_restaurants_near_location(
                 latitude, longitude, radius
@@ -89,29 +95,75 @@ def get_restaurants():
             logger.info(
                 f"Location search results: {len(restaurants)} restaurants near ({latitude}, {longitude})"
             )
+
+            # For location search, we don't paginate at the database level
+            # but could implement manual pagination here if needed
+            return (
+                jsonify(
+                    {
+                        "error": False,
+                        "data": {
+                            "restaurants": [
+                                restaurant.to_dict() for restaurant in restaurants
+                            ],
+                            "count": len(restaurants),
+                        },
+                    }
+                ),
+                200,
+            )
         elif active_only:
             # Get only active restaurants
             restaurants = RestaurantService.get_active_restaurants()
             logger.info(f"Retrieved {len(restaurants)} active restaurants")
-        else:
-            # Get all restaurants
-            restaurants = RestaurantService.get_all_restaurants(n=limit)
-            logger.info(f"Retrieved {len(restaurants)} restaurants")
 
-        return (
-            jsonify(
-                {
-                    "error": False,
-                    "data": {
-                        "restaurants": [
-                            restaurant.to_dict() for restaurant in restaurants
-                        ],
-                        "count": len(restaurants),
-                    },
-                }
-            ),
-            200,
-        )
+            # For active only, we don't paginate at the database level
+            # but could implement manual pagination here if needed
+            return (
+                jsonify(
+                    {
+                        "error": False,
+                        "data": {
+                            "restaurants": [
+                                restaurant.to_dict() for restaurant in restaurants
+                            ],
+                            "count": len(restaurants),
+                        },
+                    }
+                ),
+                200,
+            )
+        else:
+            # Get all restaurants with pagination
+            result = RestaurantService.get_all_restaurants(
+                page=page, limit=limit, search=search
+            )
+
+            restaurants = result["items"]
+            logger.info(
+                f"Retrieved {len(restaurants)} restaurants from total {result['total']}"
+            )
+
+            return (
+                jsonify(
+                    {
+                        "error": False,
+                        "data": {
+                            "restaurants": [
+                                restaurant.to_dict() for restaurant in restaurants
+                            ],
+                            "count": len(restaurants),
+                            "pagination": {
+                                "page": result["page"],
+                                "limit": result["limit"],
+                                "total": result["total"],
+                                "pages": result["pages"],
+                            },
+                        },
+                    }
+                ),
+                200,
+            )
     except ValueError as e:
         logger.warning(f"Validation error retrieving restaurants: {str(e)}")
         return jsonify({"error": True, "message": str(e)}), 400

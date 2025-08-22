@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import apiService from "@/dashboard/services/api";
+import apiService from "@/services/api";
 import LocationPicker from "@/components/map/LocationPicker";
 import { editRestaurantSchema } from "../schemas/restaurantSchema";
 

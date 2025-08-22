@@ -1,4 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import {
+    initializeTheme,
+    getEffectiveDarkMode,
+    getCurrentTheme,
+    setTheme as setLibTheme,
+    setDarkMode as setLibDarkMode,
+    getCurrentDarkMode,
+    getSystemDarkMode,
+} from "@/lib/theme";
 
 const ThemeContext = createContext(null);
 
@@ -11,38 +20,78 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    // Check local storage or prefer-color-scheme
-    const getInitialTheme = () => {
-        const storedTheme = localStorage.getItem("food-app-theme");
-        if (storedTheme) return storedTheme;
-
-        // Check system preference
-        if (
-            window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-        ) {
-            return "dark";
-        }
-
-        return "light";
-    };
-
-    const [theme, setTheme] = useState(getInitialTheme);
-
-    // Apply theme to document element
+    // Initialize theme
     useEffect(() => {
-        const root = document.documentElement;
-        root.classList.remove("light", "dark");
-        root.classList.add(theme);
-        localStorage.setItem("food-app-theme", theme);
-    }, [theme]);
+        initializeTheme();
+    }, []);
+
+    // State for light/dark mode
+    const [theme, setThemeState] = useState(() => getEffectiveDarkMode());
+
+    // State for theme preference (system, light, dark)
+    const [themePreference, setThemePreferenceState] = useState(() => {
+        return getCurrentDarkMode();
+    });
+
+    // State for color theme
+    const [activeColorTheme, setActiveColorThemeState] = useState(() => {
+        return getCurrentTheme();
+    });
+
+    // Listen for system theme changes if preference is set to system
+    useEffect(() => {
+        if (themePreference === "system") {
+            const mediaQuery = window.matchMedia(
+                "(prefers-color-scheme: dark)"
+            );
+
+            const handleChange = () => {
+                setThemeState(getSystemDarkMode() ? "dark" : "light");
+            };
+
+            mediaQuery.addEventListener("change", handleChange);
+
+            return () => {
+                mediaQuery.removeEventListener("change", handleChange);
+            };
+        } else {
+            setThemeState(themePreference);
+        }
+    }, [themePreference]);
 
     const toggleTheme = () => {
-        setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
+        const newTheme = theme === "light" ? "dark" : "light";
+        setThemeState(newTheme);
+        setLibDarkMode(newTheme);
+        setThemePreferenceState(newTheme);
+    };
+
+    const setThemePreference = (preference) => {
+        setThemePreferenceState(preference);
+        setLibDarkMode(preference);
+        if (preference === "system") {
+            setThemeState(getSystemDarkMode() ? "dark" : "light");
+        } else {
+            setThemeState(preference);
+        }
+    };
+
+    const setColorTheme = (newColorTheme) => {
+        setActiveColorThemeState(newColorTheme);
+        setLibTheme(newColorTheme);
     };
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+        <ThemeContext.Provider
+            value={{
+                theme,
+                toggleTheme,
+                themePreference,
+                setThemePreference,
+                colorTheme: activeColorTheme,
+                setColorTheme,
+            }}
+        >
             {children}
         </ThemeContext.Provider>
     );

@@ -18,9 +18,23 @@ class FoodService:
         return FoodRepository.get_all()
 
     @staticmethod
-    def get_all_foods_with_details(limit: int = 10) -> List[Dict[str, Any]]:
-        foods = FoodRepository.get_all_with_limit(limit)
-        return [food.to_dict() for food in foods]
+    def get_all_foods_with_details(
+        page: int = 1, limit: int = 10, search: Optional[Text] = None
+    ) -> Dict[str, Any]:
+        result = FoodRepository.get_all_with_limit(
+            page=page, limit=limit, search=search
+        )
+
+        # Convert the food items to dictionaries
+        foods_dict = [food.to_dict() for food in result["items"]]
+
+        return {
+            "items": foods_dict,
+            "total": result["total"],
+            "page": result["page"],
+            "limit": result["limit"],
+            "pages": result["pages"],
+        }
 
     @staticmethod
     def get_food_detail(food_id: int) -> Optional[Dict[str, Any]]:
@@ -188,7 +202,7 @@ class FoodService:
 
     @staticmethod
     def search_foods(
-        category: Optional[str] = None, limit: int = 10
+        category: Optional[str] = None, page: int = 1, limit: int = 10
     ) -> List[Dict[str, Any]]:
         if category:
             return [
@@ -196,4 +210,5 @@ class FoodService:
                 for food in FoodRepository.get_by_category(category, limit)
             ]
         else:
-            return [food.to_dict() for food in FoodRepository.get_all_with_limit(limit)]
+            result = FoodRepository.get_all_with_limit(page=page, limit=limit)
+            return [food.to_dict() for food in result["items"]]

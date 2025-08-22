@@ -1,7 +1,8 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import apiService from "@/dashboard/services/api";
+import apiService from "@/services/api";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export const useRestaurants = () => {
     const [pageIndex, setPageIndex] = useState(0);
@@ -9,11 +10,18 @@ export const useRestaurants = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sorting, setSorting] = useState([]);
 
+    // Apply debounce to search term to prevent excessive API calls
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
     // Fetch restaurants with SWR using real API
     const { data, error, mutate } = useSWR(
-        [`/restaurants`, pageIndex, pageSize, searchTerm],
+        [`/restaurants`, pageIndex, pageSize, debouncedSearchTerm],
         () =>
-            apiService.restaurants.getAll(pageIndex + 1, pageSize, searchTerm),
+            apiService.restaurants.getAll(
+                pageIndex + 1,
+                pageSize,
+                debouncedSearchTerm
+            ),
         {
             revalidateOnFocus: false,
             onError: (err) => {

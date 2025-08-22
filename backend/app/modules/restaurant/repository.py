@@ -19,12 +19,41 @@ class RestaurantRepository:
             raise e
 
     @staticmethod
-    def get_all(n: int = 20):
-        """Get all restaurants"""
+    def get_all(page=1, limit=20, search=None):
+        """Get all restaurants with pagination and search"""
         try:
-            restaurants = Restaurant.query.limit(n).all()
-            logger.info(f"Retrieved {len(restaurants)} restaurants")
-            return restaurants
+            query = Restaurant.query
+
+            # Apply search filter if provided
+            if search:
+                search_term = f"%{search}%"
+                query = query.filter(
+                    db.or_(
+                        Restaurant.name.ilike(search_term),
+                        Restaurant.address.ilike(search_term),
+                        Restaurant.description.ilike(search_term),
+                    )
+                )
+                logger.info(f"Applying search filter: {search}")
+
+            # Get total count for pagination
+            total_count = query.count()
+
+            # Apply pagination
+            restaurants = query.order_by(Restaurant.created_at.desc()).paginate(
+                page=page, per_page=limit, error_out=False
+            )
+
+            logger.info(
+                f"Retrieved {len(restaurants.items)} restaurants (total {total_count})"
+            )
+            return {
+                "items": restaurants.items,
+                "total": total_count,
+                "page": page,
+                "limit": limit,
+                "pages": restaurants.pages,
+            }
         except Exception as e:
             logger.error(f"Error retrieving restaurants: {str(e)}")
             raise e

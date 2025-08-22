@@ -12,11 +12,42 @@ class FoodRepository:
         return foods
 
     @staticmethod
-    def get_all_with_limit(limit=10):
-        logger.debug(f"Mengambil {limit} makanan dari database")
-        foods = Food.query.limit(limit).all()
-        logger.info(f"Berhasil mengambil {len(foods)} makanan")
-        return foods
+    def get_all_with_limit(page=1, limit=10, search=None):
+        logger.debug(
+            f"Mengambil makanan dengan pagination: page={page}, limit={limit}, search={search}"
+        )
+        query = Food.query
+
+        # Apply search filter if provided
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    Food.name.ilike(search_term),
+                    Food.description.ilike(search_term),
+                    Food.category.ilike(search_term),
+                )
+            )
+            logger.info(f"Menerapkan filter pencarian: {search}")
+
+        # Get total count for pagination
+        total_count = query.count()
+
+        # Apply pagination
+        foods = query.order_by(Food.created_at.desc()).paginate(
+            page=page, per_page=limit, error_out=False
+        )
+
+        logger.info(
+            f"Berhasil mengambil {len(foods.items)} makanan (total {total_count})"
+        )
+        return {
+            "items": foods.items,
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "pages": foods.pages,
+        }
 
     @staticmethod
     def get_by_id(food_id):

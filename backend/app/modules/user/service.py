@@ -7,8 +7,8 @@ from app.utils.jwt_utils import generate_token
 
 class UserService:
     @staticmethod
-    def get_all_users():
-        return UserRepository.get_all()
+    def get_all_users(page=1, limit=10, search=None):
+        return UserRepository.get_all(page=page, limit=limit, search=search)
 
     @staticmethod
     def get_user_by_id(user_id):

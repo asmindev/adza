@@ -8,10 +8,16 @@ from app.utils import api_logger as logger
 
 class FoodRatingService:
     @staticmethod
-    def get_food_ratings(food_id):
-        """Get all ratings for a specific food"""
-        ratings = FoodRatingRepository.get_by_food_id(food_id)
-        return [rating.to_dict() for rating in ratings]
+    def get_food_ratings(food_id, page=1, limit=10):
+        """Get all ratings for a specific food with pagination"""
+        result = FoodRatingRepository.get_by_food_id(food_id, page=page, limit=limit)
+        return {
+            "items": [rating.to_dict() for rating in result["items"]],
+            "total": result["total"],
+            "page": result["page"],
+            "limit": result["limit"],
+            "pages": result["pages"],
+        }
 
     @staticmethod
     def get_user_ratings(user_id):
@@ -81,8 +87,18 @@ RatingService = FoodRatingService
 
 class RestaurantRatingService:
     @staticmethod
-    def get_restaurant_ratings(restaurant_id):
-        return RestaurantRatingRepository.get_by_restaurant_id(restaurant_id)
+    def get_restaurant_ratings(restaurant_id, page=1, limit=10):
+        """Get all ratings for a specific restaurant with pagination"""
+        result = RestaurantRatingRepository.get_by_restaurant_id(
+            restaurant_id, page=page, limit=limit
+        )
+        return {
+            "items": result["items"],
+            "total": result["total"],
+            "page": result["page"],
+            "limit": result["limit"],
+            "pages": result["pages"],
+        }
 
     @staticmethod
     def get_user_restaurant_ratings(user_id):

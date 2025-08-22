@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { foodCreateSchema } from "../schemas/foodSchema";
-import apiService from "@/dashboard/services/api";
+import apiService from "@/services/api";
 import { Upload, X, ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import useSWR from "swr";

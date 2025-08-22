@@ -89,12 +89,45 @@ def get_me():
 @user_blueprint.route("/users", methods=["GET"])
 @admin_required
 def get_users():
-    logger.info("GET /users - Mengambil semua pengguna (admin only)")
-    users = UserService.get_all_users()
-    logger.info(f"Berhasil mengambil {len(users)} pengguna")
+    logger.info("GET /users - Mengambil semua pengguna dengan pagination (admin only)")
+
+    # Get query parameters with defaults
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+    search = request.args.get("search", None, type=str)
+
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 10
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}, search={search}")
+
+    # Get users with pagination
+    result = UserService.get_all_users(page=page, limit=limit, search=search)
+
+    users = result["items"]
+    logger.info(
+        f"Berhasil mengambil {len(users)} pengguna dari total {result['total']}"
+    )
+
+    # Return paginated response
     return (
         jsonify(
-            {"error": False, "data": {"users": [user.to_dict() for user in users]}}
+            {
+                "error": False,
+                "data": {
+                    "users": [user.to_dict() for user in users],
+                    "pagination": {
+                        "page": result["page"],
+                        "limit": result["limit"],
+                        "total": result["total"],
+                        "pages": result["pages"],
+                    },
+                },
+            }
         ),
         200,
     )

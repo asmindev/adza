@@ -5,11 +5,42 @@ from app.utils import db_logger as logger
 
 class UserRepository:
     @staticmethod
-    def get_all():
-        logger.debug("Mengambil semua pengguna dari database")
-        users = User.query.all()
-        logger.info(f"Berhasil mengambil {len(users)} pengguna")
-        return users
+    def get_all(page=1, limit=10, search=None):
+        logger.debug(
+            f"Mengambil pengguna dengan pagination: page={page}, limit={limit}, search={search}"
+        )
+        query = User.query
+
+        # Apply search filter if provided
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                db.or_(
+                    User.username.ilike(search_term),
+                    User.email.ilike(search_term),
+                    User.name.ilike(search_term),
+                )
+            )
+            logger.info(f"Menerapkan filter pencarian: {search}")
+
+        # Get total count for pagination
+        total_count = query.count()
+
+        # Apply pagination
+        users = query.order_by(User.created_at.desc()).paginate(
+            page=page, per_page=limit, error_out=False
+        )
+
+        logger.info(
+            f"Berhasil mengambil {len(users.items)} pengguna (total {total_count})"
+        )
+        return {
+            "items": users.items,
+            "total": total_count,
+            "page": page,
+            "limit": limit,
+            "pages": users.pages,
+        }
 
     @staticmethod
     def get_by_id(user_id):

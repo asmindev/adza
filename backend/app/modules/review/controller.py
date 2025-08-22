@@ -10,11 +10,33 @@ review_blueprint = Blueprint("review", __name__)
 @review_blueprint.route("/foods/<string:food_id>/reviews", methods=["GET"])
 @token_required
 def get_food_reviews(food_id):
-    """Get all reviews for a specific food"""
-    logger.info(f"GET /foods/{food_id}/reviews - Mengambil semua review makanan")
-    reviews = ReviewService.get_food_reviews(food_id)
+    """Get all reviews for a specific food with pagination"""
+    logger.info(
+        f"GET /foods/{food_id}/reviews - Mengambil review makanan dengan pagination"
+    )
 
-    logger.info(f"Berhasil mengambil {len(reviews)} review untuk makanan {food_id}")
+    # Get query parameters with defaults
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 10
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}")
+
+    # Get reviews with pagination
+    result = ReviewService.get_food_reviews(food_id, page=page, limit=limit)
+
+    reviews = result["items"]
+    logger.info(
+        f"Berhasil mengambil {len(reviews)} review untuk makanan {food_id} dari total {result['total']}"
+    )
+
+    # Return paginated response
     return (
         jsonify(
             {
@@ -22,6 +44,12 @@ def get_food_reviews(food_id):
                 "data": {
                     "food_id": food_id,
                     "reviews": [review.to_dict() for review in reviews],
+                    "pagination": {
+                        "page": result["page"],
+                        "limit": result["limit"],
+                        "total": result["total"],
+                        "pages": result["pages"],
+                    },
                 },
             }
         ),
@@ -32,11 +60,33 @@ def get_food_reviews(food_id):
 @review_blueprint.route("/users/<string:user_id>/reviews", methods=["GET"])
 @token_required
 def get_user_reviews(user_id):
-    """Get all reviews written by a specific user"""
-    logger.info(f"GET /users/{user_id}/reviews - Mengambil semua review pengguna")
-    reviews = ReviewService.get_user_reviews(user_id)
+    """Get all reviews written by a specific user with pagination"""
+    logger.info(
+        f"GET /users/{user_id}/reviews - Mengambil review pengguna dengan pagination"
+    )
 
-    logger.info(f"Berhasil mengambil {len(reviews)} review dari pengguna {user_id}")
+    # Get query parameters with defaults
+    page = request.args.get("page", 1, type=int)
+    limit = request.args.get("limit", 10, type=int)
+
+    # Validate parameters
+    if page < 1:
+        page = 1
+    if limit < 1 or limit > 100:
+        limit = 10
+
+    # Log the pagination parameters
+    logger.info(f"Pagination parameters: page={page}, limit={limit}")
+
+    # Get reviews with pagination
+    result = ReviewService.get_user_reviews(user_id, page=page, limit=limit)
+
+    reviews = result["items"]
+    logger.info(
+        f"Berhasil mengambil {len(reviews)} review dari pengguna {user_id} dari total {result['total']}"
+    )
+
+    # Return paginated response
     return (
         jsonify(
             {
@@ -44,6 +94,12 @@ def get_user_reviews(user_id):
                 "data": {
                     "user_id": user_id,
                     "reviews": [review.to_dict() for review in reviews],
+                    "pagination": {
+                        "page": result["page"],
+                        "limit": result["limit"],
+                        "total": result["total"],
+                        "pages": result["pages"],
+                    },
                 },
             }
         ),
