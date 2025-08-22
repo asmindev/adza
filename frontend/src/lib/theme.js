@@ -1,11 +1,13 @@
 // Theme management utility
 export const themes = {
+    monochrome: "theme-monochrome",
     blue: "theme-blue",
     green: "theme-green",
     purple: "theme-purple",
 };
 
 export const themeNames = {
+    "theme-monochrome": "Monochrome Theme",
     "theme-blue": "Blue Theme",
     "theme-green": "Green Theme",
     "theme-purple": "Purple Theme",
@@ -26,6 +28,16 @@ export const darkModeNames = {
 
 // Theme color information with primary and secondary colors
 export const themeColors = {
+    "theme-monochrome": {
+        name: "Monochrome Theme",
+        primary: "oklch(0.205 0 0)",
+        secondary: "oklch(0.97 0 0)",
+        accent: "oklch(0.922 0 0)",
+        description: "Classic monochrome palette with timeless elegance",
+        colorClass: "bg-gray-800",
+        secondaryClass: "bg-gray-100",
+        accentClass: "bg-gray-200",
+    },
     "theme-blue": {
         name: "Blue Theme",
         primary: "oklch(0.546 0.207 264.376)",
@@ -61,9 +73,9 @@ export const themeColors = {
 // Get current theme from localStorage or default
 export function getCurrentTheme() {
     if (typeof window !== "undefined") {
-        return localStorage.getItem("app-theme") || "theme-blue";
+        return localStorage.getItem("app-theme") || "theme-monochrome";
     }
-    return "theme-blue";
+    return "theme-monochrome";
 }
 
 // Get current dark mode from localStorage or default
@@ -133,7 +145,12 @@ export function applyDarkMode() {
 export function initializeTheme() {
     if (typeof window !== "undefined") {
         const currentTheme = getCurrentTheme();
-        setTheme(currentTheme);
+
+        // Ensure the html element has the theme class
+        document.documentElement.classList.remove(...Object.values(themes));
+        document.documentElement.classList.add(currentTheme);
+
+        // Apply dark mode
         applyDarkMode();
 
         // Listen for system dark mode changes
@@ -143,13 +160,18 @@ export function initializeTheme() {
                 applyDarkMode();
             }
         });
+
+        // Force the theme to be saved in localStorage if it wasn't set
+        if (!localStorage.getItem("app-theme")) {
+            localStorage.setItem("app-theme", currentTheme);
+        }
     }
 }
 
 // Get theme color information
 export function getThemeColors(theme = null) {
     const currentTheme = theme || getCurrentTheme();
-    return themeColors[currentTheme] || themeColors["theme-blue"];
+    return themeColors[currentTheme] || themeColors["theme-monochrome"];
 }
 
 // Get all available theme colors for selection UI
