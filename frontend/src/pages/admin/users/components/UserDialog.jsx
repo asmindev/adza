@@ -27,8 +27,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import apiService from "@/services/api";
 import { userFormSchema } from "../schemas/userSchema";
+import apiService from "@/lib/api";
 
 export default function UserDialog({
     open,

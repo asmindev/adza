@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import apiService from "@/services/api";
 import { useDebounce } from "@/hooks/useDebounce";
+import apiService from "@/lib/api";
 
 export const useFoods = (initialPage = 1, initialPageSize = 50) => {
     // State management

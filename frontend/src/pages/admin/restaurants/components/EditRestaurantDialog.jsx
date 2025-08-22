@@ -22,9 +22,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import apiService from "@/services/api";
 import LocationPicker from "@/components/map/LocationPicker";
 import { editRestaurantSchema } from "../schemas/restaurantSchema";
+import apiService from "@/lib/api";
 
 export default function EditRestaurantDialog({
     open,
