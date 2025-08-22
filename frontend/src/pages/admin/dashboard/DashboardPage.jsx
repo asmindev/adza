@@ -23,16 +23,27 @@ import StatsCard from "@/dashboard/components/StatsCard";
 import TopRatedFoodsChart from "@/dashboard/components/charts/TopRatedFoodsChart";
 
 export default function DashboardPage() {
-    const { data: statsData, isLoading } = useSWR("/api/v1/dashboard/stats", {
-        revalidateOnFocus: false,
-    });
+    const {
+        data: statsData,
+        isLoading,
+        error,
+    } = useSWR("/api/v1/dashboard/stats");
 
-    const stats = statsData?.data || {
-        totalFoods: 0,
-        totalUsers: 0,
-        totalReviews: 0,
-        averageRating: 0,
-    };
+    // Use error state to conditionally show an error message or fallback data
+    const stats = error
+        ? {
+              totalFoods: 0,
+              totalUsers: 0,
+              totalReviews: 0,
+              averageRating: 0,
+              error: true,
+          }
+        : statsData?.data || {
+              totalFoods: 0,
+              totalUsers: 0,
+              totalReviews: 0,
+              averageRating: 0,
+          };
 
     return (
         <div className="space-y-6 w-full">

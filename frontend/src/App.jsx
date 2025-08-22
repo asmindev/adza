@@ -8,14 +8,14 @@ import FoodDetailPage from "@/pages/detail/FoodDetailPage";
 import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
 import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
 import RouteNavigationPage from "@/pages/navigation/RouteNavigationPage";
-import DashboardPage from "@/pages/dashboard/DashboardPage";
+import DashboardPage from "@/pages/admin/dashboard/DashboardPage";
 import Login from "./pages/auth/Login";
 import { Toaster } from "sonner";
 import { SWRConfig } from "swr";
 import UserProfile from "./pages/profile/UserProfile";
-import FoodsPage from "./dashboard/pages/foods/FoodsPage";
-import UsersPage from "./dashboard/pages/users/UsersPage";
-import AdminRestaurantsPage from "./dashboard/pages/restaurants/RestaurantsPage";
+import FoodsPage from "./pages/admin/foods/FoodsPage";
+import UsersPage from "./pages/admin/users/UsersPage";
+import AdminRestaurantsPage from "./pages/admin/restaurants/RestaurantsPage";
 const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
 
 // Create the router configuration with React Router v7
@@ -120,6 +120,26 @@ export default function App() {
         <>
             <SWRConfig
                 value={{
+                    revalidateOnFocus: false,
+                    revalidateOnReconnect: false,
+                    refreshWhenOffline: false,
+                    refreshWhenHidden: false,
+                    refreshInterval: 0,
+                    shouldRetryOnError: false,
+                    errorRetryCount: 3,
+                    onErrorRetry: (
+                        error,
+                        key,
+                        config,
+                        revalidate,
+                        { retryCount }
+                    ) => {
+                        // Don't retry on 404s
+                        if (error.status === 404) return;
+
+                        // Only retry up to 3 times
+                        if (retryCount >= 3) return;
+                    },
                     fetcher: (resource, init) => {
                         // Get authentication token from localStorage
                         const token = localStorage.getItem("token");
@@ -148,8 +168,27 @@ export default function App() {
                                 throw new Error("Autentikasi diperlukan");
                             }
 
-                            // Parse response as JSON
-                            const data = await res.json();
+                            // Handle 404 Not Found errors
+                            if (res.status === 404) {
+                                const error = new Error(
+                                    "Resource tidak ditemukan"
+                                );
+                                error.status = 404;
+                                throw error;
+                            }
+
+                            // Try to parse response as JSON
+                            let data;
+                            try {
+                                data = await res.json();
+                            } catch {
+                                // If JSON parsing fails, create an error with the status
+                                const error = new Error(
+                                    "Format respons tidak valid"
+                                );
+                                error.status = res.status;
+                                throw error;
+                            }
 
                             // Handle API errors
                             if (!res.ok) {
