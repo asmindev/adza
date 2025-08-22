@@ -108,7 +108,7 @@ Get detailed information about a specific food item.
                 "id": 1,
                 "user_id": 3,
                 "food_id": 1,
-                "review_text": "Sangat enak dan porsinya banyak!",
+                "content": "Sangat enak dan porsinya banyak!",
                 "username": "foodlover"
             }
             // More reviews...

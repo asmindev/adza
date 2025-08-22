@@ -72,7 +72,7 @@ curl -X POST http://localhost:5000/api/v1/users/1/foods/5/review \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-token-here" \
   -d '{
-    "review_text": "Sangat enak dan porsinya banyak! Akan order lagi."
+    "content": "Sangat enak dan porsinya banyak! Akan order lagi."
   }'
 ```
 
@@ -104,7 +104,7 @@ print('Rating response:', rating_response.json())
 
 # If rating successful, add a review
 if rating_response.status_code in (200, 201):
-    review_data = {'review_text': 'Sangat enak dan porsinya banyak! Akan order lagi.'}
+    review_data = {'content': 'Sangat enak dan porsinya banyak! Akan order lagi.'}
     review_response = requests.post(
         f'{base_url}/users/{user_id}/foods/{food_id}/review',
         headers=headers,

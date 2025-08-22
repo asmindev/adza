@@ -23,7 +23,7 @@ export default function FoodDetailPage() {
                 toast.success("Penilaian berhasil dikirim");
             }
 
-            if (data.review_text) {
+            if (data.content) {
                 toast.success("Ulasan berhasil dikirim");
             }
 

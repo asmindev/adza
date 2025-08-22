@@ -90,7 +90,7 @@ class Review {
   -id: String(36)
   -user_id: String(36)
   -food_id: String(36)
-  -review_text: Text
+  -content: Text
   -created_at: DateTime
   -updated_at: DateTime
   +to_dict(): Dictionary
@@ -100,7 +100,7 @@ class Review {
   +create(review): Review
   +update(review): Review
   +delete(review): Boolean
-  +create_or_update_review(user_id, food_id, review_text): Review
+  +create_or_update_review(user_id, food_id, content): Review
 }
 
 class RecommendationSystem {

@@ -222,7 +222,7 @@ function FoodItem({ food, index }) {
                                                             </span>
                                                         </div>
                                                         <p className="text-gray-700 text-sm sm:text-xs leading-relaxed">
-                                                            {review.review_text}
+                                                            {review.content}
                                                         </p>
                                                     </div>
                                                 </div>

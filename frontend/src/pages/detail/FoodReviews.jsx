@@ -26,7 +26,7 @@ export default function FoodReviews({
         setIsSubmitting(true);
 
         try {
-            await onSubmitReview({ food_id: foodId, review_text: reviewText });
+            await onSubmitReview({ food_id: foodId, content: reviewText });
             setReviewText("");
         } catch (error) {
             console.error("Gagal mengirim ulasan:", error);
@@ -136,7 +136,7 @@ export default function FoodReviews({
                                             )}
                                         </div>
                                         <p className="text-muted-foreground text-xs line-clamp-3">
-                                            {review.review_text}
+                                            {review.content}
                                         </p>
                                     </div>
                                 </div>

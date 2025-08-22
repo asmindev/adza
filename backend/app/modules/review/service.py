@@ -19,7 +19,7 @@ class ReviewService:
         return ReviewRepository.get_by_user_and_food(user_id, food_id)
 
     @staticmethod
-    def create_or_update_review(user_id, food_id, review_text):
+    def create_or_update_review(user_id, food_id, content):
         logger.info(
             f"Membuat/memperbarui review untuk makanan {food_id} dari pengguna {user_id}"
         )
@@ -37,13 +37,11 @@ class ReviewService:
 
         if existing_review:
             # Update existing review
-            existing_review.review_text = review_text
+            existing_review.content = content
             return ReviewRepository.update(existing_review)
         else:
             # Create new review
-            new_review = Review(
-                user_id=user_id, food_id=food_id, review_text=review_text
-            )
+            new_review = Review(user_id=user_id, food_id=food_id, content=content)
             return ReviewRepository.create(new_review)
 
     @staticmethod

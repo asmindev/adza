@@ -24,7 +24,7 @@ Get all reviews for a specific food item.
                 "id": 1,
                 "user_id": 3,
                 "food_id": 1,
-                "review_text": "Sangat enak dan porsinya banyak!",
+                "content": "Sangat enak dan porsinya banyak!",
                 "username": "foodlover"
             }
             // More reviews...
@@ -53,7 +53,7 @@ Get all reviews written by a specific user.
                 "id": 1,
                 "user_id": 3,
                 "food_id": 1,
-                "review_text": "Sangat enak dan porsinya banyak!",
+                "content": "Sangat enak dan porsinya banyak!",
                 "food_name": "Nasi Goreng Spesial"
             }
             // More reviews...
@@ -74,7 +74,7 @@ Create a review for a food item or update an existing review.
 
 ```json
 {
-    "review_text": "Sangat enak dan porsinya banyak! Akan order lagi."
+    "content": "Sangat enak dan porsinya banyak! Akan order lagi."
 }
 ```
 
@@ -88,7 +88,7 @@ Create a review for a food item or update an existing review.
         "id": 1,
         "user_id": 3,
         "food_id": 1,
-        "review_text": "Sangat enak dan porsinya banyak! Akan order lagi."
+        "content": "Sangat enak dan porsinya banyak! Akan order lagi."
     }
 }
 ```

@@ -65,14 +65,14 @@ def review_food():
         f"{method} /users/{g.user_id}/foods/{food_id}/review - {'Membuat' if method == 'POST' else 'Memperbarui'} review"
     )
 
-    if not data or "review_text" not in data:
+    if not data or "content" not in data:
         logger.warning(f"Permintaan tidak valid: teks review tidak diberikan")
         return jsonify({"error": True, "message": "Review text is required"}), 400
 
-    review_text = data["review_text"]
+    content = data["content"]
 
     try:
-        review = ReviewService.create_or_update_review(user_id, food_id, review_text)
+        review = ReviewService.create_or_update_review(user_id, food_id, content)
 
         if not review:
             return jsonify({"error": True, "message": "Could not add review"}), 400

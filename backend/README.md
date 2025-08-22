@@ -171,7 +171,7 @@ The API will be available at http://localhost:5000
         "rating": 4.5,
         "comment": "This food is delicious!",
         "review_title": "Sangat Enak!",
-        "review_text": "Saya sangat menyukai makanan ini. Rasanya enak dan porsinya pas. Sangat direkomendasikan untuk dicoba!"
+        "content": "Saya sangat menyukai makanan ini. Rasanya enak dan porsinya pas. Sangat direkomendasikan untuk dicoba!"
     }
     ```
 -   `DELETE /api/v1/users/<user_id>/foods/<food_id>/rating` - Delete a rating and its associated review
@@ -250,7 +250,7 @@ Pendekatan ini menggunakan teks ulasan makanan untuk menemukan kemiripan antar m
 
 1. **Pengumpulan Ulasan**:
 
-    - Semua ulasan (review_text, review_title, comment) untuk setiap makanan dikumpulkan
+    - Semua ulasan (content, review_title, comment) untuk setiap makanan dikumpulkan
     - Ulasan digabungkan menjadi satu dokumen per makanan
 
 2. **Preprocessing Teks**:

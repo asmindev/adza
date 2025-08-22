@@ -22,9 +22,7 @@ export default function RatingForm({
     const [reviewTitle, setReviewTitle] = useState(
         existingRating?.review_title || ""
     );
-    const [reviewText, setReviewText] = useState(
-        existingRating?.review_text || ""
-    );
+    const [reviewText, setReviewText] = useState(existingRating?.content || "");
     const [comment, setComment] = useState(existingRating?.comment || "");
     const [hoveredRating, setHoveredRating] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +40,7 @@ export default function RatingForm({
             await onSubmit(foodId, {
                 rating,
                 review_title: reviewTitle,
-                review_text: reviewText,
+                content: reviewText,
                 comment,
             });
 

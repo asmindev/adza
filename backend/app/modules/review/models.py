@@ -9,7 +9,7 @@ class Review(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     food_id = db.Column(db.String(36), db.ForeignKey("foods.id"), nullable=False)
-    review_text = db.Column(db.Text, nullable=False)  # Review content
+    content = db.Column(db.Text, nullable=False)  # Review content
 
     # Menggunakan UTC secara eksplisit
     created_at = db.Column(
@@ -48,7 +48,7 @@ class Review(db.Model):
             "id": self.id,
             "food_id": self.food_id,
             "user": user,
-            "review_text": self.review_text,
+            "content": self.content,
             "created_at": (
                 self.created_at.isoformat() + "Z" if self.created_at else None
             ),
