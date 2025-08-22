@@ -4,6 +4,7 @@ export const themes = {
     blue: "theme-blue",
     green: "theme-green",
     purple: "theme-purple",
+    violet: "theme-violet",
 };
 
 export const themeNames = {
@@ -11,6 +12,7 @@ export const themeNames = {
     "theme-blue": "Blue Theme",
     "theme-green": "Green Theme",
     "theme-purple": "Purple Theme",
+    "theme-violet": "Violet Theme",
 };
 
 // Dark mode options
@@ -40,9 +42,9 @@ export const themeColors = {
     },
     "theme-blue": {
         name: "Blue Theme",
-        primary: "oklch(0.546 0.207 264.376)",
-        secondary: "oklch(0.925 0.035 264.376)",
-        accent: "oklch(0.875 0.065 264.376)",
+        primary: "oklch(0.623 0.214 259.815)",
+        secondary: "oklch(0.967 0.001 286.375)",
+        accent: "oklch(0.967 0.001 286.375)",
         description: "Professional blue palette with cool tones",
         colorClass: "bg-blue-500",
         secondaryClass: "bg-blue-100",
@@ -67,6 +69,16 @@ export const themeColors = {
         colorClass: "bg-purple-500",
         secondaryClass: "bg-purple-100",
         accentClass: "bg-purple-200",
+    },
+    "theme-violet": {
+        name: "Violet Theme",
+        primary: "oklch(0.606 0.25 292.717)",
+        secondary: "oklch(0.967 0.001 286.375)",
+        accent: "oklch(0.967 0.001 286.375)",
+        description: "Elegant violet palette with sophisticated tones",
+        colorClass: "bg-violet-500",
+        secondaryClass: "bg-violet-100",
+        accentClass: "bg-violet-200",
     },
 };
 

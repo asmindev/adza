@@ -1,23 +1,18 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router"; // Fixed import from react-router to react-router-dom
+import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Clock, Award, Star, DollarSign } from "lucide-react"; // Added DollarSign
+import { Card } from "@/components/ui/card";
+import { Heart, Star, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function FoodCard({
-    food,
-    onToggleFavorite,
-    hybridScore,
-    predictedRating,
-}) {
+export default function FoodCard({ food, onToggleFavorite }) {
     if (!food) return null;
-    console.log("FoodCard food", food);
 
     const handleFavoriteClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        onToggleFavorite(food.id);
+        onToggleFavorite?.(food.id);
     };
 
     // Format price to IDR currency
@@ -27,100 +22,95 @@ export default function FoodCard({
         minimumFractionDigits: 0,
     }).format(food.price || 0);
 
-    // The card animation
+    // Card animations
     const cardVariants = {
-        hidden: { opacity: 0, y: 50 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+        hidden: { opacity: 0, y: 15 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.3 },
+        },
     };
 
-    // Get image URL from main_image if available
+    // Get image URL
     const imageUrl =
         food.main_image?.image_url ||
-        (food.images && food.images.length > 0
-            ? food.images[0].image_url
-            : null) ||
+        food.images?.[0]?.image_url ||
         food.image ||
         "https://placehold.co/600x400?text=Food+Image";
 
     return (
         <motion.div variants={cardVariants}>
-            <Link
-                to={`/food/${food.id}`}
-                className="block"
-                aria-label={`View details for ${food.name}`}
-            >
-                <div className="w-full group bg-white dark:bg-gray-800 rounded-lg overflow-hidden duration-300 border hover:shadow-2xl shadow-accent/20">
-                    <div className="relative">
+            <Link to={`/food/${food.id}`} className="block group">
+                <Card className="border-1 shadow-none duration-300 overflow-hidden p-0">
+                    {/* Image Section */}
+                    <div className="relative aspect-[5/3] overflow-hidden">
                         <img
                             src={imageUrl}
                             alt={food.name}
-                            className="w-full min-w-52 h-48 min-h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
                                 e.target.src =
                                     "https://placehold.co/600x400?text=Food+Image";
                             }}
                         />
+
+                        {/* Favorite Button */}
                         <button
                             onClick={handleFavoriteClick}
-                            className="absolute top-2 right-2 p-2 bg-white dark:bg-gray-900 rounded-full shadow-md hover:scale-110 transition-transform"
-                            aria-label={
-                                food.isFavorite
-                                    ? "Remove from favorites"
-                                    : "Add to favorites"
-                            }
+                            className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm hover:scale-110 transition-transform"
                         >
                             <Heart
                                 className={cn(
-                                    "h-5 w-5",
+                                    "h-3.5 w-3.5",
                                     food.isFavorite
-                                        ? "fill-red-500 text-red-500"
-                                        : "text-gray-400 dark:text-gray-300"
+                                        ? "fill-rose-500 text-rose-500"
+                                        : "text-gray-600"
                                 )}
                             />
                         </button>
 
-                        {/* Show category badge on the image */}
-                        {food.category && (
-                            <div className="absolute top-2 left-2 px-2 py-1 bg-white/80 dark:bg-gray-800/80 text-gray-800 dark:text-white text-xs font-medium rounded">
-                                {food.category}
-                            </div>
-                        )}
+                        {/* Price Badge */}
+                        <Badge className="absolute bottom-2 right-2 bg-emerald-500 text-white text-xs px-2 py-1">
+                            {formattedPrice}
+                        </Badge>
                     </div>
 
-                    <div className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                            <h3 className="font-bold text-gray-800 dark:text-white line-clamp-1">
-                                {food.name}
-                            </h3>
-                            <div className="flex items-center">
-                                <Star className="h-4 w-4 text-yellow-500 mr-1" />
+                    {/* Content Section */}
+                    <div className="p-3">
+                        {/* Title */}
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 text-sm mb-1">
+                            {food.name}
+                        </h3>
 
-                                {food?.ratings?.average && (
-                                    <span className="text-xs text-gray-500 ml-1">
-                                        {food?.ratings?.average.toFixed(1)}
+                        {/* Restaurant & Rating Row */}
+                        <div className="flex items-center justify-between text-xs">
+                            {/* Restaurant */}
+                            {food.restaurant && (
+                                <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400 flex-1 min-w-0">
+                                    <MapPin className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate">
+                                        {food.restaurant.name}
                                     </span>
-                                )}
-                            </div>
-                        </div>
+                                </div>
+                            )}
 
-                        {/* <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
-                            {food.description}
-                        </p> */}
-
-                        <div className="flex flex-wrap gap-2">
-                            {/* Price badge */}
-                            {food.price && (
-                                <Badge
-                                    variant="outline"
-                                    className="flex items-center gap-1 bg-secondary/10 text-secondary dark:bg-green-900/30 dark:text-green-300"
-                                >
-                                    {/* <DollarSign className="h-3 w-3" /> */}
-                                    {formattedPrice}
-                                </Badge>
+                            {/* Rating */}
+                            {food.ratings && (
+                                <div className="flex items-center gap-1 ml-2">
+                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                        {food.ratings.average?.toFixed(1) ||
+                                            "0.0"}
+                                    </span>
+                                    <span className="text-gray-500">
+                                        ({food.ratings.count || 0})
+                                    </span>
+                                </div>
                             )}
                         </div>
                     </div>
-                </div>
+                </Card>
             </Link>
         </motion.div>
     );
