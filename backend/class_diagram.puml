@@ -1,0 +1,130 @@
+@startuml GoFood API Class Diagram
+
+' Class definitions with attributes and methods
+class User {
+  -id: String(36)
+  -name: String
+  -username: String
+  -email: String
+  -password: String
+  -role: String
+  -created_at: DateTime
+  -updated_at: DateTime
+  +to_dict(): Dictionary
+  +is_admin: Boolean
+  +get_by_id(user_id): User
+  +get_by_username(username): User
+  +get_by_email(email): User
+  +create(user): User
+  +update(user): User
+  +delete(user): Boolean
+}
+
+class Restaurant {
+  -id: String(36)
+  -name: String(100)
+  -description: Text
+  -address: String(255)
+  -phone: String(20)
+  -email: String(100)
+  -latitude: Float
+  -longitude: Float
+  -rating_average: Float
+  -is_active: Boolean
+  -created_at: DateTime
+  -updated_at: DateTime
+  +to_dict(): Dictionary
+  +location: Dictionary
+  +get_all(): List<Restaurant>
+  +get_by_id(restaurant_id): Restaurant
+  +get_active_restaurants(): List<Restaurant>
+  +get_by_location(lat, lng, radius): List<Restaurant>
+  +create(restaurant): Restaurant
+  +update(restaurant): Restaurant
+  +delete(restaurant): Boolean
+  +update_rating_average(): Float
+}
+
+class Food {
+  -id: String(36)
+  -name: String
+  -description: Text
+  -category: String
+  -price: Float
+  -restaurant_id: String(36)
+  -created_at: DateTime
+  -updated_at: DateTime
+  +to_dict(): Dictionary
+  +get_all(): List<Food>
+  +get_all_with_details(limit): List<Dictionary>
+  +get_by_id(food_id): Food
+  +get_by_category(category, limit): List<Food>
+  +get_by_restaurant(restaurant_id): List<Food>
+  +create(food): Food
+  +update(food): Food
+  +delete(food): Boolean
+  +add_food_image(food_id, filename): FoodImage
+  +get_food_images(food_id): List<FoodImage>
+  +delete_food_image(image_id): Boolean
+}
+
+class FoodRating {
+  -id: String(36)
+  -user_id: String(36)
+  -food_id: String(36)
+  -rating: Float
+  -created_at: DateTime
+  -updated_at: DateTime
+  +to_dict(): Dictionary
+  +get_by_food_id(food_id): List<FoodRating>
+  +get_by_user_id(user_id): List<FoodRating>
+  +get_by_user_and_food(user_id, food_id): FoodRating
+  +get_food_average_rating(food_id): Float
+  +create(rating): FoodRating
+  +update(rating): FoodRating
+  +delete(rating): Boolean
+  +create_or_update_rating(user_id, food_id, rating_value): FoodRating
+}
+
+class Review {
+  -id: String(36)
+  -user_id: String(36)
+  -food_id: String(36)
+  -review_text: Text
+  -created_at: DateTime
+  -updated_at: DateTime
+  +to_dict(): Dictionary
+  +get_by_food_id(food_id): List<Review>
+  +get_by_user_id(user_id): List<Review>
+  +get_by_user_and_food(user_id, food_id): Review
+  +create(review): Review
+  +update(review): Review
+  +delete(review): Boolean
+  +create_or_update_review(user_id, food_id, review_text): Review
+}
+
+class RecommendationSystem {
+  +get_recommendations(user_id, n): List<Dictionary>
+  +get_hybrid_recommendations(user_id, n, alpha): List<Dictionary>
+  +get_popular_foods(n): List<Dictionary>
+  -_build_user_item_matrix(): Matrix
+  -_perform_svd(matrix): SVD
+  -_predict_ratings(user_id, svd): Dictionary
+  -_compute_text_similarity(user_id): Dictionary
+  -_combine_scores(rating_scores, similarity_scores, alpha): Dictionary
+}
+
+' Relationships
+User "1" -- "many" FoodRating : has >
+User "1" -- "many" Review : writes >
+Restaurant "1" -- "many" Food : owns >
+Food "1" -- "many" FoodRating : receives >
+Food "1" -- "many" Review : has >
+
+' Adjusted direction to show recommendations flow to users
+User "*" -- "1" RecommendationSystem : < receives recommendations from
+RecommendationSystem "1" -- "*" FoodRating : processes >
+RecommendationSystem "1" -- "*" Review : analyzes >
+RecommendationSystem "1" -- "*" Food : recommends >
+
+@enduml

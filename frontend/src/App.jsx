@@ -1,0 +1,176 @@
+import React from "react";
+import { createBrowserRouter, RouterProvider } from "react-router";
+import UserProvider from "@/contexts/UserContext";
+import RootLayout from "@/components/layout/RootLayout";
+import DashboardLayout from "@/components/layout/AdminLayout";
+import HomePage from "@/pages/home/HomePage";
+import FoodDetailPage from "@/pages/detail/FoodDetailPage";
+import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
+import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
+import RouteNavigationPage from "@/pages/navigation/RouteNavigationPage";
+import DashboardPage from "@/pages/dashboard/DashboardPage";
+import Login from "./pages/auth/Login";
+import { Toaster } from "sonner";
+import { SWRConfig } from "swr";
+import UserProfile from "./pages/profile/UserProfile";
+import FoodsPage from "./dashboard/pages/foods/FoodsPage";
+import UsersPage from "./dashboard/pages/users/UsersPage";
+import AdminRestaurantsPage from "./dashboard/pages/restaurants/RestaurantsPage";
+const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
+
+// Create the router configuration with React Router v7
+export default function App() {
+    // Create routes using the declarative API
+    const router = createBrowserRouter([
+        {
+            path: "/",
+            element: (
+                <RootLayout>
+                    <HomePage />
+                </RootLayout>
+            ),
+        },
+        {
+            path: "/restaurants",
+            element: (
+                <RootLayout>
+                    <RestaurantsPage />
+                </RootLayout>
+            ),
+        },
+        {
+            path: "/food/:id",
+            element: (
+                <RootLayout>
+                    <FoodDetailPage />
+                </RootLayout>
+            ),
+        },
+        {
+            path: "/restaurant/:id",
+            element: (
+                <RootLayout>
+                    <RestaurantDetailPage />
+                </RootLayout>
+            ),
+        },
+        {
+            path: "/navigation/restaurant/:restaurantId",
+            element: (
+                <RootLayout>
+                    <RouteNavigationPage />
+                </RootLayout>
+            ),
+        },
+        {
+            path: "/navigation/food/:foodId",
+            element: (
+                <RootLayout>
+                    <RouteNavigationPage />
+                </RootLayout>
+            ),
+        },
+        {
+            path: "/dashboard",
+            element: (
+                <DashboardLayout>
+                    <DashboardPage />
+                </DashboardLayout>
+            ),
+        },
+        {
+            path: "/dashboard/foods",
+            element: (
+                <DashboardLayout>
+                    <FoodsPage />
+                </DashboardLayout>
+            ),
+        },
+        {
+            path: "/dashboard/users",
+            element: (
+                <DashboardLayout>
+                    <UsersPage />
+                </DashboardLayout>
+            ),
+        },
+        {
+            path: "/dashboard/restaurants",
+            element: (
+                <DashboardLayout>
+                    <AdminRestaurantsPage />
+                </DashboardLayout>
+            ),
+        },
+        {
+            path: "/login",
+            element: <Login />,
+        },
+        {
+            path: "/profile",
+            element: (
+                <RootLayout>
+                    <UserProfile />
+                </RootLayout>
+            ),
+        },
+    ]);
+
+    return (
+        <>
+            <SWRConfig
+                value={{
+                    fetcher: (resource, init) => {
+                        // Get authentication token from localStorage
+                        const token = localStorage.getItem("token");
+
+                        // Create headers
+                        const headers = {
+                            "Content-Type": "application/json",
+                            ...(token && { Authorization: `Bearer ${token}` }),
+                            ...(init?.headers || {}),
+                        };
+
+                        return fetch(`${BASE_API_URL}${resource}`, {
+                            ...init,
+                            headers,
+                        }).then(async (res) => {
+                            // Handle unauthorized responses
+                            if (res.status === 401) {
+                                localStorage.removeItem("user");
+                                localStorage.removeItem("token");
+                                // Only redirect if not already on the login page
+                                if (
+                                    !window.location.pathname.includes("/login")
+                                ) {
+                                    window.location.href = "/login";
+                                }
+                                throw new Error("Autentikasi diperlukan");
+                            }
+
+                            // Parse response as JSON
+                            const data = await res.json();
+
+                            // Handle API errors
+                            if (!res.ok) {
+                                const error = new Error(
+                                    data.message || "Terjadi kesalahan"
+                                );
+                                error.status = res.status;
+                                error.info = data;
+                                throw error;
+                            }
+
+                            return data;
+                        });
+                    },
+                }}
+            >
+                <UserProvider>
+                    <Toaster />
+                    <RouterProvider router={router} />
+                </UserProvider>
+            </SWRConfig>
+        </>
+    );
+}
