@@ -3,6 +3,9 @@ from app.modules.rating.repository import (
     RestaurantRatingRepository,
 )
 from app.modules.rating.models import FoodRating, RestaurantRating
+from app.modules.food.repository import FoodRepository
+from app.modules.user.repository import UserRepository
+from app.modules.restaurant.repository import RestaurantRepository
 from app.utils import api_logger as logger
 
 
@@ -38,6 +41,29 @@ class FoodRatingService:
     @staticmethod
     def create_rating(user_id, food_id, rating_value):
         """Create or update rating"""
+        logger.info(
+            f"Membuat/memperbarui rating makanan {food_id} dari pengguna {user_id}"
+        )
+
+        # Verify user and food exist
+        user = UserRepository.get_by_id(user_id)
+        food = FoodRepository.get_by_id(food_id)
+
+        if not user:
+            logger.warning(f"Pengguna {user_id} tidak ditemukan")
+            return None
+
+        if not food:
+            logger.warning(f"Makanan {food_id} tidak ditemukan")
+            return None
+
+        # Validate rating value
+        if not (1 <= rating_value <= 5):
+            logger.warning(
+                f"Rating value tidak valid: {rating_value}. Harus antara 1-5"
+            )
+            return None
+
         # Check if rating already exists
         existing_rating = FoodRatingRepository.get_user_rating(user_id, food_id)
 
@@ -205,8 +231,8 @@ class RestaurantRatingService:
                 avg_rating = RestaurantRatingRepository.get_restaurant_average_rating(
                     restaurant_id
                 )
-                restaurant.rating_average = avg_rating if avg_rating else 0.0
-                RestaurantRepository.update(restaurant)
+                update_data = {"rating_average": avg_rating if avg_rating else 0.0}
+                RestaurantRepository.update(restaurant_id, update_data)
                 logger.info(
                     f"Restaurant {restaurant_id} rating_average updated to {avg_rating}"
                 )

@@ -53,6 +53,7 @@ class FoodRepository:
     def get_by_id(food_id):
         logger.debug(f"Mencari makanan dengan ID: {food_id}")
         food = Food.query.get(food_id)
+        logger.info(f"Food found: {food.name}")
         if food:
             logger.info(f"Makanan dengan ID {food_id} ditemukan")
         else:

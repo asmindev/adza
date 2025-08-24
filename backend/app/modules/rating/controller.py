@@ -88,7 +88,11 @@ def get_user_ratings(user_id):
 @rating_blueprint.route("/ratings", methods=["POST", "PUT"])
 @token_required
 def rate_food():
-    """Create or update a rating"""
+    """Create or update a rating (standalone rating without review)
+
+    Note: It's recommended to use the /reviews endpoint which handles
+    both rating and review together for better user experience.
+    """
     # Verify that the authenticated user is the one making the rating
     user_id = g.user_id
     data = request.get_json()
@@ -96,7 +100,7 @@ def rate_food():
 
     method = request.method
     logger.info(
-        f"{method} /users/{user_id}/foods/{food_id}/rating - {'Membuat' if method == 'POST' else 'Memperbarui'} rating"
+        f"{method} /ratings - {'Membuat' if method == 'POST' else 'Memperbarui'} rating standalone"
     )
 
     if not data or "rating" not in data:
@@ -119,7 +123,7 @@ def rate_food():
         return jsonify({"error": True, "message": "Rating must be a number"}), 400
 
     try:
-        rating = FoodRatingService.create_or_update_rating(
+        rating = FoodRatingService.create_rating(
             user_id,
             food_id,
             rating_value,
@@ -135,7 +139,7 @@ def rate_food():
             {
                 "error": False,
                 "message": f"Rating {'added' if method == 'POST' else 'updated'} successfully",
-                "data": rating.to_dict(),
+                "data": rating,
             }
         ), (201 if method == "POST" else 200)
     except Exception as e:

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, g
 from app.modules.restaurant.service import RestaurantService
 from app.utils import api_logger as logger
 from app.utils.auth import token_required, admin_required
+import requests
 
 restaurant_blueprint = Blueprint("restaurant", __name__)
 
@@ -358,5 +359,30 @@ def get_restaurant_list():
         logger.error(f"Error retrieving restaurant list: {str(e)}")
         return (
             jsonify({"error": True, "message": "Failed to retrieve restaurant list"}),
+            500,
+        )
+
+
+# route by osrm
+@restaurant_blueprint.route("/restaurants/route", methods=["POST"])
+def get_restaurant_route():
+    """Get restaurant route by OSRM"""
+    logger.info(f"POST /restaurants/route - Retrieving restaurant route")
+    coordinates = request.json.get("coordinates")
+    restaurant_id = request.json.get("restaurant_id")
+
+    try:
+        # https://router.project-osrm.org/route/v1/driving/120.03,-4.1279;110.368,-7.7897?overview=full&geometries=geojson&steps=true
+        osrm = "http://router.project-osrm.org"
+        restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
+        response = requests.post(
+            f"{osrm}/route/v1/driving/{coordinates[0]},{coordinates[1]};{restaurant.latitude},{restaurant.longitude}"
+        )
+        route = response.json()
+        return jsonify({"error": False, "data": route}), 200
+    except Exception as e:
+        logger.error(f"Error retrieving restaurant route {restaurant_id}: {str(e)}")
+        return (
+            jsonify({"error": True, "message": "Failed to retrieve restaurant route"}),
             500,
         )
