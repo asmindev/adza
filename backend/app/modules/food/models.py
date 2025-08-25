@@ -68,7 +68,7 @@ class Food(db.Model):
         )
         ratings = {
             "average": (
-                sum(r["rating"] for r in ratings) / len(ratings) if ratings else None
+                sum(r["rating"] for r in ratings) / len(ratings) if ratings else 0
             ),
             "count": len(ratings),
             "data": ratings,
@@ -145,7 +145,12 @@ class FoodImage(db.Model):
         super(FoodImage, self).__init__(**kwargs)
 
     def to_dict(self):
-        image_url = url_for("food.serve_static", filename=self.filename, _external=True)
+        if self.image_url.startswith("http"):
+            image_url = self.image_url
+        else:
+            image_url = url_for(
+                "food.serve_static", filename=self.filename, _external=True
+            )
         return {
             "id": self.id,
             "food_id": self.food_id,

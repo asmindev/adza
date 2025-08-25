@@ -39,9 +39,11 @@ class FoodService:
     @staticmethod
     def get_food_detail(food_id: int) -> Optional[Dict[str, Any]]:
         food = FoodRepository.get_by_id(food_id)
+
         if not food:
             return None
-        return food.to_dict()
+        result = food.to_dict()
+        return result
 
     @staticmethod
     def get_user_rating(user_id: int, food_id: int) -> Optional[FoodRating]:

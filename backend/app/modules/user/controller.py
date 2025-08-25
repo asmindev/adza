@@ -1,7 +1,12 @@
 from flask import Blueprint, request, jsonify, g
 from app.modules.user.service import UserService
 from app.utils import api_logger as logger
-from app.utils.auth import token_required, admin_required, user_matches_or_admin
+from app.utils.auth import (
+    token_required,
+    admin_required,
+    user_matches_or_admin,
+    has_login,
+)
 
 user_blueprint = Blueprint("user", __name__)
 
@@ -191,3 +196,75 @@ def delete_user(user_id):
     except Exception as e:
         logger.error(f"Gagal menghapus pengguna dengan ID {user_id}: {str(e)}")
         return jsonify({"error": True, "message": "Failed to delete user"}), 500
+
+
+# auth/change-password
+
+
+@user_blueprint.route("/auth/change-password", methods=["PUT"])
+@has_login
+def change_password():
+    logger.info(f"PUT /auth/change-password - Mengubah password pengguna")
+    data = request.get_json()
+    logger.info(f"Data yang diterima untuk perubahan password: {data}")
+    user_id = g.user_id
+
+    if not data:
+        logger.warning("Tidak ada data yang diberikan untuk perubahan password")
+        return jsonify({"error": True, "message": "No data provided"}), 400
+
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
+    # Validate required fields
+    if not old_password or not new_password:
+        logger.warning("Old password atau new password tidak diberikan")
+        return (
+            jsonify(
+                {"error": True, "message": "Old password and new password are required"}
+            ),
+            400,
+        )
+
+    # Validate new password length (optional but recommended)
+    if len(new_password) < 6:
+        logger.warning("New password terlalu pendek")
+        return (
+            jsonify(
+                {
+                    "error": True,
+                    "message": "New password must be at least 6 characters long",
+                }
+            ),
+            400,
+        )
+
+    try:
+        result = UserService.change_password(user_id, old_password, new_password)
+        if not result:
+            logger.warning(
+                f"Gagal mengubah password - pengguna tidak ditemukan atau password lama salah"
+            )
+            return (
+                jsonify(
+                    {
+                        "error": True,
+                        "message": "User not found or old password is incorrect",
+                    }
+                ),
+                400,
+            )
+
+        logger.info(f"Password pengguna berhasil diubah")
+        return (
+            jsonify(
+                {
+                    "error": False,
+                    "message": "Password changed successfully",
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Gagal mengubah password pengguna: {str(e)}")
+        return jsonify({"error": True, "message": "Failed to change password"}), 500

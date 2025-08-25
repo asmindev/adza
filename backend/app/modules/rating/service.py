@@ -104,7 +104,7 @@ class FoodRatingService:
     def get_user_food_rating(user_id, food_id):
         """Get specific rating by user for a food"""
         rating = FoodRatingRepository.get_user_rating(user_id, food_id)
-        return rating.to_dict() if rating else None
+        return rating.to_dict() if rating else 0
 
 
 # Legacy alias for backward compatibility

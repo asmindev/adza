@@ -1,5 +1,7 @@
 alembic==1.16.4
+beautifulsoup4==4.13.5
 blinker==1.9.0
+bs4==0.0.2
 certifi==2025.8.3
 charset-normalizer==3.4.3
 click==8.2.1
@@ -26,6 +28,7 @@ scikit-learn==1.4.0
 scikit-surprise==1.1.4
 scipy==1.16.1
 six==1.17.0
+soupsieve==2.7
 SQLAlchemy==2.0.43
 threadpoolctl==3.6.0
 typing_extensions==4.14.1

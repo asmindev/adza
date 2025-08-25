@@ -20,11 +20,7 @@ const REGULAR_ROUTES = [
                 Component: UserProfile,
             },
             {
-                path: "foods",
-                Component: UserProfile,
-            },
-            {
-                path: "foods/:id",
+                path: "food/:id",
                 Component: FoodDetailPage,
             },
             {

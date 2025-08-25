@@ -57,7 +57,7 @@ class FoodRatingRepository:
     @staticmethod
     def get_food_average_rating(food_id):
         """Calculate average rating for a food"""
-        logger.debug(f"Menghitung rata-rata rating untuk makanan {food_id}")
+        logger.info(f"Menghitung rata-rata rating untuk makanan {food_id}")
         result = (
             db.session.query(func.avg(FoodRating.rating))
             .filter_by(food_id=food_id)

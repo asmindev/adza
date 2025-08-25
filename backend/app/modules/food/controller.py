@@ -117,7 +117,8 @@ def get_foods():
 def get_food_detail(food_id):
     logger.info(f"GET /foods/{food_id} - Mengambil detail makanan")
 
-    food_detail = FoodService.get_food_detail(food_id)
+    food_detail = FoodService.get_food_detail(food_id) or {}
+    logger.info(f"Detail makanan yang diambil: {food_detail['ratings']}")
 
     if not food_detail:
         logger.warning(f"Makanan dengan ID {food_id} tidak ditemukan")
@@ -129,10 +130,10 @@ def get_food_detail(food_id):
         # get the user's rating for the food
         user_rating = FoodService.get_user_rating(user_id, food_id)
         food_detail["ratings"]["user_rating"] = (
-            user_rating.to_dict()["rating"] if user_rating else None
+            user_rating.to_dict()["rating"] if user_rating else 0
         )
     else:
-        food_detail["ratings"]["user_rating"] = None
+        food_detail["ratings"]["user_rating"] = 0
 
     return jsonify({"error": False, "data": food_detail}), 200
 

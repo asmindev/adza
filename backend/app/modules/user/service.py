@@ -134,3 +134,24 @@ class UserService:
 
         logger.info(f"Authentication successful for user {username}")
         return {"user": user, "token": token}
+
+    @staticmethod
+    def change_password(user_id, old_password, new_password):
+        logger.info(f"Changing password for user ID: {user_id}")
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            logger.warning(f"User with ID {user_id} not found")
+            return False
+
+        if not UserService.verify_password(user, old_password):
+            logger.warning(f"Old password does not match for user ID {user_id}")
+            return False
+
+        user.password = generate_password_hash(new_password)
+        try:
+            UserRepository.update(user)
+            logger.info(f"Password changed successfully for user ID: {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to change password for user ID {user_id}: {str(e)}")
+            return False

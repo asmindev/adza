@@ -8,6 +8,7 @@ export default function FoodInfo({ food }) {
     if (!food) return null;
 
     const rating = food.ratings || { average: 0, count: 0 };
+    console.log("rating", rating);
     const { average: averageRating, count: ratingCount } = rating;
 
     // Format price to Indonesian Rupiah
