@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Edit2, Check, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Edit2, Check, X, Loader2 } from "lucide-react";
 import { useUpdateProfile } from "@/lib/api";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,10 +11,19 @@ import { formatTimeAgo } from "@/utils";
 export default function ProfileInfo({ userData, mutate }) {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
-        name: userData.name,
-        username: userData.username,
-        email: userData.email,
+        name: userData?.name || "",
+        username: userData?.username || "",
+        email: userData?.email || "",
     });
+
+    // Update form data when userData changes
+    useEffect(() => {
+        setFormData({
+            name: userData?.name || "",
+            username: userData?.username || "",
+            email: userData?.email || "",
+        });
+    }, [userData]);
 
     const { trigger: updateProfileMutation, isMutating } = useUpdateProfile();
 
@@ -24,16 +33,67 @@ export default function ProfileInfo({ userData, mutate }) {
     };
 
     const handleSubmit = async () => {
+        // Basic validation
+        if (!formData.name?.trim()) {
+            toast.error("Name is required");
+            return;
+        }
+
+        if (!formData.username?.trim()) {
+            toast.error("Username is required");
+            return;
+        }
+
+        if (!formData.email?.trim()) {
+            toast.error("Email is required");
+            return;
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            toast.error("Please enter a valid email address");
+            return;
+        }
+
+        // Check if data actually changed
+        const hasChanges =
+            formData.name !== userData?.name ||
+            formData.username !== userData?.username ||
+            formData.email !== userData?.email;
+
+        if (!hasChanges) {
+            toast.info("No changes detected");
+            setIsEditing(false);
+            return;
+        }
+
         try {
             await updateProfileMutation(formData);
             toast.success("Profile updated successfully");
-            mutate();
+            mutate(); // Revalidate the profile data
+            // update(formData);
             setIsEditing(false);
         } catch (error) {
+            console.error("Update profile error:", error);
+            const errorMessage =
+                error?.response?.data?.message ||
+                error?.message ||
+                "Please try again later";
             toast.error("Failed to update profile", {
-                description: error.message || "Please try again later",
+                description: errorMessage,
             });
         }
+    };
+
+    const handleCancel = () => {
+        // Reset form data to original values
+        setFormData({
+            name: userData?.name || "",
+            username: userData?.username || "",
+            email: userData?.email || "",
+        });
+        setIsEditing(false);
     };
 
     return (
@@ -55,7 +115,8 @@ export default function ProfileInfo({ userData, mutate }) {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setIsEditing(false)}
+                            onClick={handleCancel}
+                            disabled={isMutating}
                             className="flex items-center gap-1"
                         >
                             <X size={16} />
@@ -68,7 +129,11 @@ export default function ProfileInfo({ userData, mutate }) {
                             disabled={isMutating}
                             className="flex items-center gap-1"
                         >
-                            <Check size={16} />
+                            {isMutating ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Check size={16} />
+                            )}
                             <span>
                                 {isMutating ? "Menyimpan..." : "Simpan"}
                             </span>
@@ -84,14 +149,16 @@ export default function ProfileInfo({ userData, mutate }) {
                         </label>
                         {isEditing ? (
                             <Input
-                                name="username"
+                                name="name"
                                 value={formData.name}
                                 onChange={handleChange}
+                                disabled={isMutating}
                                 className="mt-1"
+                                placeholder="Enter your name"
                             />
                         ) : (
                             <p className="text-foreground mt-1">
-                                {userData.name}
+                                {userData?.name || "-"}
                             </p>
                         )}
                     </div>
@@ -104,11 +171,13 @@ export default function ProfileInfo({ userData, mutate }) {
                                 name="username"
                                 value={formData.username}
                                 onChange={handleChange}
+                                disabled={isMutating}
                                 className="mt-1"
+                                placeholder="Enter your username"
                             />
                         ) : (
                             <p className="text-foreground mt-1">
-                                {userData.username}
+                                {userData?.username || "-"}
                             </p>
                         )}
                     </div>
@@ -119,13 +188,16 @@ export default function ProfileInfo({ userData, mutate }) {
                         {isEditing ? (
                             <Input
                                 name="email"
+                                type="email"
                                 value={formData.email}
                                 onChange={handleChange}
+                                disabled={isMutating}
                                 className="mt-1"
+                                placeholder="Enter your email"
                             />
                         ) : (
                             <p className="text-foreground mt-1">
-                                {userData.email}
+                                {userData?.email || "-"}
                             </p>
                         )}
                     </div>
@@ -135,7 +207,7 @@ export default function ProfileInfo({ userData, mutate }) {
                         </label>
                         <div className="mt-1">
                             <Badge variant="secondary" className="capitalize">
-                                {userData.role}
+                                {userData?.role || "User"}
                             </Badge>
                         </div>
                     </div>
@@ -144,7 +216,9 @@ export default function ProfileInfo({ userData, mutate }) {
                             Anggota Sejak
                         </label>
                         <p className="text-foreground mt-1">
-                            {formatTimeAgo(userData.created_at)}
+                            {userData?.created_at
+                                ? formatTimeAgo(userData.created_at)
+                                : "-"}
                         </p>
                     </div>
                 </div>
@@ -153,7 +227,7 @@ export default function ProfileInfo({ userData, mutate }) {
                     <div>
                         <h3 className="text-lg font-medium mb-1">Penilaian</h3>
                         <p className="text-3xl font-bold">
-                            {userData.ratings?.length || 0}
+                            {userData.food_ratings?.length || 0}
                         </p>
                     </div>
                     <div>

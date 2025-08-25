@@ -62,3 +62,5 @@ export default function RestaurantsPage() {
         </div>
     );
 }
+
+RestaurantsPage.breadcrumbs = [{ label: "Restaurants" }];

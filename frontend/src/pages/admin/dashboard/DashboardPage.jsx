@@ -58,3 +58,7 @@ export default function DashboardPage() {
         </div>
     );
 }
+
+const breadcrumbs = [{ label: "Dashboard" }];
+
+DashboardPage.breadcrumbs = breadcrumbs;

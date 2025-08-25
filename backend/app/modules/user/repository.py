@@ -63,6 +63,16 @@ class UserRepository:
         return user
 
     @staticmethod
+    def get_by_email(email):
+        logger.debug(f"Mencari pengguna dengan email: {email}")
+        user = User.query.filter_by(email=email).first()
+        if user:
+            logger.info(f"Pengguna dengan email {email} ditemukan")
+        else:
+            logger.warning(f"Pengguna dengan email {email} tidak ditemukan")
+        return user
+
+    @staticmethod
     def create(user):
         try:
             db.session.add(user)

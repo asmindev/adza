@@ -2,12 +2,14 @@ import {
     ListPlus,
     Home,
     BarChart3,
-    ClipboardList,
     Settings,
     Store,
     Users,
     TrendingUp,
     Activity,
+    User2,
+    ChevronUp,
+    LogOut,
 } from "lucide-react";
 import {
     Sidebar,
@@ -21,6 +23,14 @@ import {
 } from "@/components/ui/sidebar";
 import { Link } from "react-router";
 import ThemeSwitcher from "./ui/ThemeSwitcher";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { useContext } from "react";
+import { UserContext } from "@/contexts/UserContextDefinition";
 
 // Menu groups for better organization
 const menuGroups = [
@@ -89,11 +99,12 @@ const menuGroups = [
 ];
 
 export function AppSidebar() {
+    const { user, logout } = useContext(UserContext);
     return (
         <Sidebar className="border-r">
             <SidebarContent className="gap-0">
                 {/* Header */}
-                <div className="flex h-14 items-center border-b px-6">
+                <div className="flex p-4 items-center border-b px-6">
                     <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                             <TrendingUp className="h-4 w-4" />
@@ -146,13 +157,34 @@ export function AppSidebar() {
 
                 {/* Footer */}
                 <div className="mt-auto border-t p-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                            <div className="h-2 w-2 rounded-full bg-green-500 relative after:content-[''] after:absolute after:top-1/2 after:-translate-y-1/2 after:left-1/2 after:-translate-x-1/2 after:w-2 after:h-2 after:bg-green-500 after:rounded-full after:animate-ping"></div>
-                            <span>Sistem Online</span>
-                        </div>
-                        <ThemeSwitcher />
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton>
+                                <User2 /> {user?.name || "Guest"}
+                                <ChevronUp className="ml-auto" />
+                            </SidebarMenuButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-56">
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    console.log("User logged out");
+                                    logout();
+                                }}
+                                className="cursor-pointer"
+                            >
+                                <div className="flex w-full justify-between items-center">
+                                    <span>Logout</span>
+                                    <LogOut className="ml-2 h-4 w-4" />
+                                </div>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <div className="w-full flex justify-between items-center">
+                                    <span>Theme</span>
+                                    <ThemeSwitcher />
+                                </div>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </SidebarContent>
         </Sidebar>

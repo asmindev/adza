@@ -25,7 +25,7 @@ export default function FoodGallery({ images = [] }) {
     }
 
     return (
-        <div className="w-full relative">
+        <div className="w-full relative bg-background/50">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeImage}
@@ -33,26 +33,17 @@ export default function FoodGallery({ images = [] }) {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="relative h-[400px]"
+                    className="relative h-[400px] rounded-2xl overflow-hidden"
                 >
                     <img
                         src={images[activeImage]?.image_url}
                         alt={`Gambar makanan ${activeImage + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-2xl overflow-hidden"
                         onError={(e) => {
                             e.target.src =
                                 "https://placehold.co/600x400?text=Gambar+Makanan";
                         }}
                     />
-
-                    {/* Main image indicator */}
-                    {images[activeImage]?.is_main && (
-                        <div className="absolute top-4 right-4">
-                            <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                                Utama
-                            </span>
-                        </div>
-                    )}
 
                     {/* Image gallery navigation */}
                     {images.length > 1 && (
@@ -90,9 +81,12 @@ export default function FoodGallery({ images = [] }) {
                             <img
                                 src={image.image_url}
                                 alt={`Gambar Kecil ${index + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover rounded-md"
                                 onError={(e) => {
                                     // Handling error
+                                    const placeholder =
+                                        "https://placehold.co/100x100?text=No+Image";
+                                    e.target.src = placeholder;
                                 }}
                             />
                         </button>

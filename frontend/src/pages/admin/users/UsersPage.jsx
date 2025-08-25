@@ -61,3 +61,5 @@ export default function UsersPage() {
         </div>
     );
 }
+
+UsersPage.breadcrumbs = [{ label: "Users" }];

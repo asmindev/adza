@@ -167,7 +167,6 @@ def update_user(user_id):
                 {
                     "error": False,
                     "message": "User updated successfully",
-                    "data": user.to_dict(),
                 }
             ),
             200,

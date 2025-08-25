@@ -32,23 +32,68 @@ class UserService:
         logger.info(f"Memperbarui pengguna dengan ID: {user_id}")
         user = UserRepository.get_by_id(user_id)
         if not user:
+            logger.warning(f"Pengguna dengan ID {user_id} tidak ditemukan")
             return None
 
-        if "username" in data:
+        # Validate email format if email is being updated
+        if "email" in data and data["email"]:
+            import re
+
+            email_pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+            if not re.match(email_pattern, data["email"]):
+                logger.warning(f"Format email tidak valid: {data['email']}")
+                raise ValueError("Format email tidak valid")
+
+            # Check if email already exists for other users
+            from app.modules.user.models import User
+
+            existing_user = User.query.filter_by(email=data["email"]).first()
+            if existing_user and existing_user.id != user_id:
+                logger.warning(
+                    f"Email {data['email']} sudah digunakan oleh pengguna lain"
+                )
+                raise ValueError("Email sudah digunakan")
+
+        # Validate username if username is being updated
+        if "username" in data and data["username"]:
+            # Check if username already exists for other users
+            existing_user = UserRepository.get_by_username(data["username"])
+            if existing_user and existing_user.id != user_id:
+                logger.warning(
+                    f"Username {data['username']} sudah digunakan oleh pengguna lain"
+                )
+                raise ValueError("Username sudah digunakan")
+
+        # Update fields
+        if "name" in data and data["name"]:
+            logger.debug(
+                f"Memperbarui name dari '{getattr(user, 'name', 'N/A')}' menjadi '{data['name']}'"
+            )
+            user.name = data["name"]
+
+        if "username" in data and data["username"]:
             logger.debug(
                 f"Memperbarui username dari '{user.username}' menjadi '{data['username']}'"
             )
             user.username = data["username"]
-        if "email" in data:
+
+        if "email" in data and data["email"]:
             logger.debug(
                 f"Memperbarui email dari '{user.email}' menjadi '{data['email']}'"
             )
             user.email = data["email"]
-        if "password" in data:
+
+        if "password" in data and data["password"]:
             logger.debug(f"Memperbarui password untuk pengguna {user.username}")
             user.password = generate_password_hash(data["password"])
 
-        return UserRepository.update(user)
+        try:
+            updated_user = UserRepository.update(user)
+            logger.info(f"Berhasil memperbarui pengguna dengan ID: {user_id}")
+            return updated_user
+        except Exception as e:
+            logger.error(f"Gagal memperbarui pengguna dengan ID {user_id}: {str(e)}")
+            raise e
 
     @staticmethod
     def delete_user(user_id):

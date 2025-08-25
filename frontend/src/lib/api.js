@@ -177,6 +177,7 @@ export const apiService = {
                 `/api/v1/users?page=${page}&limit=${limit}&search=${search}`
             ),
         getById: (id) => apiClient.get(`/api/v1/users/${id}`),
+        getMe: () => apiClient.get("/api/v1/me"),
         create: (data) => apiClient.post("/api/v1/users", data),
         update: (id, data) => apiClient.put(`/api/v1/users/${id}`, data),
         delete: (id) => apiClient.delete(`/api/v1/users/${id}`),
@@ -230,21 +231,32 @@ export function useUpdateProfile() {
     return useSWRMutation(
         "/api/v1/me",
         async (url, { arg }) => {
-            const response = await fetch(url, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(arg),
-                credentials: "include",
-            });
+            // Try to get user ID from localStorage first
+            const storedUser = localStorage.getItem("user");
+            let userId;
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || "Failed to update profile");
+            if (storedUser) {
+                try {
+                    const user = JSON.parse(storedUser);
+                    userId = user.id;
+                } catch (error) {
+                    console.warn("Failed to parse stored user data:", error);
+                }
             }
 
-            return response.json();
+            // If no user ID in localStorage, fetch from API
+            if (!userId) {
+                const currentUserResponse = await apiService.users.getMe();
+                userId = currentUserResponse.data.id;
+
+                if (!userId) {
+                    throw new Error("User ID not found. Please log in again.");
+                }
+            }
+
+            // Use the apiService users.update method with the user ID
+            const response = await apiService.users.update(userId, arg);
+            return response;
         },
         {
             onSuccess: () => {

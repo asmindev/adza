@@ -12,19 +12,6 @@ export default function FoodDialogsSection({
     setDeleteFoodId,
     refreshData,
 }) {
-    // Explicit handlers for dialog state management
-    const handleDeleteDialogChange = (open) => {
-        if (!open) {
-            setDeleteFoodId(null);
-        }
-    };
-
-    const handleEditDialogChange = (open) => {
-        if (!open) {
-            setEditFoodData(null);
-        }
-    };
-
     return (
         <>
             {/* Add Food Dialog */}
@@ -35,26 +22,20 @@ export default function FoodDialogsSection({
             />
 
             {/* Edit Food Dialog */}
-            {editFoodData && (
-                <EditFoodDialog
-                    key={`edit-${editFoodData.id}`}
-                    open={true}
-                    onOpenChange={handleEditDialogChange}
-                    foodData={editFoodData}
-                    onSuccess={refreshData}
-                />
-            )}
+            <EditFoodDialog
+                open={!!editFoodData}
+                onOpenChange={(open) => !open && setEditFoodData(null)}
+                foodData={editFoodData}
+                onSuccess={refreshData}
+            />
 
             {/* Delete Food Dialog */}
-            {deleteFoodId && (
-                <DeleteFoodDialog
-                    key={`delete-${deleteFoodId}`}
-                    open={true}
-                    onOpenChange={handleDeleteDialogChange}
-                    foodId={deleteFoodId}
-                    onSuccess={refreshData}
-                />
-            )}
+            <DeleteFoodDialog
+                open={!!deleteFoodId}
+                onOpenChange={(open) => !open && setDeleteFoodId(null)}
+                foodId={deleteFoodId}
+                onSuccess={refreshData}
+            />
         </>
     );
 }

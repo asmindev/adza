@@ -1,5 +1,4 @@
 import React from "react";
-import { motion } from "framer-motion";
 import { Star, MessageSquare } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatTimeAgo } from "@/utils";

@@ -234,13 +234,13 @@ export default function RouteNavigationPage() {
     if (error || !locationData) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                <div className="text-center space-y-4">
+                    <h2 className="text-2xl font-bold text-foreground">
                         Data tidak ditemukan
                     </h2>
                     <Button onClick={() => navigate(-1)}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Kembali
+                        <span className="hidden md:inline">Kembali</span>
                     </Button>
                 </div>
             </div>
@@ -248,16 +248,16 @@ export default function RouteNavigationPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-background">
             {/* Offline indicator */}
             {!isOnline && (
-                <div className="bg-red-500 text-white text-center py-2 text-sm">
+                <div className="bg-destructive text-destructive-foreground text-center py-2 text-sm">
                     Anda sedang offline. Beberapa fitur mungkin tidak tersedia.
                 </div>
             )}
 
             {/* Header */}
-            <div className="bg-white shadow-sm border-b">
+            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <div className="max-w-7xl mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -268,12 +268,11 @@ export default function RouteNavigationPage() {
                                 className="flex items-center gap-2"
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                Kembali
+                                <span className="hidden md:inline">
+                                    Kembali
+                                </span>
                             </Button>
                             <div>
-                                <h1 className="text-xl font-bold">
-                                    Navigasi & Rute
-                                </h1>
                                 <p className="text-sm text-muted-foreground">
                                     {locationData?.type === "food"
                                         ? `${locationData.foodName} - ${locationData.name}`
@@ -308,22 +307,24 @@ export default function RouteNavigationPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="max-w-7xl mx-auto p-4 flex flex-col sm:flex-row lg:gap-6 gap-y-4">
                 {/* Peta - Kolom kiri/atas */}
-                <div className="lg:col-span-2 order-2 lg:order-1">
+                <div className="w-full sm:w-2/3">
                     <div className="h-[400px] lg:h-[500px]">
                         <div className="p-0 h-full">
                             {!isOnline ? (
-                                <div className="h-full flex items-center justify-center bg-gray-100 rounded-lg">
-                                    <div className="text-center">
-                                        <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Peta Tidak Tersedia
-                                        </h3>
-                                        <p className="text-gray-600">
-                                            Koneksi internet diperlukan untuk
-                                            menampilkan peta
-                                        </p>
+                                <div className="h-full flex items-center justify-center bg-muted rounded-lg border">
+                                    <div className="text-center space-y-4">
+                                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto" />
+                                        <div className="space-y-2">
+                                            <h3 className="text-lg font-semibold text-foreground">
+                                                Peta Tidak Tersedia
+                                            </h3>
+                                            <p className="text-muted-foreground">
+                                                Koneksi internet diperlukan
+                                                untuk menampilkan peta
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             ) : (
@@ -336,7 +337,7 @@ export default function RouteNavigationPage() {
                                             : 10
                                     }
                                     style={{ height: "100%", width: "100%" }}
-                                    className="rounded-lg bg-accent"
+                                    className="rounded-lg border"
                                 >
                                     <TileLayer
                                         url="http://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}"
@@ -361,18 +362,18 @@ export default function RouteNavigationPage() {
                                                 icon={restaurantIcon}
                                             >
                                                 <Popup>
-                                                    <div className="p-2">
-                                                        <h3 className="font-semibold">
+                                                    <div className="p-2 space-y-1">
+                                                        <h3 className="font-semibold text-foreground">
                                                             {locationData.name}
                                                         </h3>
                                                         {locationData.address && (
-                                                            <p className="text-sm text-gray-600">
+                                                            <p className="text-sm text-muted-foreground">
                                                                 {
                                                                     locationData.address
                                                                 }
                                                             </p>
                                                         )}
-                                                        <p className="text-xs text-gray-500 mt-1">
+                                                        <p className="text-xs text-muted-foreground">
                                                             {locationData.latitude.toFixed(
                                                                 6
                                                             )}
@@ -396,11 +397,11 @@ export default function RouteNavigationPage() {
                                             icon={userLocationIcon}
                                         >
                                             <Popup>
-                                                <div className="p-2">
-                                                    <h3 className="font-semibold">
+                                                <div className="p-2 space-y-1">
+                                                    <h3 className="font-semibold text-foreground">
                                                         Lokasi Anda
                                                     </h3>
-                                                    <p className="text-xs text-gray-500">
+                                                    <p className="text-xs text-muted-foreground">
                                                         {userLocation.lat.toFixed(
                                                             6
                                                         )}
@@ -423,41 +424,27 @@ export default function RouteNavigationPage() {
                 </div>
 
                 {/* Panel informasi - Kolom kanan/bawah */}
-                <div className="order-1 lg:order-2 space-y-6">
+                <div className="flex-1 space-y-2">
                     {/* Informasi Lokasi */}
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <MapPin className="h-5 w-5 text-red-500" />
+                                <MapPin className="h-5 w-5 text-destructive" />
                                 Tujuan
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <div>
-                                <h3 className="font-semibold">
+                            <div className="space-y-1">
+                                <h3 className="font-semibold text-foreground">
+                                    {locationData.foodName} -{" "}
                                     {locationData?.name}
                                 </h3>
-                                {locationData?.type === "food" && (
-                                    <p className="text-sm text-blue-600">
-                                        {locationData.foodName}
-                                    </p>
-                                )}
                                 {locationData?.address && (
                                     <p className="text-sm text-muted-foreground">
                                         {locationData.address}
                                     </p>
                                 )}
                             </div>
-
-                            {/* Koordinat info */}
-                            {locationData?.latitude &&
-                                locationData?.longitude && (
-                                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                        Koordinat:{" "}
-                                        {locationData.latitude.toFixed(6)},{" "}
-                                        {locationData.longitude.toFixed(6)}
-                                    </div>
-                                )}
                         </CardContent>
                     </Card>
 
@@ -495,7 +482,7 @@ export default function RouteNavigationPage() {
                                 )}
 
                             {!isOnline && (
-                                <p className="text-xs text-gray-500 text-center">
+                                <p className="text-xs text-muted-foreground text-center">
                                     Koneksi internet diperlukan untuk navigasi
                                 </p>
                             )}
@@ -573,9 +560,9 @@ export default function RouteNavigationPage() {
                                         .map((step, index) => (
                                             <div
                                                 key={index}
-                                                className="flex gap-3 p-2 bg-gray-50 rounded"
+                                                className="flex gap-3 p-2 bg-muted rounded"
                                             >
-                                                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
+                                                <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
                                                     {index + 1}
                                                 </div>
                                                 <div className="flex-1 text-sm">

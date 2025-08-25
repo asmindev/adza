@@ -109,7 +109,7 @@ def user_matches_or_admin(f):
             )
             return jsonify({"error": True, "message": "Internal server error"}), 500
 
-        if int(g.user_id) != int(user_id) and not g.is_admin:
+        if g.user_id != user_id and not g.is_admin:
             logger.warning(
                 f"User {g.user_id} attempted to access data of user {user_id}"
             )

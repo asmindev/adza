@@ -3,13 +3,14 @@ import { Store, Home } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 import { Footer } from "@/components/ui/footer";
+import { Outlet } from "react-router";
 
-export default function RootLayout({ children }) {
+export default function RootLayout() {
     const location = useLocation();
 
     return (
         <div className={`min-h-screen flex flex-col`}>
-            <header className="backdrop-blur-sm py-4 sticky top-0 z-20 shadow">
+            <header className="backdrop-blur-sm py-4 sticky top-0 z-[90000] shadow">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
                     {/* Logo */}
                     <Link to="/" className="text-2xl font-bold text-primary">
@@ -75,7 +76,9 @@ export default function RootLayout({ children }) {
                 </div>
             </header>
 
-            <main className="w-full mx-auto flex-grow">{children}</main>
+            <main className="w-full mx-auto flex-grow">
+                <Outlet />
+            </main>
 
             <Footer
                 logo={

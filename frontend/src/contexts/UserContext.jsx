@@ -65,9 +65,13 @@ export default function UserProvider({ children }) {
 
     // Logout function
     const logout = () => {
+        console.log("User logged out");
+
         setUser(null);
+
         localStorage.removeItem("user");
         localStorage.removeItem("token");
+        console.log("User logged out");
 
         // Call logout API if needed
         // AuthApi.logout();

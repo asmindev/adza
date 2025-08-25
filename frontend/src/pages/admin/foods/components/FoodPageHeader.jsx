@@ -6,16 +6,13 @@ export default function FoodPageHeader({ onAddFood }) {
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                    Manajemen Makanan
-                </h1>
+                <h2 className="text-3xl font-bold tracking-tight">Foods</h2>
                 <p className="text-muted-foreground">
-                    Kelola koleksi makanan Anda
+                    Kelola koleksi makanan di platform Anda.
                 </p>
             </div>
-            <Button onClick={onAddFood} className={"text-base dark:text-white"}>
-                <Plus className="h-4 w-4 mr-2" />
-                Tambah Makanan
+            <Button onClick={onAddFood}>
+                <Plus className="mr-2 h-4 w-4" /> Tambah Makanan
             </Button>
         </div>
     );

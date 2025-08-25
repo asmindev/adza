@@ -164,3 +164,5 @@ export default function SettingsPage() {
         </div>
     );
 }
+
+SettingsPage.breadcrumbs = [{ label: "Settings" }];

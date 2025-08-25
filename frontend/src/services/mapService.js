@@ -113,9 +113,7 @@ class MapService {
 
                 const response = await fetch(url, {
                     signal: controller.signal,
-                    headers: {
-                        "User-Agent": "FoodRecommendationApp/1.0",
-                    },
+                    mode: "cors",
                 });
 
                 clearTimeout(timeoutId);

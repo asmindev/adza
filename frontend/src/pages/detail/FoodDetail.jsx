@@ -3,19 +3,17 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import useSWR, { mutate } from "swr";
-import { toast } from "sonner";
+import useSWR from "swr";
 
 // Import our component files
 import FoodGallery from "./FoodGallery";
 import FoodInfo from "./FoodInfo";
-import FoodRating from "./FoodRating";
 import FoodReviews from "./FoodReviews";
 import { UserContext } from "@/contexts/UserContextDefinition";
-import { useRateFood, useSubmitReview, useToggleFavorite } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
-export default function FoodDetail({ foodId, onRateFood }) {
+export default function FoodDetail({ foodId }) {
     console.log("Rendering FoodDetail for foodId:", foodId);
     const { user: currentUser } = useContext(UserContext);
     const [isFavorite, setIsFavorite] = useState(false);
@@ -36,14 +34,6 @@ export default function FoodDetail({ foodId, onRateFood }) {
         revalidateOnFocus: false,
     });
 
-    // SWR mutations
-    const { trigger: rateFoodMutation, isMutating: isRating } =
-        useRateFood(foodId);
-    const { trigger: submitReviewMutation, isMutating: isReviewing } =
-        useSubmitReview(foodId);
-    const { trigger: toggleFavoriteMutation, isMutating: isTogglingFavorite } =
-        useToggleFavorite(foodId);
-
     const food = data?.data || null;
 
     // Extract reviews from food data
@@ -53,93 +43,6 @@ export default function FoodDetail({ foodId, onRateFood }) {
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [foodId]);
-
-    const handleToggleFavorite = async () => {
-        if (!currentUser) {
-            toast.error("Autentikasi Diperlukan", {
-                description:
-                    "Silakan masuk untuk menambahkan makanan ini ke favorit",
-            });
-            return;
-        }
-
-        // Optimistic UI update
-        setIsFavorite((prevState) => !prevState);
-
-        try {
-            // Use SWR mutation instead of direct fetch
-            await toggleFavoriteMutation({ is_favorite: !isFavorite });
-
-            toast.success(
-                isFavorite ? "Dihapus dari favorit" : "Ditambahkan ke favorit"
-            );
-
-            // Revalidate food data and global food list
-            revalidateFood();
-            mutate("/api/v1/foods");
-        } catch (error) {
-            console.error("Error updating favorite:", error);
-            // Revert on error
-            setIsFavorite((prevState) => !prevState);
-            toast.error("Gagal memperbarui favorit", {
-                description: error.message || "Silakan coba lagi nanti",
-            });
-        }
-    };
-
-    const handleRateFood = async (ratingData) => {
-        if (!currentUser) {
-            toast.error("Silakan masuk untuk memberikan penilaian", {
-                description: "Anda harus masuk untuk menilai makanan ini.",
-            });
-            return false;
-        }
-
-        try {
-            // Use SWR mutation instead of direct fetch
-            await rateFoodMutation(ratingData);
-
-            toast.success("Penilaian berhasil dikirim");
-
-            // Revalidate food data
-            revalidateFood();
-
-            return true;
-        } catch (error) {
-            console.error("Error rating food:", error);
-            toast.error("Gagal mengirim penilaian", {
-                description: error.message || "Silakan coba lagi nanti",
-            });
-            return false;
-        }
-    };
-
-    const handleSubmitReview = async (reviewData) => {
-        if (!currentUser) {
-            toast.error("Silakan masuk untuk mengirim ulasan", {
-                description: "Anda harus masuk untuk mengulas makanan ini.",
-            });
-            return false;
-        }
-
-        try {
-            // Use SWR mutation instead of direct fetch
-            await submitReviewMutation(reviewData);
-
-            toast.success("Ulasan berhasil dikirim");
-
-            // Revalidate food data
-            revalidateFood();
-
-            return true;
-        } catch (error) {
-            console.error("Error submitting review:", error);
-            toast.error("Gagal mengirim ulasan", {
-                description: error.message || "Silakan coba lagi nanti",
-            });
-            return false;
-        }
-    };
 
     // Handle error state
     if (error) {
@@ -240,28 +143,25 @@ export default function FoodDetail({ foodId, onRateFood }) {
         return 0;
     });
 
-    // Get average rating and user rating
-    const averageRating = food?.ratings?.average || 0;
-    const ratingCount = food?.ratings?.count || 0;
-    const userRating = food?.ratings?.user_rating || 0;
-
     return (
-        <div className="max-w-6xl mx-auto sm:p-4">
+        <div className="max-w-6xl mx-auto px-2 sm:p-4">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="mb-6"
             >
-                <Link to="/" className="inline-flex items-center px-4 py-2">
+                <Link
+                    to="/"
+                    className="inline-flex items-center sm:px-4 sm:py-2 sm:mb-6 mt-4 sm:mt-0"
+                >
                     <ArrowLeft size={18} className="mr-1" />
                     <span>Kembali ke Makanan</span>
                 </Link>
 
-                <div className="bg-card text-card-foreground rounded-xl shadow-lg overflow-hidden">
+                <Card className="overflow-hidden shadow-none">
                     <div className="flex flex-col md:flex-row">
                         {/* Image Gallery */}
-                        <div className="w-full md:w-3/5">
+                        <div className="w-full md:w-3/5 p-4 rounded-2xl overflow-hidden">
                             <FoodGallery images={sortedImages} />
                         </div>
 
@@ -270,19 +170,8 @@ export default function FoodDetail({ foodId, onRateFood }) {
                             <FoodInfo
                                 food={food}
                                 isFavorite={isFavorite}
-                                onToggleFavorite={handleToggleFavorite}
+                                onToggleFavorite={() => {}}
                             />
-
-                            {/* Rating component */}
-                            <div className="px-6 pb-6">
-                                <FoodRating
-                                    averageRating={averageRating}
-                                    ratingCount={ratingCount}
-                                    onRateFood={handleRateFood}
-                                    foodId={foodId}
-                                    initialRating={userRating}
-                                />
-                            </div>
                         </div>
                     </div>
 
@@ -290,12 +179,11 @@ export default function FoodDetail({ foodId, onRateFood }) {
                         {/* Reviews section */}
                         <FoodReviews
                             reviews={reviews}
-                            onSubmitReview={handleSubmitReview}
                             foodId={foodId}
                             foodRatings={food?.ratings}
                         />
                     </div>
-                </div>
+                </Card>
             </motion.div>
         </div>
     );

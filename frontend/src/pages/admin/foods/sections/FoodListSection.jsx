@@ -6,36 +6,27 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import FoodFilters from "./FoodFilters";
-import FoodTable from "./FoodTable";
-import FoodPagination from "./FoodPagination";
+import FoodSearchBar from "../components/FoodSearchBar";
+import FoodTable from "../components/FoodTable";
+import { createFoodColumns } from "../components/FoodTableColumns";
 
 export default function FoodListSection({
     foods,
-    restaurantMap,
+    totalCount,
+    totalPages,
     isLoading,
-    error,
-    pagination,
-    page,
-    setPage,
+    pageIndex,
+    pageSize,
+    setPageIndex,
     searchTerm,
-    statusFilter,
-    categoryFilter,
     handleSearch,
-    handleStatusFilter,
-    handleCategoryFilter,
+    sorting,
+    setSorting,
     setDeleteFoodId,
     setEditFoodData,
 }) {
-    // Handler for edit button click
-    const handleEdit = (food) => {
-        setEditFoodData({ ...food });
-    };
-
-    // Handler for delete button click
-    const handleDelete = (food) => {
-        setDeleteFoodId(food.id);
-    };
+    // Create table columns with delete and edit handlers
+    const columns = createFoodColumns(setDeleteFoodId, setEditFoodData);
 
     return (
         <Card>
@@ -45,33 +36,24 @@ export default function FoodListSection({
                     Kelola koleksi makanan Anda. Anda dapat melihat, mengedit,
                     atau menghapus makanan.
                 </CardDescription>
-                <FoodFilters
+                <FoodSearchBar
                     searchTerm={searchTerm}
-                    setSearchTerm={handleSearch}
-                    statusFilter={statusFilter}
-                    setStatusFilter={handleStatusFilter}
-                    categoryFilter={categoryFilter}
-                    setCategoryFilter={handleCategoryFilter}
+                    onSearch={handleSearch}
                 />
             </CardHeader>
             <CardContent>
-                <div>
-                    <FoodTable
-                        foods={foods}
-                        restaurantMap={restaurantMap}
-                        isLoading={isLoading}
-                        error={error}
-                        pagination={pagination}
-                        handleEdit={handleEdit}
-                        handleDelete={handleDelete}
-                    />
-
-                    <FoodPagination
-                        pagination={pagination}
-                        page={page}
-                        setPage={setPage}
-                    />
-                </div>
+                <FoodTable
+                    data={foods}
+                    columns={columns}
+                    sorting={sorting}
+                    setSorting={setSorting}
+                    pageIndex={pageIndex}
+                    pageSize={pageSize}
+                    totalPages={totalPages}
+                    isLoading={isLoading}
+                    setPageIndex={setPageIndex}
+                    totalCount={totalCount}
+                />
             </CardContent>
         </Card>
     );

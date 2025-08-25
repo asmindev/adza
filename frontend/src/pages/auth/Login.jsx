@@ -13,8 +13,12 @@ const loginSchema = z.object({
 
 const Login = () => {
     const [serverError, setServerError] = useState("");
-    const { login } = useContext(UserContext);
+    const { login, user } = useContext(UserContext);
     const navigate = useNavigate();
+
+    if (user?.email) {
+        navigate("/");
+    }
 
     const {
         register,

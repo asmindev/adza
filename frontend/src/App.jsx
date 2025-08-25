@@ -1,130 +1,13 @@
 import React from "react";
-import { createBrowserRouter, RouterProvider } from "react-router";
+import { RouterProvider } from "react-router/dom";
 import UserProvider from "@/contexts/UserContext";
-import RootLayout from "@/layout/RootLayout";
-import DashboardLayout from "@/layout/AdminLayout";
-import FoodDetailPage from "@/pages/detail/FoodDetailPage";
-import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
-import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
-import RouteNavigationPage from "@/pages/navigation/RouteNavigationPage";
-import DashboardPage from "@/pages/admin/dashboard/DashboardPage";
-import Login from "./pages/auth/Login";
 import { Toaster } from "sonner";
 import { SWRConfig } from "swr";
-import UserProfile from "./pages/profile/UserProfile";
-import FoodsPage from "./pages/admin/foods/FoodsPage";
-import UsersPage from "./pages/admin/users/UsersPage";
-import AdminRestaurantsPage from "./pages/admin/restaurants/RestaurantsPage";
-import SettingsPage from "./pages/admin/settings/SettingsPage";
-import Home from "./pages/home/Home";
+import router from "./routes";
 const BASE_API_URL = import.meta.env.VITE_BASE_API_URL;
 
 // Create the router configuration with React Router v7
 export default function App() {
-    // Create routes using the declarative API
-    const router = createBrowserRouter([
-        {
-            path: "/",
-            element: (
-                <RootLayout>
-                    <Home />
-                </RootLayout>
-            ),
-        },
-        {
-            path: "/restaurants",
-            element: (
-                <RootLayout>
-                    <RestaurantsPage />
-                </RootLayout>
-            ),
-        },
-        {
-            path: "/food/:id",
-            element: (
-                <RootLayout>
-                    <FoodDetailPage />
-                </RootLayout>
-            ),
-        },
-        {
-            path: "/restaurant/:id",
-            element: (
-                <RootLayout>
-                    <RestaurantDetailPage />
-                </RootLayout>
-            ),
-        },
-        {
-            path: "/navigation/restaurant/:restaurantId",
-            element: (
-                <RootLayout>
-                    <RouteNavigationPage />
-                </RootLayout>
-            ),
-        },
-        {
-            path: "/navigation/food/:foodId",
-            element: (
-                <RootLayout>
-                    <RouteNavigationPage />
-                </RootLayout>
-            ),
-        },
-        {
-            path: "/dashboard",
-            element: (
-                <DashboardLayout>
-                    <DashboardPage />
-                </DashboardLayout>
-            ),
-        },
-        {
-            path: "/dashboard/foods",
-            element: (
-                <DashboardLayout>
-                    <FoodsPage />
-                </DashboardLayout>
-            ),
-        },
-        {
-            path: "/dashboard/users",
-            element: (
-                <DashboardLayout>
-                    <UsersPage />
-                </DashboardLayout>
-            ),
-        },
-        {
-            path: "/dashboard/restaurants",
-            element: (
-                <DashboardLayout>
-                    <AdminRestaurantsPage />
-                </DashboardLayout>
-            ),
-        },
-        {
-            path: "/dashboard/settings",
-            element: (
-                <DashboardLayout>
-                    <SettingsPage />
-                </DashboardLayout>
-            ),
-        },
-        {
-            path: "/login",
-            element: <Login />,
-        },
-        {
-            path: "/profile",
-            element: (
-                <RootLayout>
-                    <UserProfile />
-                </RootLayout>
-            ),
-        },
-    ]);
-
     return (
         <>
             <SWRConfig
