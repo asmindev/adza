@@ -29,7 +29,7 @@ def scrape_data(location: str, max_pages: int = 5, max_details: int = 10):
 
     # Scrape detailed information (optional)
     print("Scraping detailed information...")
-    detailed_data = scraper.scrape_outlet_details(result.outlets[:max_details])
+    detailed_data = scraper.scrape_outlet_details(result.outlets)
 
     if detailed_data:
         filename = scraper.export_detailed_data(detailed_data)
