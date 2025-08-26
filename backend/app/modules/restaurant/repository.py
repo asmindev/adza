@@ -73,6 +73,36 @@ class RestaurantRepository:
             raise e
 
     @staticmethod
+    def get_by_category(category_id, page=1, limit=20):
+        """Get restaurants by category with pagination"""
+        try:
+            query = Restaurant.query.filter_by(category_id=category_id, is_active=True)
+
+            # Get total count for pagination
+            total_count = query.count()
+
+            # Apply pagination
+            restaurants = query.order_by(Restaurant.created_at.desc()).paginate(
+                page=page, per_page=limit, error_out=False
+            )
+
+            logger.info(
+                f"Retrieved {len(restaurants.items)} restaurants for category {category_id} (total {total_count})"
+            )
+            return {
+                "items": restaurants.items,
+                "total": total_count,
+                "page": page,
+                "limit": limit,
+                "pages": restaurants.pages,
+            }
+        except Exception as e:
+            logger.error(
+                f"Error retrieving restaurants by category {category_id}: {str(e)}"
+            )
+            raise e
+
+    @staticmethod
     def get_active():
         """Get all active restaurants"""
         try:

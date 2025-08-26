@@ -12,6 +12,7 @@ from app.modules.rating.controller import rating_blueprint
 from app.modules.review.controller import review_blueprint
 from app.modules.recommendation.controller import recommendation_blueprint
 from app.modules.restaurant.controller import restaurant_blueprint
+from app.modules.category.controller import category_bp
 
 # List of all module blueprints for easy registration
 blueprints = [
@@ -21,6 +22,7 @@ blueprints = [
     review_blueprint,
     recommendation_blueprint,
     restaurant_blueprint,
+    category_bp,
 ]
 
 

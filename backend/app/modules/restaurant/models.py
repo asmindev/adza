@@ -11,6 +11,9 @@ class Restaurant(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    category_id = db.Column(
+        db.String(36), db.ForeignKey("categories.id"), nullable=True
+    )
     address = db.Column(db.String(255), nullable=False)
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
@@ -131,16 +134,29 @@ class Restaurant(db.Model):
         def safe_created_at_key(item):
             return item.get("created_at", "") or ""
 
-        foods = [food.to_dict() for food in self.foods] if self.foods else []
-        foods = sorted(foods, key=safe_created_at_key, reverse=True) if foods else []
-
         # Get detailed rating information
         rating_details = self.get_rating_details()
+
+        # Include category info if available
+        category_info = None
+        if self.category_id:
+            # Import here to avoid circular import
+            from app.modules.category.models import Category
+
+            category = Category.query.get(self.category_id)
+            if category:
+                category_info = {
+                    "id": category.id,
+                    "name": category.name,
+                    "description": category.description,
+                }
 
         return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
+            "category_id": self.category_id,
+            "category": category_info,
             "address": self.address,
             "phone": self.phone,
             "email": self.email,
@@ -148,7 +164,6 @@ class Restaurant(db.Model):
             "longitude": self.longitude,
             "rating": rating_details,
             "is_active": self.is_active,
-            "foods": foods,
             "created_at": (
                 self.created_at.isoformat() + "Z" if self.created_at else None
             ),

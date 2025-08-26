@@ -36,6 +36,9 @@ class User(db.Model):
     reviews = db.relationship(
         "Review", backref="user", lazy=True, cascade="all, delete-orphan"
     )
+    favorite_categories = db.relationship(
+        "UserFavoriteCategory", backref="user", lazy=True, cascade="all, delete-orphan"
+    )
 
     def __init__(self, **kwargs):
         # Generate UUID if not provided

@@ -50,6 +50,37 @@ class RestaurantService:
             raise e
 
     @staticmethod
+    def get_restaurants_by_category(category_id, page=1, limit=20):
+        """Get restaurants by category"""
+        try:
+            result = RestaurantRepository.get_by_category(
+                category_id, page=page, limit=limit
+            )
+            logger.info(
+                f"Restaurant service: Retrieved {len(result['items'])} restaurants for category {category_id}"
+            )
+            return {
+                "success": True,
+                "data": [restaurant.to_dict() for restaurant in result["items"]],
+                "pagination": {
+                    "page": result["page"],
+                    "limit": result["limit"],
+                    "total": result["total"],
+                    "pages": result["pages"],
+                },
+                "message": "Restaurants retrieved successfully",
+            }
+        except Exception as e:
+            logger.error(
+                f"Restaurant service: Error retrieving restaurants by category - {str(e)}"
+            )
+            return {
+                "success": False,
+                "data": [],
+                "message": f"Error retrieving restaurants: {str(e)}",
+            }
+
+    @staticmethod
     def get_active_restaurants():
         """Get all active restaurants"""
         try:

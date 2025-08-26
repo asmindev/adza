@@ -11,7 +11,6 @@ class Food(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    category = db.Column(db.String(50), nullable=True)
     price = db.Column(db.Float, nullable=True)
     restaurant_id = db.Column(
         db.String(36), db.ForeignKey("restaurants.id"), nullable=True
@@ -84,20 +83,38 @@ class Food(db.Model):
 
         # Include restaurant info if available
         restaurant_info = None
-        if self.restaurant:
-            restaurant_info = {
-                "id": self.restaurant.id,
-                "name": self.restaurant.name,
-                "address": self.restaurant.address,
-                "latitude": self.restaurant.latitude,
-                "longitude": self.restaurant.longitude,
-            }
+        category_info = None
+        if self.restaurant_id:
+            # Import here to avoid circular import
+            from app.modules.restaurant.models import Restaurant
+
+            restaurant = Restaurant.query.get(self.restaurant_id)
+            if restaurant:
+                restaurant_info = {
+                    "id": restaurant.id,
+                    "name": restaurant.name,
+                    "address": restaurant.address,
+                    "latitude": restaurant.latitude,
+                    "longitude": restaurant.longitude,
+                }
+
+                # Get category from restaurant
+                if restaurant.category_id:
+                    from app.modules.category.models import Category
+
+                    category = Category.query.get(restaurant.category_id)
+                    if category:
+                        category_info = {
+                            "id": category.id,
+                            "name": category.name,
+                            "description": category.description,
+                        }
 
         return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "category": self.category,
+            "category": category_info,
             "price": self.price,
             "restaurant_id": self.restaurant_id,
             "restaurant": restaurant_info,
