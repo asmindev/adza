@@ -15,39 +15,49 @@ function RestaurantHero({ restaurant }) {
             animate={{ opacity: 1, y: 0 }}
             className="overflow-hidden rounded-xl"
         >
-            <Card className="border-0 shadow-lg">
+            <Card className="border-0 shadow-lg p-0">
                 <div className="h-48 sm:h-64 bg-gradient-to-br from-primary/20 to-primary/40 relative overflow-hidden">
                     <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-foreground">
                         <h1 className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2 text-white drop-shadow-lg">
                             {restaurant.name}
                         </h1>
-                        <p className="text-sm sm:text-lg opacity-90 mb-3 sm:mb-4 line-clamp-2 text-white drop-shadow">
-                            {restaurant.description}
-                        </p>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                            <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-3 py-1 self-start">
-                                <StarRating
-                                    rating={restaurant.rating?.average || 0}
-                                    showRating={false}
-                                />
-                                <span className="font-semibold text-sm sm:text-base text-foreground">
-                                    {restaurant.rating?.average?.toFixed(1) ||
-                                        "0.0"}
-                                </span>
-                                <span className="text-xs sm:text-sm text-muted-foreground">
-                                    ({restaurant.rating?.total || 0})
-                                </span>
+                        <div className="flex justify-between items-end sm:items-center ">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-3 py-1 self-start">
+                                    <StarRating
+                                        rating={restaurant.rating?.average || 0}
+                                        showRating={false}
+                                    />
+                                    <span className="font-semibold text-sm sm:text-base text-foreground">
+                                        {restaurant.rating?.average?.toFixed(
+                                            1
+                                        ) || "0.0"}
+                                    </span>
+                                    <span className="text-xs sm:text-sm text-muted-foreground">
+                                        ({restaurant.rating?.total || 0})
+                                    </span>
+                                </div>
+                                <Badge
+                                    variant={
+                                        restaurant.is_active
+                                            ? "default"
+                                            : "destructive"
+                                    }
+                                >
+                                    {restaurant.is_active ? "Buka" : "Tutup"}
+                                </Badge>
                             </div>
-                            <Badge
-                                variant={
-                                    restaurant.is_active
-                                        ? "default"
-                                        : "destructive"
-                                }
-                                className="self-start"
-                            >
-                                {restaurant.is_active ? "Buka" : "Tutup"}
-                            </Badge>
+                            {/* mapping categories */}
+                            <div className="flex flex-wrap gap-2">
+                                {restaurant.categories.map((category) => (
+                                    <Badge
+                                        key={category.id}
+                                        className={"text-xs"}
+                                    >
+                                        {category.name}
+                                    </Badge>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -58,12 +68,6 @@ function RestaurantHero({ restaurant }) {
                             <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                             <span className="line-clamp-1 text-foreground">
                                 {restaurant.address}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">
-                            <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="text-foreground">
-                                {restaurant.phone}
                             </span>
                         </div>
                         <div className="flex items-center gap-2 bg-muted/50 rounded-xl px-3 py-2">

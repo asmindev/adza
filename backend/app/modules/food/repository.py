@@ -16,7 +16,15 @@ class FoodRepository:
         logger.debug(
             f"Mengambil makanan dengan pagination: page={page}, limit={limit}, search={search}"
         )
-        query = Food.query
+
+        # Import Restaurant here to avoid circular imports
+        from app.modules.restaurant.models import Restaurant
+
+        # Join with restaurant table to include restaurant information
+        # Use proper attribute access for the backref
+        query = Food.query.join(
+            Restaurant, Food.restaurant_id == Restaurant.id, isouter=True
+        )
 
         # Apply search filter if provided
         if search:
@@ -25,7 +33,9 @@ class FoodRepository:
                 db.or_(
                     Food.name.ilike(search_term),
                     Food.description.ilike(search_term),
-                    Food.category.ilike(search_term),
+                    Restaurant.name.ilike(
+                        search_term
+                    ),  # Include restaurant name in search
                 )
             )
             logger.info(f"Menerapkan filter pencarian: {search}")
@@ -33,7 +43,7 @@ class FoodRepository:
         # Get total count for pagination
         total_count = query.count()
 
-        # Apply pagination
+        # Apply pagination with proper ordering
         foods = query.order_by(Food.created_at.desc()).paginate(
             page=page, per_page=limit, error_out=False
         )
@@ -52,9 +62,21 @@ class FoodRepository:
     @staticmethod
     def get_by_id(food_id):
         logger.debug(f"Mencari makanan dengan ID: {food_id}")
-        food = Food.query.get(food_id)
-        logger.info(f"Food found: {food.name}")
+
+        # Import Restaurant here to avoid circular imports
+        from app.modules.restaurant.models import Restaurant
+
+        # Join with restaurant to get restaurant data as well
+        food = (
+            Food.query.join(
+                Restaurant, Food.restaurant_id == Restaurant.id, isouter=True
+            )
+            .filter(Food.id == food_id)
+            .first()
+        )
+
         if food:
+            logger.info(f"Food found: {food.name}")
             logger.info(f"Makanan dengan ID {food_id} ditemukan")
         else:
             logger.warning(f"Makanan dengan ID {food_id} tidak ditemukan")

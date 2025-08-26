@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from flask import current_app, url_for
 import uuid
+from app.utils import db_logger as logger
 
 
 class Food(db.Model):
@@ -29,6 +30,7 @@ class Food(db.Model):
     )
 
     # Relationships
+    # Note: restaurant relationship is defined via backref in Restaurant model
     ratings = db.relationship(
         "FoodRating", backref="food", lazy=True, cascade="all, delete-orphan"
     )

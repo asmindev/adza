@@ -12,11 +12,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import StarRating from "./StarRating";
-import ReviewSection from "./ReviewSection";
 
 function FoodItem({ food, index }) {
-    const [showReviews, setShowReviews] = useState(false);
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -24,18 +21,18 @@ function FoodItem({ food, index }) {
             transition={{ delay: index * 0.1 }}
             className="h-full"
         >
-            <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 p-0">
-                <CardContent className="p-0">
+            <Card className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 p-0">
+                <CardContent className="p-0 h-full">
                     {/* Mobile-optimized layout */}
-                    <div className="p-3 sm:p-4">
+                    <div className="p-3 sm:p-4 h-full">
                         {/* Food header - stacked on mobile */}
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                        <div className="h-full flex flex-col sm:flex-row gap-3 sm:gap-4 relative pt-4 sm:pt-0">
                             {/* Food Image */}
                             {food.main_image ? (
                                 <img
                                     src={food.main_image.image_url}
                                     alt={food.name}
-                                    className="w-full h-32 sm:w-20 sm:h-20 object-cover rounded-lg mb-3 sm:mb-0"
+                                    className="w-full h-32 sm:w-1/2 sm:h-full object-cover rounded-lg mb-3 sm:mb-0"
                                 />
                             ) : (
                                 <div className="w-full h-32 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-200 via-red-200 to-pink-200 rounded-lg relative overflow-hidden flex-shrink-0">
@@ -74,38 +71,13 @@ function FoodItem({ food, index }) {
                             )}
 
                             {/* Food Info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1 min-w-0 h-full flex flex-col justify-between">
+                                <div className="flex sm:flex-col flex-row justify-between items-start mb-2 ">
                                     <div className="flex-1 min-w-0">
-                                        {/* Category badge for desktop */}
-                                        <div className="hidden sm:flex items-center gap-2 mb-1">
-                                            <Badge
-                                                variant="outline"
-                                                className="text-xs px-2 py-0.5"
-                                            >
-                                                {food.category}
-                                            </Badge>
-                                        </div>
-                                        <h3 className="font-bold text-lg sm:text-base text-foreground leading-tight">
+                                        <h3 className="font-medium sm:font-bold text-sm sm:text-base text-foreground leading-tight">
                                             {food.name}
                                         </h3>
-                                    </div>
-                                    <div className="text-right ml-2">
-                                        <div className="text-xl sm:text-lg font-bold text-green-600">
-                                            Rp
-                                            {food.price.toLocaleString("id-ID")}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                                    {food.description}
-                                </p>
-
-                                {/* Rating and Reviews - mobile friendly */}
-                                <div className="flex sm:items-center sm:justify-between gap-2 mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1">
+                                        <div className="absolute sm:static -top-3 -right-1 flex gap-2 items-center text-sm text-muted-foreground mt-1">
                                             <StarRating
                                                 rating={
                                                     food.ratings?.average || 0
@@ -115,25 +87,16 @@ function FoodItem({ food, index }) {
                                             <span className="text-sm font-medium text-foreground">
                                                 {food.ratings?.average?.toFixed(
                                                     1
-                                                ) || "0.0"}
+                                                ) || 0}
                                             </span>
                                         </div>
-                                        <span className="text-xs text-muted-foreground">
-                                            ({food.ratings?.count || 0} rating)
-                                        </span>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                            setShowReviews(!showReviews)
-                                        }
-                                        className="text-primary hover:text-primary/80 text-xs h-7 px-2 self-start sm:self-auto"
-                                    >
-                                        <MessageSquare className="h-3 w-3 mr-1" />
-                                        {food.reviews?.review_count || 0}{" "}
-                                        Reviews
-                                    </Button>
+                                    <div className="absolute -top-2 -left-3 sm:static text-right ml-2 sm:block">
+                                        <div className="text-sm sm:text-lg font-bold text-green-600">
+                                            Rp
+                                            {food.price.toLocaleString("id-ID")}
+                                        </div>
+                                    </div>
                                 </div>
                                 <Link
                                     to={`/food/${food.id}`}
@@ -145,12 +108,6 @@ function FoodItem({ food, index }) {
                             </div>
                         </div>
                     </div>
-
-                    {/* Reviews Section */}
-                    <ReviewSection
-                        showReviews={showReviews}
-                        reviews={food.reviews}
-                    />
                 </CardContent>
             </Card>
         </motion.div>

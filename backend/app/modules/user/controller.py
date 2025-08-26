@@ -177,6 +177,7 @@ def get_users():
 
 
 @user_blueprint.route("/users/<string:user_id>", methods=["GET"])
+@user_matches_or_admin
 def get_user(user_id):
     """
     Get user details by ID with full information.

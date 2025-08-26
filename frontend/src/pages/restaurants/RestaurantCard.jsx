@@ -19,7 +19,7 @@ export default function RestaurantCard({ restaurant }) {
             whileHover={{ y: -5 }}
             transition={{ duration: 0.2 }}
         >
-            <Card className="h-full hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+            <Card className="h-full hover:shadow-lg transition-shadow duration-300 overflow-hidden p-0">
                 <CardContent className="p-6">
                     {/* Header */}
                     <div className="flex justify-between items-start mb-4">
@@ -29,19 +29,11 @@ export default function RestaurantCard({ restaurant }) {
                                     {restaurant.name}
                                 </h3>
                             </Link>
-                            <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
-                                {restaurant.description}
-                            </p>
                         </div>
                         <Badge
                             variant={
-                                restaurant.is_active ? "default" : "secondary"
+                                restaurant.is_active ? "default" : "destructive"
                             }
-                            className={`ml-2 ${
-                                restaurant.is_active
-                                    ? "bg-green-100 text-green-800 border-green-200"
-                                    : "bg-red-100 text-red-800 border-red-200"
-                            }`}
                         >
                             {restaurant.is_active ? "Buka" : "Tutup"}
                         </Badge>
@@ -73,10 +65,6 @@ export default function RestaurantCard({ restaurant }) {
                             <span className="line-clamp-1">
                                 {restaurant.address}
                             </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-4 w-4 flex-shrink-0" />
-                            <span>{restaurant.phone}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Clock className="h-4 w-4 flex-shrink-0" />

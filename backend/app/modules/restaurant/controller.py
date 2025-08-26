@@ -121,19 +121,37 @@ def get_restaurants():
 
 @restaurant_blueprint.route("/restaurants/<string:restaurant_id>", methods=["GET"])
 def get_restaurant(restaurant_id):
-    """Get restaurant by ID"""
+    """Get restaurant by ID with detailed information"""
     logger.info(f"GET /restaurants/{restaurant_id} - Retrieving restaurant details")
 
     try:
-        # Use service layer for validation and retrieval
-        restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
+        # Get restaurant with full context from data service
+        from app.modules.restaurant.data_service import RestaurantDataService
+        from app.modules.restaurant.validators import RestaurantValidator
 
-        if not restaurant:
+        # Validate restaurant ID
+        validated_id = RestaurantValidator.validate_restaurant_id(restaurant_id)
+
+        # Get restaurant with full context including related data
+        result = RestaurantDataService.get_restaurant_with_context(validated_id)
+
+        if not result:
             logger.warning(f"Restaurant not found with ID: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
 
-        logger.info(f"Restaurant retrieved: {restaurant['name']}")
-        return ResponseHelper.success(data=restaurant)
+        restaurant_data = result["restaurant"]
+        context_data = result["context"]
+        related_data = context_data.get("related_data", {})
+
+        # Build detailed response with additional information including categories and foods
+        detailed_response = {
+            **restaurant_data,  # All basic restaurant fields
+            "categories": related_data.get("categories", []),
+            "foods": related_data.get("foods", []),
+        }
+
+        logger.info(f"Restaurant details retrieved: {restaurant_data['name']}")
+        return ResponseHelper.success(data=detailed_response)
 
     except ValueError as e:
         logger.warning(f"Validation error retrieving restaurant: {str(e)}")

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ArrowLeft, Heart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,18 +10,18 @@ import {
 } from "@/components/ui/tooltip";
 
 function RestaurantHeader() {
+    const navigate = useNavigate();
+
     return (
         <div className="bg-card border-b">
             <div className="max-w-6xl mx-auto p-4">
                 <div className="flex items-center justify-between">
-                    <Button variant="ghost" asChild>
-                        <Link to="/" className="flex items-center">
-                            <ArrowLeft className="mr-2 h-5 w-5" />
-                            <span className="hidden sm:inline">
-                                Back to Restaurants
-                            </span>
-                            <span className="sm:hidden">Kembali</span>
-                        </Link>
+                    <Button variant="ghost" onClick={() => navigate(-1)}>
+                        <ArrowLeft className="mr-2 h-5 w-5" />
+                        <span className="hidden sm:inline">
+                            Back to Restaurants
+                        </span>
+                        <span className="sm:hidden">Kembali</span>
                     </Button>
                     <div className="flex items-center gap-1 sm:gap-2">
                         <TooltipProvider>

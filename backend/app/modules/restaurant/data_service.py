@@ -231,7 +231,7 @@ class RestaurantDataService:
             restaurant_id (str): Restaurant ID
 
         Returns:
-            dict: Restaurant with enriched context
+            dict: Restaurant with enriched context and detailed information
         """
         try:
             restaurant = RestaurantRepository.get_by_id(restaurant_id)
@@ -240,22 +240,58 @@ class RestaurantDataService:
 
             restaurant_data = restaurant.to_dict()
 
-            # Add additional context
-            # Could include nearby restaurants, related categories, etc.
+            # Add enhanced context with detailed information
+            context = {
+                "location": {
+                    "latitude": restaurant.latitude,
+                    "longitude": restaurant.longitude,
+                    "address": restaurant.address,
+                },
+                "status": {
+                    "is_active": restaurant.is_active,
+                    "rating_level": RestaurantDataService._get_rating_level(
+                        restaurant.rating_average
+                    ),
+                },
+                "timestamps": {
+                    "created_at": restaurant_data["created_at"],
+                    "updated_at": restaurant_data["updated_at"],
+                },
+            }
+
+            # Add related counts if available (foods, ratings, etc.)
+            try:
+                # Get categories
+                categories = []
+                if hasattr(restaurant, "categories") and restaurant.categories:
+                    categories = [
+                        category.to_dict() for category in restaurant.categories
+                    ]
+
+                # Get foods with main image
+                foods = []
+                if hasattr(restaurant, "foods") and restaurant.foods:
+                    from app.modules.food.service import FoodService
+
+                    foods = [
+                        FoodService.to_dict_with_main_image(food)
+                        for food in restaurant.foods
+                    ]
+
+                context["related_data"] = {
+                    "categories": categories,
+                    "foods": foods,
+                }
+            except Exception as e:
+                logger.warning(f"Could not load related data counts: {str(e)}")
+                context["related_data"] = {
+                    "categories": [],
+                    "foods": [],
+                }
 
             return {
                 "restaurant": restaurant_data,
-                "context": {
-                    "location": {
-                        "latitude": restaurant.latitude,
-                        "longitude": restaurant.longitude,
-                        "address": restaurant.address,
-                    },
-                    "status": {
-                        "is_active": restaurant.is_active,
-                        "has_rating": restaurant.rating_average > 0,
-                    },
-                },
+                "context": context,
             }
         except Exception as e:
             logger.error(f"Error getting restaurant with context: {str(e)}")
@@ -291,6 +327,78 @@ class RestaurantDataService:
         r = 6371
 
         return c * r
+
+    @staticmethod
+    def _get_rating_level(rating):
+        """
+        Get rating level description based on numeric rating.
+
+        Args:
+            rating (float): Numeric rating
+
+        Returns:
+            str: Rating level description
+        """
+        if rating >= 4.5:
+            return "Excellent"
+        elif rating >= 4.0:
+            return "Very Good"
+        elif rating >= 3.5:
+            return "Good"
+        elif rating >= 3.0:
+            return "Average"
+        elif rating > 0:
+            return "Below Average"
+        else:
+            return "No Rating"
+
+    @staticmethod
+    def _is_recently_updated(updated_at):
+        """
+        Check if restaurant was recently updated (within last 30 days).
+
+        Args:
+            updated_at (datetime): Last update timestamp
+
+        Returns:
+            bool: True if recently updated
+        """
+        if not updated_at:
+            return False
+
+        from datetime import datetime, timezone, timedelta
+
+        # Calculate days since last update
+        now = datetime.now(timezone.utc)
+        # Ensure updated_at is timezone aware
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+
+        days_since_update = (now - updated_at).days
+        return days_since_update <= 30
+
+    @staticmethod
+    def _calculate_age_days(created_at):
+        """
+        Calculate age of restaurant in days.
+
+        Args:
+            created_at (datetime): Creation timestamp
+
+        Returns:
+            int: Age in days
+        """
+        if not created_at:
+            return 0
+
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc)
+        # Ensure created_at is timezone aware
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+
+        return (now - created_at).days
 
     @staticmethod
     def get_simple_restaurant_list():

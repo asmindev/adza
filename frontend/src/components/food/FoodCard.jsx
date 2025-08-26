@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Heart, Star, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Separator } from "../ui/separator";
 
 export default function FoodCard({ food, onToggleFavorite }) {
     if (!food) return null;
@@ -42,33 +43,18 @@ export default function FoodCard({ food, onToggleFavorite }) {
     return (
         <motion.div variants={cardVariants}>
             <Link to={`/food/${food.id}`} className="block group">
-                <Card className="border-1 shadow-none duration-300 overflow-hidden p-0">
+                <Card className="shadow-none duration-300 overflow-hidden p-0 h-full gap-0">
                     {/* Image Section */}
-                    <div className="relative aspect-[5/3] overflow-hidden">
+                    <div className="relative overflow-hidden">
                         <img
                             src={imageUrl}
                             alt={food.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-46 object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
                                 e.target.src =
                                     "https://placehold.co/600x400?text=Food+Image";
                             }}
                         />
-
-                        {/* Favorite Button */}
-                        <button
-                            onClick={handleFavoriteClick}
-                            className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm hover:scale-110 transition-transform"
-                        >
-                            <Heart
-                                className={cn(
-                                    "h-3.5 w-3.5",
-                                    food.isFavorite
-                                        ? "fill-rose-500 text-rose-500"
-                                        : "text-gray-600"
-                                )}
-                            />
-                        </button>
 
                         {/* Price Badge */}
                         <Badge className="absolute bottom-2 right-2 bg-emerald-500 text-white text-xs px-2 py-1">
@@ -77,12 +63,7 @@ export default function FoodCard({ food, onToggleFavorite }) {
                     </div>
 
                     {/* Content Section */}
-                    <div className="p-3">
-                        {/* Title */}
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 text-sm mb-1">
-                            {food.name}
-                        </h3>
-
+                    <div className="p-3 ">
                         {/* Restaurant & Rating Row */}
                         <div className="flex items-center justify-between text-xs">
                             {/* Restaurant */}
@@ -109,6 +90,10 @@ export default function FoodCard({ food, onToggleFavorite }) {
                                 </div>
                             )}
                         </div>
+                        {/* Title */}
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-1 text-sm mb-1">
+                            {food.name}
+                        </h3>
                     </div>
                 </Card>
             </Link>

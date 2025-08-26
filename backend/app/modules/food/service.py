@@ -13,6 +13,49 @@ from flask import current_app
 class FoodService:
 
     @staticmethod
+    def get_main_image(food):
+        """Business logic to find main image for a food"""
+        if not hasattr(food, "images") or not food.images:
+            return None
+
+        main_image = next((img for img in food.images if img.is_main), None)
+        return main_image.to_dict() if main_image else None
+
+    @staticmethod
+    def to_dict_with_main_image(food):
+        """Convert food to dict with main image logic and restaurant name"""
+        base_data = food.to_dict()
+        base_data["main_image"] = FoodService.get_main_image(food)
+
+        # Add restaurant name if available
+        if hasattr(food, "restaurant") and food.restaurant:
+            base_data["restaurant"] = {
+                "id": food.restaurant.id,
+                "name": food.restaurant.name,
+            }
+
+        else:
+            base_data["restaurant"] = {}
+
+        # ratings - calculate from the ratings list
+        if hasattr(food, "ratings") and food.ratings:
+            # Calculate average rating from the list of ratings
+            ratings_list = food.ratings
+            if ratings_list:
+                total_rating = sum(rating.rating for rating in ratings_list)
+                average_rating = total_rating / len(ratings_list)
+                base_data["ratings"] = {
+                    "average": round(average_rating, 1),
+                    "count": len(ratings_list),
+                }
+            else:
+                base_data["ratings"] = {"average": 0, "count": 0}
+        else:
+            base_data["ratings"] = {"average": 0, "count": 0}
+
+        return base_data
+
+    @staticmethod
     def get_all_foods() -> List[Food]:
         """Get all foods - returns ORM objects"""
         return FoodRepository.get_all()
@@ -33,10 +76,10 @@ class FoodService:
             page=page, limit=limit, search=search
         )
 
-        # Use basic data for now
+        # Use service method that includes main image
         foods_dict = []
         for food in result["items"]:
-            base_data = food.to_dict()
+            base_data = FoodService.to_dict_with_main_image(food)
             foods_dict.append(base_data)
 
         return {
@@ -104,7 +147,10 @@ class FoodService:
 
         # Return full details
         result_food = FoodDataService.get_food_with_details(food.id)
-        return result_food if result_food else food.to_dict()
+        if not result_food:
+            # Fallback to service method if data service fails
+            result_food = FoodService.to_dict_with_main_image(food)
+        return result_food
 
     @staticmethod
     def update_food(
@@ -148,7 +194,10 @@ class FoodService:
 
         # Return updated food with full details
         result_food = FoodDataService.get_food_with_details(food.id)
-        return result_food if result_food else food.to_dict()
+        if not result_food:
+            # Fallback to service method if data service fails
+            result_food = FoodService.to_dict_with_main_image(food)
+        return result_food
 
     @staticmethod
     def delete_food(food_id: str) -> bool:
@@ -182,14 +231,22 @@ class FoodService:
             limit = 10
 
         if restaurant_id:
-            # Search by restaurant - use available method
-            # Since get_by_restaurant_id doesn't exist, we'll filter differently
-            all_foods = FoodRepository.get_all()
-            foods = [f for f in all_foods if f.restaurant_id == restaurant_id][:limit]
+            # Search by restaurant - use proper query
+            from app.extensions import db
+            from app.modules.food.models import Food
+
+            # Use proper query without complex joinedload for now
+            foods_query = (
+                Food.query.filter(Food.restaurant_id == restaurant_id)
+                .order_by(Food.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+
             # Convert to paginated format for consistency
             result = {
-                "items": foods,
-                "total": len(foods),
+                "items": foods_query,
+                "total": len(foods_query),
                 "page": 1,
                 "limit": limit,
                 "pages": 1,
@@ -197,10 +254,10 @@ class FoodService:
         else:
             result = FoodRepository.get_all_with_limit(page=page, limit=limit)
 
-        # Use basic data for now
+        # Use service method that includes main image and restaurant name
         foods_dict = []
         for food in result["items"]:
-            base_data = food.to_dict()
+            base_data = FoodService.to_dict_with_main_image(food)
             foods_dict.append(base_data)
 
         return {
