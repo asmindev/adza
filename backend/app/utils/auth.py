@@ -1,7 +1,8 @@
 from functools import wraps
-from flask import request, jsonify, g
+from flask import request, g
 from app.utils.jwt_utils import decode_token
 from app.utils import api_logger as logger
+from app.utils.response import ResponseHelper
 
 
 def has_login(f):
@@ -23,7 +24,7 @@ def has_login(f):
         payload = decode_token(token)
         if not payload:
             logger.warning("Token is invalid")
-            return jsonify({"error": True, "message": "Invalid or expired token"}), 401
+            return ResponseHelper.unauthorized("Invalid or expired token")
 
         # Store user info in Flask's g object for use in the route
         g.user_id = payload["sub"]
@@ -50,16 +51,13 @@ def token_required(f):
 
         if not token:
             logger.warning("Token is missing")
-            return (
-                jsonify({"error": True, "message": "Authentication token is missing"}),
-                401,
-            )
+            return ResponseHelper.unauthorized("Authentication token is missing")
 
         # Decode token
         payload = decode_token(token)
         if not payload:
             logger.warning("Token is invalid")
-            return jsonify({"error": True, "message": "Invalid or expired token"}), 401
+            return ResponseHelper.unauthorized("Invalid or expired token")
 
         # Store user info in Flask's g object for use in the route
         g.user_id = payload["sub"]
@@ -84,7 +82,7 @@ def admin_required(f):
         # Now check admin status
         if not g.is_admin:
             logger.warning(f"User {g.user_id} attempted to access admin-only resource")
-            return jsonify({"error": True, "message": "Admin privileges required"}), 403
+            return ResponseHelper.forbidden("Admin privileges required")
 
         return f(*args, **kwargs)
 
@@ -107,20 +105,14 @@ def user_matches_or_admin(f):
             logger.error(
                 "user_matches_or_admin decorator used on route without user_id parameter"
             )
-            return jsonify({"error": True, "message": "Internal server error"}), 500
+            return ResponseHelper.internal_server_error("Internal server error")
 
         if g.user_id != user_id and not g.is_admin:
             logger.warning(
                 f"User {g.user_id} attempted to access data of user {user_id}"
             )
-            return (
-                jsonify(
-                    {
-                        "error": True,
-                        "message": "You do not have permission to access this resource",
-                    }
-                ),
-                403,
+            return ResponseHelper.forbidden(
+                "You do not have permission to access this resource"
             )
 
         return f(*args, **kwargs)

@@ -42,7 +42,7 @@ def create_restaurant():
         return ResponseHelper.success(
             data=restaurant.to_dict(),
             message="Restaurant created successfully",
-            status_code=201
+            status_code=201,
         )
     except ValueError as e:
         logger.warning(f"Validation error creating restaurant: {str(e)}")
@@ -176,8 +176,7 @@ def update_restaurant(restaurant_id):
 
         logger.info(f"Restaurant updated successfully: {restaurant.name}")
         return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message="Restaurant updated successfully"
+            data=restaurant.to_dict(), message="Restaurant updated successfully"
         )
     except ValueError as e:
         logger.warning(f"Validation error updating restaurant: {str(e)}")
@@ -227,12 +226,13 @@ def toggle_restaurant_status(restaurant_id):
             f"Restaurant status toggled: {restaurant.name} is now {status_text}"
         )
         return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message=f"Restaurant {status_text} successfully"
+            data=restaurant.to_dict(), message=f"Restaurant {status_text} successfully"
         )
     except Exception as e:
         logger.error(f"Error toggling restaurant status {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to toggle restaurant status")
+        return ResponseHelper.internal_server_error(
+            "Failed to toggle restaurant status"
+        )
 
 
 @restaurant_blueprint.route("/restaurants/nearby", methods=["GET"])
@@ -289,35 +289,39 @@ def get_restaurant_list():
         return ResponseHelper.success(data={"restaurants": restaurants})
     except Exception as e:
         logger.error(f"Error retrieving restaurant list: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant list")
+        return ResponseHelper.internal_server_error(
+            "Failed to retrieve restaurant list"
+        )
 
 
 @restaurant_blueprint.route("/restaurants/route", methods=["POST"])
 def get_restaurant_route():
     """Get restaurant route by OSRM"""
     logger.info("POST /restaurants/route - Retrieving restaurant route")
-    
+
     data = request.get_json()
     if not data:
         logger.warning("No data provided for route calculation")
         return ResponseHelper.validation_error("Request data is required")
-    
+
     coordinates = data.get("coordinates")
     restaurant_id = data.get("restaurant_id")
 
     if not coordinates or not restaurant_id:
         logger.warning("Missing coordinates or restaurant_id")
-        return ResponseHelper.validation_error("Coordinates and restaurant_id are required")
+        return ResponseHelper.validation_error(
+            "Coordinates and restaurant_id are required"
+        )
 
     try:
         # https://router.project-osrm.org/route/v1/driving/120.03,-4.1279;110.368,-7.7897?overview=full&geometries=geojson&steps=true
         osrm = "http://router.project-osrm.org"
         restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
-        
+
         if not restaurant:
             logger.warning(f"Restaurant not found with ID: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
-            
+
         response = requests.post(
             f"{osrm}/route/v1/driving/{coordinates[0]},{coordinates[1]};{restaurant.latitude},{restaurant.longitude}"
         )
@@ -325,4 +329,6 @@ def get_restaurant_route():
         return ResponseHelper.success(data=route)
     except Exception as e:
         logger.error(f"Error retrieving restaurant route {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant route")
+        return ResponseHelper.internal_server_error(
+            "Failed to retrieve restaurant route"
+        )

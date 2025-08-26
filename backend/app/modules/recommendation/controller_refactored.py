@@ -163,7 +163,9 @@ def get_recommendations():
 @recommendation_blueprint.route("/recommendations/top-rated", methods=["GET"])
 def get_top_rated():
     """Get top-rated foods based on user ratings"""
-    logger.info("GET /top-rated - Mengambil makanan teratas berdasarkan rating pengguna")
+    logger.info(
+        "GET /top-rated - Mengambil makanan teratas berdasarkan rating pengguna"
+    )
     try:
         # Get top-rated foods using the service
         top_rated_foods = RecommendationService.get_popular_foods(

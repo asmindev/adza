@@ -1,8 +1,7 @@
-from flask import Blueprint, request, g
+from flask import Blueprint, request, jsonify, g
 from app.modules.restaurant.service import RestaurantService
 from app.utils import api_logger as logger
 from app.utils.auth import token_required, admin_required
-from app.utils.response import ResponseHelper
 import requests
 
 restaurant_blueprint = Blueprint("restaurant", __name__)
@@ -17,15 +16,21 @@ def create_restaurant():
 
     if not data:
         logger.warning("No data provided for restaurant creation")
-        return ResponseHelper.validation_error("No data provided")
+        return jsonify({"error": True, "message": "No data provided"}), 400
 
     required_fields = ["name", "address", "latitude", "longitude"]
     missing_fields = [field for field in required_fields if field not in data]
 
     if missing_fields:
         logger.warning(f"Missing required fields: {missing_fields}")
-        return ResponseHelper.validation_error(
-            f"Missing required fields: {', '.join(missing_fields)}"
+        return (
+            jsonify(
+                {
+                    "error": True,
+                    "message": f"Missing required fields: {', '.join(missing_fields)}",
+                }
+            ),
+            400,
         )
 
     try:
@@ -39,17 +44,22 @@ def create_restaurant():
             email=data.get("email"),
         )
         logger.info(f"Restaurant created successfully: {restaurant.name}")
-        return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message="Restaurant created successfully",
-            status_code=201
+        return (
+            jsonify(
+                {
+                    "error": False,
+                    "message": "Restaurant created successfully",
+                    "data": restaurant.to_dict(),
+                }
+            ),
+            201,
         )
     except ValueError as e:
         logger.warning(f"Validation error creating restaurant: {str(e)}")
-        return ResponseHelper.validation_error(str(e))
+        return jsonify({"error": True, "message": str(e)}), 400
     except Exception as e:
         logger.error(f"Error creating restaurant: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to create restaurant")
+        return jsonify({"error": True, "message": "Failed to create restaurant"}), 500
 
 
 @restaurant_blueprint.route("/restaurants", methods=["GET"])
@@ -79,9 +89,9 @@ def get_restaurants():
 
     try:
         if latitude is not None and longitude is not None:
-            # Search by location (convert radius to int for service)
+            # Search by location
             restaurants = RestaurantService.get_restaurants_near_location(
-                latitude, longitude, int(radius)
+                latitude, longitude, radius
             )
             logger.info(
                 f"Location search results: {len(restaurants)} restaurants near ({latitude}, {longitude})"
@@ -89,11 +99,19 @@ def get_restaurants():
 
             # For location search, we don't paginate at the database level
             # but could implement manual pagination here if needed
-            return ResponseHelper.success(
-                data={
-                    "restaurants": [restaurant.to_dict() for restaurant in restaurants],
-                    "count": len(restaurants),
-                }
+            return (
+                jsonify(
+                    {
+                        "error": False,
+                        "data": {
+                            "restaurants": [
+                                restaurant.to_dict() for restaurant in restaurants
+                            ],
+                            "count": len(restaurants),
+                        },
+                    }
+                ),
+                200,
             )
         elif active_only:
             # Get only active restaurants
@@ -102,11 +120,19 @@ def get_restaurants():
 
             # For active only, we don't paginate at the database level
             # but could implement manual pagination here if needed
-            return ResponseHelper.success(
-                data={
-                    "restaurants": [restaurant.to_dict() for restaurant in restaurants],
-                    "count": len(restaurants),
-                }
+            return (
+                jsonify(
+                    {
+                        "error": False,
+                        "data": {
+                            "restaurants": [
+                                restaurant.to_dict() for restaurant in restaurants
+                            ],
+                            "count": len(restaurants),
+                        },
+                    }
+                ),
+                200,
             )
         else:
             # Get all restaurants with pagination
@@ -119,24 +145,35 @@ def get_restaurants():
                 f"Retrieved {len(restaurants)} restaurants from total {result['total']}"
             )
 
-            return ResponseHelper.success(
-                data={
-                    "restaurants": [restaurant.to_dict() for restaurant in restaurants],
-                    "count": len(restaurants),
-                    "pagination": {
-                        "page": result["page"],
-                        "limit": result["limit"],
-                        "total": result["total"],
-                        "pages": result["pages"],
-                    },
-                }
+            return (
+                jsonify(
+                    {
+                        "error": False,
+                        "data": {
+                            "restaurants": [
+                                restaurant.to_dict() for restaurant in restaurants
+                            ],
+                            "count": len(restaurants),
+                            "pagination": {
+                                "page": result["page"],
+                                "limit": result["limit"],
+                                "total": result["total"],
+                                "pages": result["pages"],
+                            },
+                        },
+                    }
+                ),
+                200,
             )
     except ValueError as e:
         logger.warning(f"Validation error retrieving restaurants: {str(e)}")
-        return ResponseHelper.validation_error(str(e))
+        return jsonify({"error": True, "message": str(e)}), 400
     except Exception as e:
         logger.error(f"Error retrieving restaurants: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurants")
+        return (
+            jsonify({"error": True, "message": "Failed to retrieve restaurants"}),
+            500,
+        )
 
 
 @restaurant_blueprint.route("/restaurants/<string:restaurant_id>", methods=["GET"])
@@ -148,13 +185,13 @@ def get_restaurant(restaurant_id):
         restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
         if not restaurant:
             logger.warning(f"Restaurant not found with ID: {restaurant_id}")
-            return ResponseHelper.not_found("Restaurant")
+            return jsonify({"error": True, "message": "Restaurant not found"}), 404
 
         logger.info(f"Restaurant retrieved: {restaurant.name}")
-        return ResponseHelper.success(data=restaurant.to_dict())
+        return jsonify({"error": False, "data": restaurant.to_dict()}), 200
     except Exception as e:
         logger.error(f"Error retrieving restaurant {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant")
+        return jsonify({"error": True, "message": "Failed to retrieve restaurant"}), 500
 
 
 @restaurant_blueprint.route("/restaurants/<string:restaurant_id>", methods=["PUT"])
@@ -166,25 +203,31 @@ def update_restaurant(restaurant_id):
 
     if not data:
         logger.warning("No data provided for restaurant update")
-        return ResponseHelper.validation_error("No data provided")
+        return jsonify({"error": True, "message": "No data provided"}), 400
 
     try:
         restaurant = RestaurantService.update_restaurant(restaurant_id, data)
         if not restaurant:
             logger.warning(f"Restaurant not found for update: {restaurant_id}")
-            return ResponseHelper.not_found("Restaurant")
+            return jsonify({"error": True, "message": "Restaurant not found"}), 404
 
         logger.info(f"Restaurant updated successfully: {restaurant.name}")
-        return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message="Restaurant updated successfully"
+        return (
+            jsonify(
+                {
+                    "error": False,
+                    "message": "Restaurant updated successfully",
+                    "data": restaurant.to_dict(),
+                }
+            ),
+            200,
         )
     except ValueError as e:
         logger.warning(f"Validation error updating restaurant: {str(e)}")
-        return ResponseHelper.validation_error(str(e))
+        return jsonify({"error": True, "message": str(e)}), 400
     except Exception as e:
         logger.error(f"Error updating restaurant {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to update restaurant")
+        return jsonify({"error": True, "message": "Failed to update restaurant"}), 500
 
 
 @restaurant_blueprint.route("/restaurants/<string:restaurant_id>", methods=["DELETE"])
@@ -197,13 +240,16 @@ def delete_restaurant(restaurant_id):
         result = RestaurantService.delete_restaurant(restaurant_id)
         if not result:
             logger.warning(f"Restaurant not found for deletion: {restaurant_id}")
-            return ResponseHelper.not_found("Restaurant")
+            return jsonify({"error": True, "message": "Restaurant not found"}), 404
 
         logger.info(f"Restaurant deleted successfully: {restaurant_id}")
-        return ResponseHelper.success(message="Restaurant deleted successfully")
+        return (
+            jsonify({"error": False, "message": "Restaurant deleted successfully"}),
+            200,
+        )
     except Exception as e:
         logger.error(f"Error deleting restaurant {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to delete restaurant")
+        return jsonify({"error": True, "message": "Failed to delete restaurant"}), 500
 
 
 @restaurant_blueprint.route(
@@ -220,19 +266,28 @@ def toggle_restaurant_status(restaurant_id):
         restaurant = RestaurantService.toggle_restaurant_status(restaurant_id)
         if not restaurant:
             logger.warning(f"Restaurant not found for status toggle: {restaurant_id}")
-            return ResponseHelper.not_found("Restaurant")
+            return jsonify({"error": True, "message": "Restaurant not found"}), 404
 
         status_text = "activated" if restaurant.is_active else "deactivated"
         logger.info(
             f"Restaurant status toggled: {restaurant.name} is now {status_text}"
         )
-        return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message=f"Restaurant {status_text} successfully"
+        return (
+            jsonify(
+                {
+                    "error": False,
+                    "message": f"Restaurant {status_text} successfully",
+                    "data": restaurant.to_dict(),
+                }
+            ),
+            200,
         )
     except Exception as e:
         logger.error(f"Error toggling restaurant status {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to toggle restaurant status")
+        return (
+            jsonify({"error": True, "message": "Failed to toggle restaurant status"}),
+            500,
+        )
 
 
 @restaurant_blueprint.route("/restaurants/nearby", methods=["GET"])
@@ -246,33 +301,46 @@ def get_nearby_restaurants():
 
     if latitude is None or longitude is None:
         logger.warning("Latitude and longitude are required for nearby search")
-        return ResponseHelper.validation_error("Latitude and longitude are required")
+        return (
+            jsonify({"error": True, "message": "Latitude and longitude are required"}),
+            400,
+        )
 
     try:
-        # Convert radius to int for service
         restaurants = RestaurantService.get_restaurants_near_location(
-            latitude, longitude, int(radius)
+            latitude, longitude, radius
         )
         logger.info(
             f"Found {len(restaurants)} restaurants near ({latitude}, {longitude}) within {radius}km"
         )
-        return ResponseHelper.success(
-            data={
-                "restaurants": [restaurant.to_dict() for restaurant in restaurants],
-                "count": len(restaurants),
-                "search_location": {
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "radius_km": radius,
-                },
-            }
+        return (
+            jsonify(
+                {
+                    "error": False,
+                    "data": {
+                        "restaurants": [
+                            restaurant.to_dict() for restaurant in restaurants
+                        ],
+                        "count": len(restaurants),
+                        "search_location": {
+                            "latitude": latitude,
+                            "longitude": longitude,
+                            "radius_km": radius,
+                        },
+                    },
+                }
+            ),
+            200,
         )
     except ValueError as e:
         logger.warning(f"Validation error in nearby search: {str(e)}")
-        return ResponseHelper.validation_error(str(e))
+        return jsonify({"error": True, "message": str(e)}), 400
     except Exception as e:
         logger.error(f"Error finding nearby restaurants: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to find nearby restaurants")
+        return (
+            jsonify({"error": True, "message": "Failed to find nearby restaurants"}),
+            500,
+        )
 
 
 @restaurant_blueprint.route("/restaurants/list", methods=["GET"])
@@ -284,45 +352,37 @@ def get_restaurant_list():
         restaurants = RestaurantService.get_restaurant_list()
         if not restaurants:
             logger.info("No restaurants found")
-            return ResponseHelper.success(data={"restaurants": []})
+            return jsonify({"error": False, "data": {"restaurants": []}}), 200
 
-        return ResponseHelper.success(data={"restaurants": restaurants})
+        return jsonify({"error": False, "data": {"restaurants": restaurants}}), 200
     except Exception as e:
         logger.error(f"Error retrieving restaurant list: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant list")
+        return (
+            jsonify({"error": True, "message": "Failed to retrieve restaurant list"}),
+            500,
+        )
 
 
+# route by osrm
 @restaurant_blueprint.route("/restaurants/route", methods=["POST"])
 def get_restaurant_route():
     """Get restaurant route by OSRM"""
-    logger.info("POST /restaurants/route - Retrieving restaurant route")
-    
-    data = request.get_json()
-    if not data:
-        logger.warning("No data provided for route calculation")
-        return ResponseHelper.validation_error("Request data is required")
-    
-    coordinates = data.get("coordinates")
-    restaurant_id = data.get("restaurant_id")
-
-    if not coordinates or not restaurant_id:
-        logger.warning("Missing coordinates or restaurant_id")
-        return ResponseHelper.validation_error("Coordinates and restaurant_id are required")
+    logger.info(f"POST /restaurants/route - Retrieving restaurant route")
+    coordinates = request.json.get("coordinates")
+    restaurant_id = request.json.get("restaurant_id")
 
     try:
         # https://router.project-osrm.org/route/v1/driving/120.03,-4.1279;110.368,-7.7897?overview=full&geometries=geojson&steps=true
         osrm = "http://router.project-osrm.org"
         restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
-        
-        if not restaurant:
-            logger.warning(f"Restaurant not found with ID: {restaurant_id}")
-            return ResponseHelper.not_found("Restaurant")
-            
         response = requests.post(
             f"{osrm}/route/v1/driving/{coordinates[0]},{coordinates[1]};{restaurant.latitude},{restaurant.longitude}"
         )
         route = response.json()
-        return ResponseHelper.success(data=route)
+        return jsonify({"error": False, "data": route}), 200
     except Exception as e:
         logger.error(f"Error retrieving restaurant route {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant route")
+        return (
+            jsonify({"error": True, "message": "Failed to retrieve restaurant route"}),
+            500,
+        )

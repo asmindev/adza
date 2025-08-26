@@ -1,9 +1,8 @@
-from flask import Blueprint, request, g
+from flask import Blueprint, request, jsonify, g
 from app.recommendation.service import RecommendationService
 from app.recommendation.config import RecommendationConfig
 from app.utils import api_logger as logger
 from app.utils.auth import token_required
-from app.utils.response import ResponseHelper
 
 recommendation_blueprint = Blueprint("recommendation", __name__)
 
@@ -48,8 +47,13 @@ def get_recommendations():
         limit < RecommendationConfig.MIN_RECOMMENDATIONS
         or limit > RecommendationConfig.MAX_RECOMMENDATIONS
     ):
-        return ResponseHelper.validation_error(
-            f"Limit must be between {RecommendationConfig.MIN_RECOMMENDATIONS} and {RecommendationConfig.MAX_RECOMMENDATIONS}"
+        return (
+            jsonify(
+                {
+                    "error": f"Limit must be between {RecommendationConfig.MIN_RECOMMENDATIONS} and {RecommendationConfig.MAX_RECOMMENDATIONS}"
+                }
+            ),
+            400,
         )
 
     # Validate enhancement parameters using config method
@@ -57,7 +61,7 @@ def get_recommendations():
         alpha, beta, gamma
     )
     if not is_valid:
-        return ResponseHelper.validation_error(error_msg)
+        return jsonify({"error": error_msg}), 400
 
     try:
         # Calculate user price preferences
@@ -72,8 +76,9 @@ def get_recommendations():
         # Option 2: User provides price range (min and max)
         elif min_price and max_price:
             if min_price > max_price:
-                return ResponseHelper.validation_error(
-                    "min_price cannot be greater than max_price"
+                return (
+                    jsonify({"error": "min_price cannot be greater than max_price"}),
+                    400,
                 )
 
             # Calculate preferred price as the middle of the range
@@ -125,7 +130,7 @@ def get_recommendations():
 
         if recommendations is None:
             logger.warning(f"User {user_id} tidak ditemukan")
-            return ResponseHelper.not_found("User")
+            return jsonify({"error": "User not found"}), 404
 
         if len(recommendations) == 0:
             logger.info(
@@ -134,36 +139,39 @@ def get_recommendations():
             # Fallback to popular foods
             popular_foods = RecommendationService.get_popular_foods(n=limit)
             if popular_foods:
-                return ResponseHelper.success(
-                    data={
-                        "recommendations": popular_foods,
-                        "fallback": True,
-                        "message": "Menggunakan makanan populer karena tidak ada rekomendasi personal",
-                    }
+                return (
+                    jsonify(
+                        {
+                            "recommendations": popular_foods,
+                            "fallback": True,
+                            "message": "Menggunakan makanan populer karena tidak ada rekomendasi personal",
+                        }
+                    ),
+                    200,
                 )
             else:
-                return ResponseHelper.not_found("No recommendations available")
+                return jsonify({"error": "No recommendations available"}), 404
 
         logger.info(
             f"Mengembalikan {len(recommendations)} rekomendasi untuk user {user_id}"
         )
 
-        return ResponseHelper.success(
-            data={
-                "recommendations": recommendations,
-                "fallback": False,
-            }
+        return (
+            jsonify(
+                {"recommendations": recommendations, "fallback": False, "error": False}
+            ),
+            200,
         )
 
     except Exception as e:
         logger.error(f"Error getting recommendations for user {user_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to get recommendations")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @recommendation_blueprint.route("/recommendations/top-rated", methods=["GET"])
 def get_top_rated():
     """Get top-rated foods based on user ratings"""
-    logger.info("GET /top-rated - Mengambil makanan teratas berdasarkan rating pengguna")
+    logger.info("GET /to-rated - Mengambil makanan teratas berdasarkan rating pengguna")
     try:
         # Get top-rated foods using the service
         top_rated_foods = RecommendationService.get_popular_foods(
@@ -171,10 +179,10 @@ def get_top_rated():
         )
         if not top_rated_foods:
             logger.info("Tidak ada makanan teratas ditemukan")
-            return ResponseHelper.not_found("No top-rated foods found")
+            return jsonify({"error": "No top-rated foods found"}), 404
 
-        return ResponseHelper.success(data={"top_rated": top_rated_foods})
+        return jsonify({"top_rated": top_rated_foods, "error": False}), 200
 
     except Exception as e:
         logger.error(f"Error getting top-rated foods: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to get top-rated foods")
+        return jsonify({"error": "Internal server error"}), 500
