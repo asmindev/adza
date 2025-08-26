@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 export default function FoodDetail({ foodId }) {
     console.log("Rendering FoodDetail for foodId:", foodId);
     const { user: currentUser } = useContext(UserContext);
+    const navigate = useNavigate();
     const [isFavorite, setIsFavorite] = useState(false);
 
     // Use SWR for food data fetching
@@ -61,13 +62,13 @@ export default function FoodDetail({ foodId }) {
                             "Kami tidak dapat memuat detail makanan. Silakan coba lagi nanti."}
                     </p>
                     <div className="flex justify-center gap-4">
-                        <Link
-                            to="/"
+                        <button
+                            onClick={() => navigate(-1)}
                             className="inline-flex items-center px-4 py-2"
                         >
                             <ArrowLeft size={18} className="mr-2" />
                             <span>Kembali ke Makanan</span>
-                        </Link>
+                        </button>
                         <button
                             onClick={() => revalidateFood()}
                             className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
@@ -126,10 +127,13 @@ export default function FoodDetail({ foodId }) {
                         Kami tidak dapat menemukan makanan yang Anda cari.
                         Mungkin telah dipindahkan atau dihapus.
                     </p>
-                    <Link to="/" className="inline-flex items-center px-4 py-2">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="inline-flex items-center px-4 py-2"
+                    >
                         <ArrowLeft size={18} className="mr-2" />
                         <span>Kembali ke Makanan</span>
-                    </Link>
+                    </button>
                 </motion.div>
             </div>
         );
@@ -150,13 +154,13 @@ export default function FoodDetail({ foodId }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <Link
-                    to="/"
+                <button
+                    onClick={() => navigate(-1)}
                     className="inline-flex items-center sm:px-4 sm:py-2 sm:mb-6 mt-4 sm:mt-0"
                 >
                     <ArrowLeft size={18} className="mr-1" />
                     <span>Kembali ke Makanan</span>
-                </Link>
+                </button>
 
                 <Card className="overflow-hidden shadow-none">
                     <div className="flex flex-col md:flex-row">
