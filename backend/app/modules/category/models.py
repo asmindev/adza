@@ -3,6 +3,26 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 import uuid
 
+# Association table for many-to-many relationship between Restaurant and Category
+restaurant_categories = db.Table(
+    "restaurant_categories",
+    db.Column(
+        "restaurant_id",
+        db.String(36),
+        db.ForeignKey("restaurants.id"),
+        primary_key=True,
+    ),
+    db.Column(
+        "category_id", db.String(36), db.ForeignKey("categories.id"), primary_key=True
+    ),
+    db.Column(
+        "created_at",
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=text("UTC_TIMESTAMP()"),
+    ),
+)
+
 
 class Category(db.Model):
     __tablename__ = "categories"
@@ -27,7 +47,10 @@ class Category(db.Model):
 
     # Relationships
     restaurants = db.relationship(
-        "Restaurant", backref="restaurant_category", lazy=True
+        "Restaurant",
+        secondary=restaurant_categories,
+        lazy="subquery",
+        backref=db.backref("categories", lazy=True),
     )
     user_favorites = db.relationship(
         "UserFavoriteCategory",

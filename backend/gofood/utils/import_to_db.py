@@ -9,7 +9,7 @@ import sys
 from typing import Optional, List, Dict, Any, Union
 
 # Add backend path to allow imports
-backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if backend_path not in sys.path:
     sys.path.insert(0, backend_path)
 
@@ -17,6 +17,7 @@ from app import create_app
 from app.extensions import db
 from app.modules.restaurant.models import Restaurant
 from app.modules.food.models import Food, FoodImage
+from app.modules.category.models import Category
 
 
 class GoFoodDBImporter:
@@ -66,8 +67,110 @@ class GoFoodDBImporter:
             print(f"Error loading Excel file: {e}")
             return {}
 
-    def clean_restaurant_data(self, row: pd.Series) -> Dict[str, Any]:
-        """Clean and prepare restaurant data for database."""
+    def extract_and_create_categories(self, outlets_df: pd.DataFrame) -> Dict[str, str]:
+        """Extract categories from Tags column and create Category entities."""
+        print("Extracting and creating categories...")
+
+        # Collect all unique tags
+        all_tags = set()
+        for _, row in outlets_df.iterrows():
+            tags_str = row.get("Tags", "")
+            if tags_str and not pd.isna(tags_str):
+                # Split by comma and clean each tag
+                tags = [tag.strip() for tag in str(tags_str).split(",")]
+                all_tags.update(tags)
+
+        # Remove empty tags
+        all_tags = {tag for tag in all_tags if tag}
+
+        print(f"Found {len(all_tags)} unique categories: {sorted(list(all_tags))}")
+
+        # Create categories in database
+        category_map = {}  # name -> id mapping
+        categories_created = 0
+
+        for tag_name in sorted(all_tags):
+            # Check if category already exists
+            existing = Category.query.filter(Category.name == tag_name).first()
+
+            if existing:
+                category_map[tag_name] = existing.id
+                print(f"Found existing category: {tag_name}")
+            else:
+                # Create new category
+                category = Category(
+                    name=tag_name,
+                    description=f"Category for {tag_name} restaurants",
+                    is_active=True,
+                )
+                db.session.add(category)
+                db.session.flush()  # Get ID without committing
+                category_map[tag_name] = category.id
+                categories_created += 1
+                print(f"Created new category: {tag_name}")
+
+        print(f"Categories created: {categories_created}")
+        return category_map
+
+    def get_primary_category_id(
+        self, tags_str: str, category_map: Dict[str, str]
+    ) -> Optional[str]:
+        """Get primary category ID from tags string."""
+        if not tags_str or pd.isna(tags_str):
+            return None
+
+        # Split tags and get the first one as primary
+        tags = [tag.strip() for tag in str(tags_str).split(",")]
+        if tags and tags[0] in category_map:
+            return category_map[tags[0]]
+
+        return None
+
+    def get_category_ids_from_tags(
+        self, tags_str: str, category_map: Dict[str, str]
+    ) -> List[str]:
+        """Get list of category IDs from tags string."""
+        if not tags_str or pd.isna(tags_str):
+            return []
+
+        # Split tags and get all matching category IDs
+        tags = [tag.strip() for tag in str(tags_str).split(",")]
+        category_ids = []
+
+        for tag in tags:
+            if tag in category_map:
+                category_ids.append(category_map[tag])
+
+        return category_ids
+
+    def add_categories_to_restaurant(
+        self, restaurant: Restaurant, category_ids: List[str]
+    ):
+        """Add categories to restaurant using many-to-many relationship."""
+        if not category_ids:
+            return
+
+        for category_id in category_ids:
+            category = db.session.get(Category, category_id)
+            if category:
+                # Check if relationship already exists
+                existing = db.session.execute(
+                    db.text(
+                        "SELECT 1 FROM restaurant_categories WHERE restaurant_id = :rid AND category_id = :cid"
+                    ),
+                    {"rid": restaurant.id, "cid": category_id},
+                ).fetchone()
+
+                if not existing:
+                    restaurant.categories.append(category)
+                    print(
+                        f"Added category '{category.name}' to restaurant '{restaurant.name}'"
+                    )
+
+    def clean_restaurant_data(
+        self, row: pd.Series, category_map: Optional[Dict[str, str]] = None
+    ) -> tuple[Dict[str, Any], List[str]]:
+        """Clean and prepare restaurant data for database and return category IDs."""
 
         # Handle NaN values
         def safe_get(value, default=None):
@@ -79,7 +182,12 @@ class GoFoodDBImporter:
         tags = safe_get(row.get("Tags"), "")
         description = f"Categories: {tags}" if tags else None
 
-        return {
+        # Get all category IDs from tags for many-to-many relationship
+        category_ids = []
+        if category_map and tags:
+            category_ids = self.get_category_ids_from_tags(str(tags), category_map)
+
+        restaurant_data = {
             "name": safe_get(
                 row.get("Name", row.get("Restaurant Name")), "Unknown Restaurant"
             ),
@@ -94,6 +202,8 @@ class GoFoodDBImporter:
             ),
             "is_active": True,
         }
+
+        return restaurant_data, category_ids
 
     def clean_food_data(self, row: pd.Series, restaurant_id: str) -> Dict[str, Any]:
         """Clean and prepare food data for database."""
@@ -125,7 +235,6 @@ class GoFoodDBImporter:
         return {
             "name": safe_get(row.get("Food Name"), "Unknown Food"),
             "description": safe_get(row.get("Description")),
-            "category": "Food",  # Default category
             "price": price,
             "restaurant_id": restaurant_id,
         }
@@ -183,6 +292,7 @@ class GoFoodDBImporter:
             return False
 
         try:
+            categories_created = 0
             restaurants_created = 0
             foods_created = 0
 
@@ -194,13 +304,22 @@ class GoFoodDBImporter:
                 print("No outlets data found")
                 return False
 
-            # Create restaurants from outlets sheet
-            print(f"\nProcessing {len(outlets_df)} restaurants...")
+            # Step 1: Extract and create categories from Tags
+            print(f"\n🏷️  Step 1: Processing categories...")
+            category_map = self.extract_and_create_categories(outlets_df)
+
+            # Step 2: Create restaurants from outlets sheet
+            print(f"\n🏪 Step 2: Processing {len(outlets_df)} restaurants...")
             restaurant_uid_map = {}  # Map UID to restaurant ID
 
             for _, outlet_row in outlets_df.iterrows():
-                restaurant_data = self.clean_restaurant_data(outlet_row)
+                restaurant_data, category_ids = self.clean_restaurant_data(
+                    outlet_row, category_map
+                )
                 restaurant = self.get_or_create_restaurant(restaurant_data)
+
+                # Add categories to restaurant (many-to-many)
+                self.add_categories_to_restaurant(restaurant, category_ids)
 
                 # Map UID to restaurant ID for foods import
                 outlet_uid = outlet_row.get("UID")
@@ -216,9 +335,9 @@ class GoFoodDBImporter:
                 else:
                     restaurants_created += 1
 
-            # Create foods from foods sheet
+            # Step 3: Create foods from foods sheet
             if not foods_df.empty:
-                print(f"\nProcessing {len(foods_df)} foods...")
+                print(f"\n🍽️  Step 3: Processing {len(foods_df)} foods...")
 
                 for _, food_row in foods_df.iterrows():
                     restaurant_uid = food_row.get("Restaurant UID")
@@ -247,6 +366,7 @@ class GoFoodDBImporter:
             db.session.commit()
 
             print(f"\n✅ Import completed successfully!")
+            print(f"🏷️  Categories created: {len(category_map)}")
             print(f"📍 Restaurants created: {restaurants_created}")
             print(f"🍽️  Foods created: {foods_created}")
 

@@ -6,7 +6,7 @@ Clean and minimal usage example.
 import argparse
 import sys
 from scraper import GoFoodScraper
-from import_to_db import GoFoodDBImporter
+from utils.import_to_db import GoFoodDBImporter
 
 
 def scrape_data(location: str, max_pages: int = 5, max_details: int = 10):
