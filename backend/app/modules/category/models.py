@@ -90,7 +90,7 @@ class Category(db.Model):
 class UserFavoriteCategory(db.Model):
     __tablename__ = "user_favorite_categories"
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
     category_id = db.Column(
         db.String(36), db.ForeignKey("categories.id"), nullable=False

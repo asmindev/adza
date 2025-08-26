@@ -99,16 +99,21 @@ class Food(db.Model):
                 }
 
                 # Get category from restaurant
-                if restaurant.category_id:
-                    from app.modules.category.models import Category
-
-                    category = Category.query.get(restaurant.category_id)
-                    if category:
-                        category_info = {
-                            "id": category.id,
-                            "name": category.name,
-                            "description": category.description,
-                        }
+                if restaurant and restaurant.categories:
+                    # Since restaurant can have multiple categories, let's get all of them
+                    # or just the first one if there are multiple
+                    categories_info = []
+                    for category in restaurant.categories:
+                        categories_info.append(
+                            {
+                                "id": category.id,
+                                "name": category.name,
+                                "description": category.description,
+                            }
+                        )
+                    # For backward compatibility, also set category_info to the first category
+                    if categories_info:
+                        category_info = categories_info[0]
 
         return {
             "id": self.id,

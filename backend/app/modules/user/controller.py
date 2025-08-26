@@ -198,9 +198,6 @@ def delete_user(user_id):
         return jsonify({"error": True, "message": "Failed to delete user"}), 500
 
 
-# auth/change-password
-
-
 @user_blueprint.route("/auth/change-password", methods=["PUT"])
 @has_login
 def change_password():

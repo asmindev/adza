@@ -13,6 +13,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="user")
+    onboarding_completed = db.Column(db.Boolean, default=False)
 
     created_at = db.Column(
         db.DateTime,
@@ -82,6 +83,7 @@ class User(db.Model):
             "username": self.username,
             "email": self.email,
             "role": self.role,
+            "onboarding_completed": self.onboarding_completed,
             "reviews": reviews,
             "ratings": all_ratings,
             "food_ratings": food_ratings,
@@ -98,3 +100,8 @@ class User(db.Model):
     def is_admin(self):
         """Helper property to easily check if user is an admin"""
         return self.role == "admin"
+
+    @property
+    def is_onboarding_completed(self):
+        """Helper property to easily check if user has completed onboarding"""
+        return self.onboarding_completed
