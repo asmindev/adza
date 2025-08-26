@@ -13,37 +13,30 @@ restaurant_blueprint = Blueprint("restaurant", __name__)
 def create_restaurant():
     """Create a new restaurant (admin only)"""
     logger.info("POST /restaurants - Creating new restaurant")
-    data = request.get_json()
-
-    if not data:
-        logger.warning("No data provided for restaurant creation")
-        return ResponseHelper.validation_error("No data provided")
-
-    required_fields = ["name", "address", "latitude", "longitude"]
-    missing_fields = [field for field in required_fields if field not in data]
-
-    if missing_fields:
-        logger.warning(f"Missing required fields: {missing_fields}")
-        return ResponseHelper.validation_error(
-            f"Missing required fields: {', '.join(missing_fields)}"
-        )
 
     try:
+        data = request.get_json()
+        if not data:
+            return ResponseHelper.validation_error("No data provided")
+
+        # Use service layer for validation and creation
         restaurant = RestaurantService.create_restaurant(
-            name=data["name"],
-            address=data["address"],
-            latitude=data["latitude"],
-            longitude=data["longitude"],
+            name=data.get("name"),
+            address=data.get("address"),
+            latitude=data.get("latitude"),
+            longitude=data.get("longitude"),
             description=data.get("description"),
             phone=data.get("phone"),
             email=data.get("email"),
         )
+
         logger.info(f"Restaurant created successfully: {restaurant.name}")
         return ResponseHelper.success(
             data=restaurant.to_dict(),
             message="Restaurant created successfully",
-            status_code=201
+            status_code=201,
         )
+
     except ValueError as e:
         logger.warning(f"Validation error creating restaurant: {str(e)}")
         return ResponseHelper.validation_error(str(e))
@@ -57,80 +50,67 @@ def get_restaurants():
     """Get all restaurants with optional filters and pagination"""
     logger.info("GET /restaurants - Retrieving restaurants")
 
-    # Check query parameters
-    active_only = request.args.get("active", "").lower() == "true"
-    search = request.args.get("search", None, type=str)
-    latitude = request.args.get("latitude", type=float)
-    longitude = request.args.get("longitude", type=float)
-    radius = request.args.get("radius", default=5, type=float)
-
-    # Pagination parameters
-    page = request.args.get("page", 1, type=int)
-    limit = request.args.get("limit", 20, type=int)
-
-    # Validate parameters
-    if page < 1:
-        page = 1
-    if limit < 1 or limit > 100:
-        limit = 20
-
-    # Log the pagination parameters
-    logger.info(f"Pagination parameters: page={page}, limit={limit}, search={search}")
-
     try:
+        # Get query parameters - let service handle validation
+        active_only = request.args.get("active", "").lower() == "true"
+        search = request.args.get("search", None, type=str)
+        latitude = request.args.get("latitude", type=float)
+        longitude = request.args.get("longitude", type=float)
+        radius = request.args.get("radius", default=5, type=float)
+        page = request.args.get("page", 1, type=int)
+        limit = request.args.get("limit", 20, type=int)
+
+        logger.info(
+            f"Query parameters: page={page}, limit={limit}, search={search}, active_only={active_only}"
+        )
+
         if latitude is not None and longitude is not None:
-            # Search by location (convert radius to int for service)
+            # Location-based search - use service layer
             restaurants = RestaurantService.get_restaurants_near_location(
                 latitude, longitude, int(radius)
             )
-            logger.info(
-                f"Location search results: {len(restaurants)} restaurants near ({latitude}, {longitude})"
-            )
 
-            # For location search, we don't paginate at the database level
-            # but could implement manual pagination here if needed
+            logger.info(f"Location search results: {len(restaurants)} restaurants")
             return ResponseHelper.success(
                 data={
-                    "restaurants": [restaurant.to_dict() for restaurant in restaurants],
+                    "restaurants": restaurants,
                     "count": len(restaurants),
+                    "search_criteria": {
+                        "latitude": latitude,
+                        "longitude": longitude,
+                        "radius_km": radius,
+                    },
                 }
             )
+
         elif active_only:
-            # Get only active restaurants
+            # Get only active restaurants - use service layer
             restaurants = RestaurantService.get_active_restaurants()
-            logger.info(f"Retrieved {len(restaurants)} active restaurants")
 
-            # For active only, we don't paginate at the database level
-            # but could implement manual pagination here if needed
+            logger.info(f"Retrieved {len(restaurants)} active restaurants")
             return ResponseHelper.success(
                 data={
-                    "restaurants": [restaurant.to_dict() for restaurant in restaurants],
+                    "restaurants": restaurants,
                     "count": len(restaurants),
                 }
             )
+
         else:
-            # Get all restaurants with pagination
+            # Get all restaurants with pagination - use service layer
             result = RestaurantService.get_all_restaurants(
                 page=page, limit=limit, search=search
             )
 
-            restaurants = result["items"]
-            logger.info(
-                f"Retrieved {len(restaurants)} restaurants from total {result['total']}"
-            )
-
+            logger.info(f"Retrieved {result['metadata']['count']} restaurants")
             return ResponseHelper.success(
                 data={
-                    "restaurants": [restaurant.to_dict() for restaurant in restaurants],
-                    "count": len(restaurants),
-                    "pagination": {
-                        "page": result["page"],
-                        "limit": result["limit"],
-                        "total": result["total"],
-                        "pages": result["pages"],
-                    },
+                    "restaurants": result["restaurants"],
+                    "count": result["metadata"]["count"],
+                    "pagination": result["pagination"],
+                    "metadata": result["metadata"],
                 }
             )
+
     except ValueError as e:
         logger.warning(f"Validation error retrieving restaurants: {str(e)}")
         return ResponseHelper.validation_error(str(e))
@@ -145,13 +125,19 @@ def get_restaurant(restaurant_id):
     logger.info(f"GET /restaurants/{restaurant_id} - Retrieving restaurant details")
 
     try:
+        # Use service layer for validation and retrieval
         restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
+
         if not restaurant:
             logger.warning(f"Restaurant not found with ID: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
 
-        logger.info(f"Restaurant retrieved: {restaurant.name}")
-        return ResponseHelper.success(data=restaurant.to_dict())
+        logger.info(f"Restaurant retrieved: {restaurant['name']}")
+        return ResponseHelper.success(data=restaurant)
+
+    except ValueError as e:
+        logger.warning(f"Validation error retrieving restaurant: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
         logger.error(f"Error retrieving restaurant {restaurant_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to retrieve restaurant")
@@ -162,23 +148,24 @@ def get_restaurant(restaurant_id):
 def update_restaurant(restaurant_id):
     """Update restaurant (admin only)"""
     logger.info(f"PUT /restaurants/{restaurant_id} - Updating restaurant")
-    data = request.get_json()
-
-    if not data:
-        logger.warning("No data provided for restaurant update")
-        return ResponseHelper.validation_error("No data provided")
 
     try:
+        data = request.get_json()
+        if not data:
+            return ResponseHelper.validation_error("No data provided")
+
+        # Use service layer for validation and update
         restaurant = RestaurantService.update_restaurant(restaurant_id, data)
+
         if not restaurant:
             logger.warning(f"Restaurant not found for update: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
 
         logger.info(f"Restaurant updated successfully: {restaurant.name}")
         return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message="Restaurant updated successfully"
+            data=restaurant.to_dict(), message="Restaurant updated successfully"
         )
+
     except ValueError as e:
         logger.warning(f"Validation error updating restaurant: {str(e)}")
         return ResponseHelper.validation_error(str(e))
@@ -194,13 +181,19 @@ def delete_restaurant(restaurant_id):
     logger.info(f"DELETE /restaurants/{restaurant_id} - Deleting restaurant")
 
     try:
+        # Use service layer for validation and deletion
         result = RestaurantService.delete_restaurant(restaurant_id)
+
         if not result:
             logger.warning(f"Restaurant not found for deletion: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
 
         logger.info(f"Restaurant deleted successfully: {restaurant_id}")
         return ResponseHelper.success(message="Restaurant deleted successfully")
+
+    except ValueError as e:
+        logger.warning(f"Validation error deleting restaurant: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
         logger.error(f"Error deleting restaurant {restaurant_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to delete restaurant")
@@ -217,7 +210,9 @@ def toggle_restaurant_status(restaurant_id):
     )
 
     try:
+        # Use service layer for validation and toggle
         restaurant = RestaurantService.toggle_restaurant_status(restaurant_id)
+
         if not restaurant:
             logger.warning(f"Restaurant not found for status toggle: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
@@ -226,13 +221,19 @@ def toggle_restaurant_status(restaurant_id):
         logger.info(
             f"Restaurant status toggled: {restaurant.name} is now {status_text}"
         )
+
         return ResponseHelper.success(
-            data=restaurant.to_dict(),
-            message=f"Restaurant {status_text} successfully"
+            data=restaurant.to_dict(), message=f"Restaurant {status_text} successfully"
         )
+
+    except ValueError as e:
+        logger.warning(f"Validation error toggling restaurant status: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
         logger.error(f"Error toggling restaurant status {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to toggle restaurant status")
+        return ResponseHelper.internal_server_error(
+            "Failed to toggle restaurant status"
+        )
 
 
 @restaurant_blueprint.route("/restaurants/nearby", methods=["GET"])
@@ -240,25 +241,30 @@ def get_nearby_restaurants():
     """Get restaurants near a specific location"""
     logger.info("GET /restaurants/nearby - Finding nearby restaurants")
 
-    latitude = request.args.get("latitude", type=float)
-    longitude = request.args.get("longitude", type=float)
-    radius = request.args.get("radius", default=5, type=float)
-
-    if latitude is None or longitude is None:
-        logger.warning("Latitude and longitude are required for nearby search")
-        return ResponseHelper.validation_error("Latitude and longitude are required")
-
     try:
-        # Convert radius to int for service
+        # Get query parameters - let service handle validation
+        latitude = request.args.get("latitude", type=float)
+        longitude = request.args.get("longitude", type=float)
+        radius = request.args.get("radius", default=5, type=float)
+
+        # Basic parameter check
+        if latitude is None or longitude is None:
+            return ResponseHelper.validation_error(
+                "Latitude and longitude are required"
+            )
+
+        # Use service layer for validation and location search
         restaurants = RestaurantService.get_restaurants_near_location(
             latitude, longitude, int(radius)
         )
+
         logger.info(
             f"Found {len(restaurants)} restaurants near ({latitude}, {longitude}) within {radius}km"
         )
+
         return ResponseHelper.success(
             data={
-                "restaurants": [restaurant.to_dict() for restaurant in restaurants],
+                "restaurants": restaurants,
                 "count": len(restaurants),
                 "search_location": {
                     "latitude": latitude,
@@ -267,6 +273,7 @@ def get_nearby_restaurants():
                 },
             }
         )
+
     except ValueError as e:
         logger.warning(f"Validation error in nearby search: {str(e)}")
         return ResponseHelper.validation_error(str(e))
@@ -281,48 +288,78 @@ def get_restaurant_list():
     logger.info("GET /restaurants/list - Retrieving restaurant list")
 
     try:
+        # Use service layer
         restaurants = RestaurantService.get_restaurant_list()
-        if not restaurants:
-            logger.info("No restaurants found")
-            return ResponseHelper.success(data={"restaurants": []})
 
+        logger.info(f"Retrieved restaurant list with {len(restaurants)} items")
         return ResponseHelper.success(data={"restaurants": restaurants})
+
     except Exception as e:
         logger.error(f"Error retrieving restaurant list: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant list")
+        return ResponseHelper.internal_server_error(
+            "Failed to retrieve restaurant list"
+        )
 
 
 @restaurant_blueprint.route("/restaurants/route", methods=["POST"])
 def get_restaurant_route():
     """Get restaurant route by OSRM"""
     logger.info("POST /restaurants/route - Retrieving restaurant route")
-    
-    data = request.get_json()
-    if not data:
-        logger.warning("No data provided for route calculation")
-        return ResponseHelper.validation_error("Request data is required")
-    
-    coordinates = data.get("coordinates")
-    restaurant_id = data.get("restaurant_id")
-
-    if not coordinates or not restaurant_id:
-        logger.warning("Missing coordinates or restaurant_id")
-        return ResponseHelper.validation_error("Coordinates and restaurant_id are required")
 
     try:
-        # https://router.project-osrm.org/route/v1/driving/120.03,-4.1279;110.368,-7.7897?overview=full&geometries=geojson&steps=true
-        osrm = "http://router.project-osrm.org"
+        data = request.get_json()
+        if not data:
+            return ResponseHelper.validation_error("Request data is required")
+
+        # Use service layer for basic validation
+        coordinates = data.get("coordinates")
+        restaurant_id = data.get("restaurant_id")
+
+        if not coordinates or not restaurant_id:
+            return ResponseHelper.validation_error(
+                "Coordinates and restaurant_id are required"
+            )
+
+        # Get restaurant to verify it exists (using service layer)
         restaurant = RestaurantService.get_restaurant_by_id(restaurant_id)
-        
         if not restaurant:
             logger.warning(f"Restaurant not found with ID: {restaurant_id}")
             return ResponseHelper.not_found("Restaurant")
-            
+
+        # Call OSRM API
+        osrm = "http://router.project-osrm.org"
         response = requests.post(
-            f"{osrm}/route/v1/driving/{coordinates[0]},{coordinates[1]};{restaurant.latitude},{restaurant.longitude}"
+            f"{osrm}/route/v1/driving/{coordinates[0]},{coordinates[1]};{restaurant['latitude']},{restaurant['longitude']}"
         )
         route = response.json()
+
+        logger.info(f"Route retrieved for restaurant {restaurant_id}")
         return ResponseHelper.success(data=route)
+
+    except ValueError as e:
+        logger.warning(f"Validation error in route calculation: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Error retrieving restaurant route {restaurant_id}: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to retrieve restaurant route")
+        logger.error(f"Error retrieving restaurant route: {str(e)}")
+        return ResponseHelper.internal_server_error(
+            "Failed to retrieve restaurant route"
+        )
+
+
+@restaurant_blueprint.route("/restaurants/statistics", methods=["GET"])
+def get_restaurant_statistics():
+    """Get restaurant statistics"""
+    logger.info("GET /restaurants/statistics - Retrieving restaurant statistics")
+
+    try:
+        # Use service layer
+        statistics = RestaurantService.get_restaurant_statistics()
+
+        logger.info("Restaurant statistics retrieved successfully")
+        return ResponseHelper.success(data=statistics)
+
+    except Exception as e:
+        logger.error(f"Error retrieving restaurant statistics: {str(e)}")
+        return ResponseHelper.internal_server_error(
+            "Failed to retrieve restaurant statistics"
+        )

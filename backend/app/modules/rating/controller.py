@@ -20,52 +20,42 @@ def get_food_ratings(food_id):
         limit (int): Items per page (default: 10, max: 100)
 
     Returns:
-        JSON response with paginated food ratings
+        JSON response with paginated food ratings and statistics
     """
     logger.info(
-        f"GET /foods/{food_id}/ratings - Mengambil rating makanan dengan pagination"
+        f"GET /foods/{food_id}/ratings - Retrieving food ratings with pagination"
     )
 
-    # Get query parameters with defaults
-    page = request.args.get("page", 1, type=int)
-    limit = request.args.get("limit", 10, type=int)
-
-    # Validate parameters
-    if page < 1:
-        page = 1
-    if limit < 1 or limit > 100:
-        limit = 10
-
-    # Log the pagination parameters
-    logger.info(f"Pagination parameters: page={page}, limit={limit}")
-
     try:
-        # Get ratings with pagination
+        # Get query parameters - let service handle validation
+        page = request.args.get("page", 1, type=int)
+        limit = request.args.get("limit", 10, type=int)
+
+        logger.info(f"Pagination parameters: page={page}, limit={limit}")
+
+        # Use service layer - it will handle validation and aggregation
         result = FoodRatingService.get_food_ratings(food_id, page=page, limit=limit)
-        avg_rating = FoodRatingService.get_food_average_rating(food_id)
 
         logger.info(
-            f"Berhasil mengambil {len(result['items'])} rating untuk makanan {food_id} dari total {result['total']}"
+            f"Successfully retrieved {len(result['ratings'])} ratings for food {food_id}"
         )
 
-        # Return custom structured response
+        # Return structured response using data from service
         return ResponseHelper.success(
             data={
-                "food_id": food_id,
-                "average_rating": avg_rating,
-                "rating_count": result["total"],
-                "ratings": result["items"],
-                "pagination": {
-                    "page": result["page"],
-                    "limit": result["limit"],
-                    "total": result["total"],
-                    "pages": result["pages"],
-                },
+                "food_id": result["food_id"],
+                "statistics": result["statistics"],
+                "ratings": result["ratings"],
+                "pagination": result["pagination"],
             },
             message="Food ratings retrieved successfully",
         )
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Gagal mengambil rating makanan {food_id}: {str(e)}")
+        logger.error(f"Failed to retrieve food ratings {food_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to retrieve food ratings")
 
 
@@ -79,31 +69,32 @@ def get_user_ratings(user_id):
         user_id (str): User ID
 
     Returns:
-        JSON response with user's ratings
+        JSON response with user's ratings and summary
     """
-    logger.info(f"GET /users/{user_id}/ratings - Mengambil semua rating pengguna")
+    logger.info(f"GET /users/{user_id}/ratings - Retrieving user ratings")
 
     try:
+        # Use service layer for validation and data retrieval
         ratings = FoodRatingService.get_user_ratings(user_id)
+        summary = FoodRatingService.get_user_rating_summary(user_id)
 
-        logger.info(
-            f"Berhasil mengambil {len(ratings)} rating untuk pengguna {user_id}"
-        )
+        logger.info(f"Successfully retrieved {len(ratings)} ratings for user {user_id}")
+
         return ResponseHelper.success(
             data={
                 "user_id": user_id,
-                "ratings": [rating.to_dict() for rating in ratings],
+                "summary": summary,
+                "ratings": ratings,
             },
             message="User ratings retrieved successfully",
         )
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Gagal mengambil rating pengguna {user_id}: {str(e)}")
+        logger.error(f"Failed to retrieve user ratings {user_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to retrieve user ratings")
-
-
-# @rating_blueprint.route(
-#     "/users/<int:user_id>/foods/<int:food_id>/rating", methods=["POST", "PUT"]
-# )
 
 
 @rating_blueprint.route("/ratings", methods=["POST", "PUT"])
@@ -124,60 +115,44 @@ def rate_food():
     Returns:
         JSON response with rating data
     """
-    # Verify that the authenticated user is the one making the rating
     user_id = g.user_id
-    data = request.get_json()
-    food_id = data.get("food_id") if data else None
-
     method = request.method
     logger.info(
-        f"{method} /ratings - {'Membuat' if method == 'POST' else 'Memperbarui'} rating standalone"
+        f"{method} /ratings - {'Creating' if method == 'POST' else 'Updating'} standalone rating"
     )
 
-    if not data or "rating" not in data:
-        logger.warning(f"Permintaan tidak valid: nilai rating tidak diberikan")
-        return ResponseHelper.validation_error("Rating value is required")
-
-    if not food_id:
-        logger.warning(f"Permintaan tidak valid: food_id tidak diberikan")
-        return ResponseHelper.validation_error("Food ID is required")
-
-    rating_value = data["rating"]
     try:
-        rating_value = float(rating_value)
-        if not (1 <= rating_value <= 5):
-            logger.warning(
-                f"Nilai rating tidak valid: {rating_value} (harus antara 1 dan 5)"
-            )
-            return ResponseHelper.validation_error("Rating must be between 1 and 5")
-    except ValueError:
-        logger.warning(f"Nilai rating bukan angka: {rating_value}")
-        return ResponseHelper.validation_error("Rating must be a number")
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return ResponseHelper.validation_error("No data provided")
 
-    try:
-        rating = FoodRatingService.create_rating(
+        food_id = data.get("food_id")
+        rating_value = data.get("rating")
+
+        # Use service layer - it will handle all validation
+        rating = FoodRatingService.create_or_update_rating(
             user_id,
             food_id,
             rating_value,
         )
 
-        if not rating:
-            return ResponseHelper.not_found("User or food")
-
         logger.info(
-            f"Berhasil {'membuat' if method == 'POST' else 'memperbarui'} rating pengguna {user_id} untuk makanan {food_id}"
+            f"Successfully {'created' if method == 'POST' else 'updated'} rating for user {user_id} and food {food_id}"
         )
+
         return ResponseHelper.success(
             data=rating,
             message=f"Rating {'added' if method == 'POST' else 'updated'} successfully",
             status_code=201 if method == "POST" else 200,
         )
+
     except ValueError as e:
         logger.warning(f"Validation error: {str(e)}")
         return ResponseHelper.validation_error(str(e))
     except Exception as e:
         logger.error(
-            f"Gagal {'membuat' if method == 'POST' else 'memperbarui'} rating: {str(e)}"
+            f"Failed to {'create' if method == 'POST' else 'update'} rating: {str(e)}"
         )
         return ResponseHelper.internal_server_error(
             f"Failed to {'create' if method == 'POST' else 'update'} rating"
@@ -185,7 +160,7 @@ def rate_food():
 
 
 @rating_blueprint.route(
-    "ratings/users/<string:user_id>/foods/<string:food_id>/rating", methods=["DELETE"]
+    "/ratings/users/<string:user_id>/foods/<string:food_id>", methods=["DELETE"]
 )
 @token_required
 def delete_rating(user_id, food_id):
@@ -200,25 +175,30 @@ def delete_rating(user_id, food_id):
         JSON response confirming deletion
     """
     # Verify that the authenticated user is the one deleting the rating
-    if g.user_id != user_id and not g.is_admin:
+    if g.user_id != user_id and not getattr(g, "is_admin", False):
         logger.warning(f"User {g.user_id} attempted to delete rating of user {user_id}")
         return ResponseHelper.forbidden("You can only delete your own ratings")
 
-    logger.info(f"DELETE /users/{user_id}/foods/{food_id}/rating - Menghapus rating")
+    logger.info(f"DELETE /ratings/users/{user_id}/foods/{food_id} - Deleting rating")
+
     try:
+        # Use service layer for validation and deletion
         result = FoodRatingService.delete_rating(user_id, food_id)
+
         if not result:
-            logger.warning(
-                f"Rating tidak ditemukan untuk pengguna {user_id} dan makanan {food_id}"
-            )
+            logger.warning(f"Rating not found for user {user_id} and food {food_id}")
             return ResponseHelper.not_found("Rating")
 
         logger.info(
-            f"Rating berhasil dihapus untuk pengguna {user_id} dan makanan {food_id}"
+            f"Rating successfully deleted for user {user_id} and food {food_id}"
         )
         return ResponseHelper.success(message="Rating deleted successfully")
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Gagal menghapus rating: {str(e)}")
+        logger.error(f"Failed to delete rating: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to delete rating")
 
 
@@ -236,54 +216,44 @@ def get_restaurant_ratings(restaurant_id):
         limit (int): Items per page (default: 10, max: 100)
 
     Returns:
-        JSON response with paginated restaurant ratings
+        JSON response with paginated restaurant ratings and statistics
     """
     logger.info(
-        f"GET /restaurants/{restaurant_id}/ratings - Mengambil rating restaurant dengan pagination"
+        f"GET /restaurants/{restaurant_id}/ratings - Retrieving restaurant ratings"
     )
 
-    # Get query parameters with defaults
-    page = request.args.get("page", 1, type=int)
-    limit = request.args.get("limit", 10, type=int)
-
-    # Validate parameters
-    if page < 1:
-        page = 1
-    if limit < 1 or limit > 100:
-        limit = 10
-
-    # Log the pagination parameters
-    logger.info(f"Pagination parameters: page={page}, limit={limit}")
-
     try:
-        # Get ratings with pagination
+        # Get query parameters - let service handle validation
+        page = request.args.get("page", 1, type=int)
+        limit = request.args.get("limit", 10, type=int)
+
+        logger.info(f"Pagination parameters: page={page}, limit={limit}")
+
+        # Use service layer - it will handle validation and aggregation
         result = RestaurantRatingService.get_restaurant_ratings(
             restaurant_id, page=page, limit=limit
         )
-        stats = RestaurantRatingService.get_restaurant_rating_stats(restaurant_id)
 
         logger.info(
-            f"Berhasil mengambil {len(result['items'])} rating untuk restaurant {restaurant_id} dari total {result['total']}"
+            f"Successfully retrieved {len(result['ratings'])} ratings for restaurant {restaurant_id}"
         )
 
-        # Return custom structured response
+        # Return structured response using data from service
         return ResponseHelper.success(
             data={
-                "restaurant_id": restaurant_id,
-                "average_rating": stats["average_rating"],
-                "rating_count": stats["total_ratings"],
-                "ratings": [rating.to_dict() for rating in result["items"]],
-                "pagination": {
-                    "page": result["page"],
-                    "limit": result["limit"],
-                    "total": result["total"],
-                    "pages": result["pages"],
-                },
+                "restaurant_id": result["restaurant_id"],
+                "statistics": result["statistics"],
+                "ratings": result["ratings"],
+                "pagination": result["pagination"],
             },
             message="Restaurant ratings retrieved successfully",
         )
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Gagal mengambil rating restaurant {restaurant_id}: {str(e)}")
+        logger.error(f"Failed to retrieve restaurant ratings {restaurant_id}: {str(e)}")
         return ResponseHelper.internal_server_error(
             "Failed to retrieve restaurant ratings"
         )
@@ -302,24 +272,30 @@ def get_user_restaurant_ratings(user_id):
         JSON response with user's restaurant ratings
     """
     logger.info(
-        f"GET /users/{user_id}/restaurant-ratings - Mengambil semua rating restaurant pengguna"
+        f"GET /users/{user_id}/restaurant-ratings - Retrieving user restaurant ratings"
     )
 
     try:
+        # Use service layer for validation and data retrieval
         ratings = RestaurantRatingService.get_user_restaurant_ratings(user_id)
 
         logger.info(
-            f"Berhasil mengambil {len(ratings)} rating restaurant untuk pengguna {user_id}"
+            f"Successfully retrieved {len(ratings)} restaurant ratings for user {user_id}"
         )
+
         return ResponseHelper.success(
             data={
                 "user_id": user_id,
-                "restaurant_ratings": [rating.to_dict() for rating in ratings],
+                "restaurant_ratings": ratings,
             },
             message="User restaurant ratings retrieved successfully",
         )
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Gagal mengambil rating restaurant pengguna {user_id}: {str(e)}")
+        logger.error(f"Failed to retrieve user restaurant ratings {user_id}: {str(e)}")
         return ResponseHelper.internal_server_error(
             "Failed to retrieve user restaurant ratings"
         )
@@ -342,57 +318,42 @@ def rate_restaurant():
         JSON response with restaurant rating data
     """
     user_id = g.user_id
-    data = request.get_json()
-    restaurant_id = data.get("restaurant_id") if data else None
-    comment = data.get("comment") if data else None
-
     method = request.method
     logger.info(
-        f"{method} /restaurant-ratings - {'Membuat' if method == 'POST' else 'Memperbarui'} rating restaurant"
+        f"{method} /restaurant-ratings - {'Creating' if method == 'POST' else 'Updating'} restaurant rating"
     )
 
-    if not data or "rating" not in data or "restaurant_id" not in data:
-        logger.warning(
-            f"Permintaan tidak valid: nilai rating atau restaurant_id tidak diberikan"
-        )
-        return ResponseHelper.validation_error(
-            "Rating value and restaurant_id are required"
-        )
-
-    rating_value = data["rating"]
     try:
-        rating_value = float(rating_value)
-        if not (1 <= rating_value <= 5):
-            logger.warning(
-                f"Nilai rating tidak valid: {rating_value} (harus antara 1 dan 5)"
-            )
-            return ResponseHelper.validation_error("Rating must be between 1 and 5")
-    except ValueError:
-        logger.warning(f"Nilai rating bukan angka: {rating_value}")
-        return ResponseHelper.validation_error("Rating must be a number")
+        # Get request data
+        data = request.get_json()
+        if not data:
+            return ResponseHelper.validation_error("No data provided")
 
-    try:
+        restaurant_id = data.get("restaurant_id")
+        rating_value = data.get("rating")
+        comment = data.get("comment")
+
+        # Use service layer - it will handle all validation
         rating = RestaurantRatingService.create_or_update_rating(
             user_id, restaurant_id, rating_value, comment
         )
 
-        if not rating:
-            return ResponseHelper.not_found("User or restaurant")
-
         logger.info(
-            f"Berhasil {'membuat' if method == 'POST' else 'memperbarui'} rating restaurant {restaurant_id} dari pengguna {user_id}"
+            f"Successfully {'created' if method == 'POST' else 'updated'} restaurant rating for user {user_id}"
         )
+
         return ResponseHelper.success(
-            data=rating.to_dict(),
+            data=rating,
             message=f"Restaurant rating {'added' if method == 'POST' else 'updated'} successfully",
             status_code=201 if method == "POST" else 200,
         )
+
     except ValueError as e:
         logger.warning(f"Validation error: {str(e)}")
         return ResponseHelper.validation_error(str(e))
     except Exception as e:
         logger.error(
-            f"Gagal {'membuat' if method == 'POST' else 'memperbarui'} rating restaurant: {str(e)}"
+            f"Failed to {'create' if method == 'POST' else 'update'} restaurant rating: {str(e)}"
         )
         return ResponseHelper.internal_server_error(
             f"Failed to {'create' if method == 'POST' else 'update'} restaurant rating"
@@ -416,29 +377,36 @@ def delete_restaurant_rating(user_id, restaurant_id):
         JSON response confirming deletion
     """
     # Verify that the authenticated user is the one deleting the rating
-    if g.user_id != user_id and not g.is_admin:
+    if g.user_id != user_id and not getattr(g, "is_admin", False):
         logger.warning(
             f"User {g.user_id} attempted to delete restaurant rating of user {user_id}"
         )
         return ResponseHelper.forbidden("You can only delete your own ratings")
 
     logger.info(
-        f"DELETE /restaurant-ratings/users/{user_id}/restaurants/{restaurant_id} - Menghapus rating restaurant"
+        f"DELETE /restaurant-ratings/users/{user_id}/restaurants/{restaurant_id} - Deleting restaurant rating"
     )
+
     try:
+        # Use service layer for validation and deletion
         result = RestaurantRatingService.delete_rating(user_id, restaurant_id)
+
         if not result:
             logger.warning(
-                f"Rating restaurant tidak ditemukan untuk pengguna {user_id} dan restaurant {restaurant_id}"
+                f"Restaurant rating not found for user {user_id} and restaurant {restaurant_id}"
             )
             return ResponseHelper.not_found("Restaurant rating")
 
         logger.info(
-            f"Rating restaurant berhasil dihapus untuk pengguna {user_id} dan restaurant {restaurant_id}"
+            f"Restaurant rating successfully deleted for user {user_id} and restaurant {restaurant_id}"
         )
         return ResponseHelper.success(message="Restaurant rating deleted successfully")
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
-        logger.error(f"Gagal menghapus rating restaurant: {str(e)}")
+        logger.error(f"Failed to delete restaurant rating: {str(e)}")
         return ResponseHelper.internal_server_error(
             "Failed to delete restaurant rating"
         )
@@ -458,26 +426,28 @@ def get_restaurant_rating_stats(restaurant_id):
         JSON response with restaurant rating statistics
     """
     logger.info(
-        f"GET /restaurants/{restaurant_id}/ratings/stats - Mengambil statistik rating restaurant"
+        f"GET /restaurants/{restaurant_id}/ratings/stats - Retrieving restaurant rating statistics"
     )
 
     try:
-        stats = RestaurantRatingService.get_restaurant_rating_stats(restaurant_id)
+        # Use service layer for validation and statistics
+        stats = RestaurantRatingService.get_restaurant_rating_statistics(restaurant_id)
 
         logger.info(
-            f"Berhasil mengambil statistik rating untuk restaurant {restaurant_id}"
+            f"Successfully retrieved rating statistics for restaurant {restaurant_id}"
         )
+
         return ResponseHelper.success(
-            data={
-                "restaurant_id": restaurant_id,
-                "average_rating": stats["average_rating"],
-                "total_ratings": stats["total_ratings"],
-            },
+            data=stats,
             message="Restaurant rating statistics retrieved successfully",
         )
+
+    except ValueError as e:
+        logger.warning(f"Validation error: {str(e)}")
+        return ResponseHelper.validation_error(str(e))
     except Exception as e:
         logger.error(
-            f"Gagal mengambil statistik rating restaurant {restaurant_id}: {str(e)}"
+            f"Failed to retrieve restaurant rating statistics {restaurant_id}: {str(e)}"
         )
         return ResponseHelper.internal_server_error(
             "Failed to retrieve restaurant rating statistics"

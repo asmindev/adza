@@ -1,103 +1,194 @@
 from app.modules.user.repository import UserRepository
 from app.modules.user.models import User
+from app.modules.user.validators import UserValidator, UserBusinessRules
+from app.modules.user.data_service import UserDataService
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.utils import db_logger as logger
 from app.utils.jwt_utils import generate_token
+from typing import Dict, Any, Optional
 
 
 class UserService:
     @staticmethod
     def get_all_users(page=1, limit=10, search=None):
-        return UserRepository.get_all(page=page, limit=limit, search=search)
+        """Get all users with basic data (no relations)"""
+        return UserDataService.get_users_with_basic_data(
+            page=page, limit=limit, search=search
+        )
 
     @staticmethod
-    def get_user_by_id(user_id):
+    def get_user_by_id(user_id: str):
+        """Get user by ID (basic data only)"""
         return UserRepository.get_by_id(user_id)
 
     @staticmethod
-    def get_user_by_username(username):
+    def get_user_with_details(user_id: str):
+        """Get user with full details including relations"""
+        return UserDataService.get_user_with_aggregated_data(user_id)
+
+    @staticmethod
+    def get_user_by_username(username: str):
+        """Get user by username"""
         return UserRepository.get_by_username(username)
 
     @staticmethod
-    def create_user(username, email, password):
-        logger.info(
-            f"Membuat pengguna baru dengan username: {username}, email: {email}"
-        )
+    def create_user(
+        username: str, email: str, password: str, name: Optional[str] = None
+    ) -> User:
+        """
+        Create a new user with validation
+
+        Args:
+            username (str): Username
+            email (str): Email address
+            password (str): Plain password
+            name (str, optional): User's display name
+
+        Returns:
+            User: Created user object
+
+        Raises:
+            ValueError: If validation fails
+        """
+        logger.info(f"Creating new user with username: {username}, email: {email}")
+
+        # Validate input data
+        email_valid = UserValidator.validate_email(email)
+        if not email_valid:
+            logger.warning(f"Invalid email format: {email}")
+            raise ValueError("Invalid email format")
+
+        username_validation = UserValidator.validate_username(username)
+        if not username_validation["valid"]:
+            logger.warning(f"Invalid username: {username_validation['errors']}")
+            raise ValueError("; ".join(username_validation["errors"]))
+
+        password_validation = UserValidator.validate_password_strength(password)
+        if not password_validation["valid"]:
+            logger.warning(f"Invalid password: {password_validation['errors']}")
+            raise ValueError("; ".join(password_validation["errors"]))
+
+        if name:
+            name_validation = UserValidator.validate_name(name)
+            if not name_validation["valid"]:
+                logger.warning(f"Invalid name: {name_validation['errors']}")
+                raise ValueError("; ".join(name_validation["errors"]))
+
+        # Check for existing username
+        if UserRepository.get_by_username(username):
+            logger.warning(f"Username {username} already exists")
+            raise ValueError("Username already exists")
+
+        # Check for existing email
+        if UserRepository.get_by_email(email):
+            logger.warning(f"Email {email} already exists")
+            raise ValueError("Email already exists")
+
+        # Create user
         hashed_password = generate_password_hash(password)
-        user = User(username=username, email=email, password=hashed_password)
+        user_data = {"username": username, "email": email, "password": hashed_password}
+
+        if name:
+            user_data["name"] = name
+
+        user = User(**user_data)
         return UserRepository.create(user)
 
     @staticmethod
-    def update_user(user_id, data):
-        logger.info(f"Memperbarui pengguna dengan ID: {user_id}")
+    def update_user(user_id: str, data: Dict[str, Any]) -> Optional[User]:
+        """
+        Update user with validation
+
+        Args:
+            user_id (str): User ID
+            data (dict): Data to update
+
+        Returns:
+            User: Updated user object or None if not found
+
+        Raises:
+            ValueError: If validation fails
+        """
+        logger.info(f"Updating user with ID: {user_id}")
         user = UserRepository.get_by_id(user_id)
         if not user:
-            logger.warning(f"Pengguna dengan ID {user_id} tidak ditemukan")
+            logger.warning(f"User with ID {user_id} not found")
             return None
 
-        # Validate email format if email is being updated
+        # Validate email if provided
         if "email" in data and data["email"]:
-            import re
-
-            email_pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
-            if not re.match(email_pattern, data["email"]):
-                logger.warning(f"Format email tidak valid: {data['email']}")
-                raise ValueError("Format email tidak valid")
+            if not UserValidator.validate_email(data["email"]):
+                logger.warning(f"Invalid email format: {data['email']}")
+                raise ValueError("Invalid email format")
 
             # Check if email already exists for other users
-            from app.modules.user.models import User
-
-            existing_user = User.query.filter_by(email=data["email"]).first()
+            existing_user = UserRepository.get_by_email(data["email"])
             if existing_user and existing_user.id != user_id:
-                logger.warning(
-                    f"Email {data['email']} sudah digunakan oleh pengguna lain"
-                )
-                raise ValueError("Email sudah digunakan")
+                logger.warning(f"Email {data['email']} already in use")
+                raise ValueError("Email already in use")
 
-        # Validate username if username is being updated
+        # Validate username if provided
         if "username" in data and data["username"]:
+            username_validation = UserValidator.validate_username(data["username"])
+            if not username_validation["valid"]:
+                logger.warning(f"Invalid username: {username_validation['errors']}")
+                raise ValueError("; ".join(username_validation["errors"]))
+
             # Check if username already exists for other users
             existing_user = UserRepository.get_by_username(data["username"])
             if existing_user and existing_user.id != user_id:
-                logger.warning(
-                    f"Username {data['username']} sudah digunakan oleh pengguna lain"
-                )
-                raise ValueError("Username sudah digunakan")
+                logger.warning(f"Username {data['username']} already in use")
+                raise ValueError("Username already in use")
+
+        # Validate name if provided
+        if "name" in data and data["name"]:
+            name_validation = UserValidator.validate_name(data["name"])
+            if not name_validation["valid"]:
+                logger.warning(f"Invalid name: {name_validation['errors']}")
+                raise ValueError("; ".join(name_validation["errors"]))
+
+        # Validate password if provided
+        if "password" in data and data["password"]:
+            password_validation = UserValidator.validate_password_strength(
+                data["password"]
+            )
+            if not password_validation["valid"]:
+                logger.warning(f"Invalid password: {password_validation['errors']}")
+                raise ValueError("; ".join(password_validation["errors"]))
 
         # Update fields
         if "name" in data and data["name"]:
             logger.debug(
-                f"Memperbarui name dari '{getattr(user, 'name', 'N/A')}' menjadi '{data['name']}'"
+                f"Updating name from '{getattr(user, 'name', 'N/A')}' to '{data['name']}'"
             )
             user.name = data["name"]
 
         if "username" in data and data["username"]:
             logger.debug(
-                f"Memperbarui username dari '{user.username}' menjadi '{data['username']}'"
+                f"Updating username from '{user.username}' to '{data['username']}'"
             )
             user.username = data["username"]
 
         if "email" in data and data["email"]:
-            logger.debug(
-                f"Memperbarui email dari '{user.email}' menjadi '{data['email']}'"
-            )
+            logger.debug(f"Updating email from '{user.email}' to '{data['email']}'")
             user.email = data["email"]
 
         if "password" in data and data["password"]:
-            logger.debug(f"Memperbarui password untuk pengguna {user.username}")
+            logger.debug(f"Updating password for user {user.username}")
             user.password = generate_password_hash(data["password"])
 
         try:
             updated_user = UserRepository.update(user)
-            logger.info(f"Berhasil memperbarui pengguna dengan ID: {user_id}")
+            logger.info(f"Successfully updated user with ID: {user_id}")
             return updated_user
         except Exception as e:
-            logger.error(f"Gagal memperbarui pengguna dengan ID {user_id}: {str(e)}")
+            logger.error(f"Failed to update user with ID {user_id}: {str(e)}")
             raise e
 
     @staticmethod
-    def delete_user(user_id):
-        logger.info(f"Menghapus pengguna dengan ID: {user_id}")
+    def delete_user(user_id: str) -> bool:
+        """Delete user by ID"""
+        logger.info(f"Deleting user with ID: {user_id}")
         user = UserRepository.get_by_id(user_id)
         if not user:
             return False
@@ -105,14 +196,23 @@ class UserService:
         return UserRepository.delete(user)
 
     @staticmethod
-    def verify_password(user, password):
-        logger.info(f"User {user.password} found, verifying password {password}...")
-
+    def verify_password(user: User, password: str) -> bool:
+        """Verify user password"""
+        logger.debug(f"Verifying password for user {user.username}")
         return check_password_hash(user.password, password)
 
     @staticmethod
-    def authenticate_user(username, password):
-        """Authenticate a user and return a JWT token if successful"""
+    def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
+        """
+        Authenticate a user and return user data with JWT token if successful
+
+        Args:
+            username (str): Username
+            password (str): Password
+
+        Returns:
+            dict: Contains user object and token, or None if authentication fails
+        """
         logger.info(f"Attempting authentication for user: {username}")
         user = UserRepository.get_by_username(username)
 
@@ -125,8 +225,7 @@ class UserService:
             return None
 
         # Generate JWT token
-        # Determine if user is admin (you may need to modify this based on your app's admin logic)
-        is_admin = user.role == "admin" if user.role else False
+        is_admin = UserBusinessRules.is_admin(user)
         token = generate_token(user.id, is_admin, user.username)
         if not token:
             logger.error(f"Failed to generate token for user {username}")
@@ -136,8 +235,29 @@ class UserService:
         return {"user": user, "token": token}
 
     @staticmethod
-    def change_password(user_id, old_password, new_password):
+    def change_password(user_id: str, old_password: str, new_password: str) -> bool:
+        """
+        Change user password with validation
+
+        Args:
+            user_id (str): User ID
+            old_password (str): Current password
+            new_password (str): New password
+
+        Returns:
+            bool: True if password changed successfully, False otherwise
+
+        Raises:
+            ValueError: If validation fails
+        """
         logger.info(f"Changing password for user ID: {user_id}")
+
+        # Validate new password
+        password_validation = UserValidator.validate_password_strength(new_password)
+        if not password_validation["valid"]:
+            logger.warning(f"Invalid new password: {password_validation['errors']}")
+            raise ValueError("; ".join(password_validation["errors"]))
+
         user = UserRepository.get_by_id(user_id)
         if not user:
             logger.warning(f"User with ID {user_id} not found")
@@ -145,7 +265,7 @@ class UserService:
 
         if not UserService.verify_password(user, old_password):
             logger.warning(f"Old password does not match for user ID {user_id}")
-            return False
+            raise ValueError("Current password is incorrect")
 
         user.password = generate_password_hash(new_password)
         try:
@@ -154,4 +274,9 @@ class UserService:
             return True
         except Exception as e:
             logger.error(f"Failed to change password for user ID {user_id}: {str(e)}")
-            return False
+            raise e
+
+    @staticmethod
+    def get_user_statistics(user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user statistics"""
+        return UserDataService.get_user_statistics(user_id)

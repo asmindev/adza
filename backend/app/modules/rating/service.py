@@ -3,108 +3,137 @@ from app.modules.rating.repository import (
     RestaurantRatingRepository,
 )
 from app.modules.rating.models import FoodRating, RestaurantRating
-from app.modules.food.repository import FoodRepository
-from app.modules.user.repository import UserRepository
-from app.modules.restaurant.repository import RestaurantRepository
+from app.modules.rating.validators import RatingValidator
+from app.modules.rating.data_service import RatingDataService
 from app.utils import api_logger as logger
+from typing import Dict, Any, List, Optional
 
 
 class FoodRatingService:
-    @staticmethod
-    def get_food_ratings(food_id, page=1, limit=10):
-        """Get all ratings for a specific food with pagination"""
-        result = FoodRatingRepository.get_by_food_id(food_id, page=page, limit=limit)
-        return {
-            "items": [rating.to_dict() for rating in result["items"]],
-            "total": result["total"],
-            "page": result["page"],
-            "limit": result["limit"],
-            "pages": result["pages"],
-        }
+    """Service for food rating business logic"""
 
     @staticmethod
-    def get_user_ratings(user_id):
+    def get_food_ratings(
+        food_id: str, page: int = 1, limit: int = 10
+    ) -> Dict[str, Any]:
+        """Get all ratings for a specific food with pagination and statistics"""
+        # Validate inputs
+        entity_validation = RatingValidator.validate_entity_id(food_id, "food")
+        if not entity_validation["valid"]:
+            raise ValueError(entity_validation["errors"][0])
+
+        pagination_validation = RatingValidator.validate_pagination_params(page, limit)
+        if not pagination_validation["valid"]:
+            raise ValueError(pagination_validation["errors"][0])
+
+        page = pagination_validation["data"]["page"]
+        limit = pagination_validation["data"]["limit"]
+
+        # Use data service for aggregated data
+        return RatingDataService.get_food_ratings_with_aggregation(food_id, page, limit)
+
+    @staticmethod
+    def get_user_ratings(user_id: str) -> List[Dict[str, Any]]:
         """Get all ratings given by a specific user"""
+        # Validate user ID
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
         ratings = FoodRatingRepository.get_by_user_id(user_id)
         return [rating.to_dict() for rating in ratings]
 
     @staticmethod
-    def get_food_average_rating(food_id):
-        """Get average rating for a food"""
-        return FoodRatingRepository.get_food_average_rating(food_id)
+    def get_food_rating_statistics(food_id: str) -> Dict[str, Any]:
+        """Get rating statistics for a food"""
+        # Validate food ID
+        entity_validation = RatingValidator.validate_entity_id(food_id, "food")
+        if not entity_validation["valid"]:
+            raise ValueError(entity_validation["errors"][0])
+
+        return RatingDataService.get_food_rating_statistics(food_id)
 
     @staticmethod
-    def get_food_rating_count(food_id):
-        """Get rating count for a food"""
-        return FoodRatingRepository.get_food_rating_count(food_id)
+    def create_or_update_rating(
+        user_id: str, food_id: str, rating_value: float
+    ) -> Dict[str, Any]:
+        """Create or update rating with proper validation"""
+        logger.info(f"Creating/updating food rating {food_id} from user {user_id}")
 
-    @staticmethod
-    def create_rating(user_id, food_id, rating_value):
-        """Create or update rating"""
-        logger.info(
-            f"Membuat/memperbarui rating makanan {food_id} dari pengguna {user_id}"
-        )
+        # Validate input data
+        rating_data = {"user_id": user_id, "food_id": food_id, "rating": rating_value}
 
-        # Verify user and food exist
-        user = UserRepository.get_by_id(user_id)
-        food = FoodRepository.get_by_id(food_id)
+        validation_result = RatingValidator.validate_food_rating_data(rating_data)
+        if not validation_result["valid"]:
+            raise ValueError("; ".join(validation_result["errors"]))
 
-        if not user:
-            logger.warning(f"Pengguna {user_id} tidak ditemukan")
-            return None
+        validated_data = validation_result["data"]
 
-        if not food:
-            logger.warning(f"Makanan {food_id} tidak ditemukan")
-            return None
-
-        # Validate rating value
-        if not (1 <= rating_value <= 5):
-            logger.warning(
-                f"Rating value tidak valid: {rating_value}. Harus antara 1-5"
-            )
-            return None
+        # Check if entities exist (this would be done via proper dependency injection in production)
+        # For now, we'll let the repository/database handle foreign key constraints
 
         # Check if rating already exists
-        existing_rating = FoodRatingRepository.get_user_rating(user_id, food_id)
+        existing_rating = FoodRatingRepository.get_user_rating(
+            validated_data["user_id"], validated_data["food_id"]
+        )
 
         if existing_rating:
             # Update existing rating
-            update_data = {"rating": rating_value}
+            update_data = {"rating": validated_data["rating"]}
             updated_rating = FoodRatingRepository.update(existing_rating, update_data)
-            logger.info(
-                f"Rating diperbarui untuk makanan {food_id} oleh user {user_id}"
-            )
+            logger.info(f"Rating updated for food {food_id} by user {user_id}")
             return updated_rating.to_dict()
         else:
             # Create new rating
-            rating_data = {
-                "user_id": user_id,
-                "food_id": food_id,
-                "rating": rating_value,
-            }
-            new_rating = FoodRatingRepository.create(rating_data)
-            logger.info(
-                f"Rating baru dibuat untuk makanan {food_id} oleh user {user_id}"
-            )
+            new_rating = FoodRatingRepository.create(validated_data)
+            logger.info(f"New rating created for food {food_id} by user {user_id}")
             return new_rating.to_dict()
 
     @staticmethod
-    def delete_rating(user_id, food_id):
-        """Delete a rating"""
+    def delete_rating(user_id: str, food_id: str) -> bool:
+        """Delete a rating with validation"""
+        # Validate IDs
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
+        food_validation = RatingValidator.validate_entity_id(food_id, "food")
+        if not food_validation["valid"]:
+            raise ValueError(food_validation["errors"][0])
+
         rating = FoodRatingRepository.get_user_rating(user_id, food_id)
         if not rating:
             return False
 
         success = FoodRatingRepository.delete(rating)
         if success:
-            logger.info(f"Rating dihapus untuk makanan {food_id} oleh user {user_id}")
+            logger.info(f"Rating deleted for food {food_id} by user {user_id}")
         return success
 
     @staticmethod
-    def get_user_food_rating(user_id, food_id):
+    def get_user_food_rating(user_id: str, food_id: str) -> Optional[Dict[str, Any]]:
         """Get specific rating by user for a food"""
+        # Validate IDs
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
+        food_validation = RatingValidator.validate_entity_id(food_id, "food")
+        if not food_validation["valid"]:
+            raise ValueError(food_validation["errors"][0])
+
         rating = FoodRatingRepository.get_user_rating(user_id, food_id)
-        return rating.to_dict() if rating else 0
+        return rating.to_dict() if rating else None
+
+    @staticmethod
+    def get_user_rating_summary(user_id: str) -> Dict[str, Any]:
+        """Get comprehensive rating summary for a user"""
+        # Validate user ID
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
+        return RatingDataService.get_user_rating_summary(user_id)
 
 
 # Legacy alias for backward compatibility
@@ -112,129 +141,151 @@ RatingService = FoodRatingService
 
 
 class RestaurantRatingService:
+    """Service for restaurant rating business logic"""
+
     @staticmethod
-    def get_restaurant_ratings(restaurant_id, page=1, limit=10):
-        """Get all ratings for a specific restaurant with pagination"""
-        result = RestaurantRatingRepository.get_by_restaurant_id(
-            restaurant_id, page=page, limit=limit
+    def get_restaurant_ratings(
+        restaurant_id: str, page: int = 1, limit: int = 10
+    ) -> Dict[str, Any]:
+        """Get all ratings for a specific restaurant with pagination and statistics"""
+        # Validate inputs
+        entity_validation = RatingValidator.validate_entity_id(
+            restaurant_id, "restaurant"
         )
-        return {
-            "items": result["items"],
-            "total": result["total"],
-            "page": result["page"],
-            "limit": result["limit"],
-            "pages": result["pages"],
+        if not entity_validation["valid"]:
+            raise ValueError(entity_validation["errors"][0])
+
+        pagination_validation = RatingValidator.validate_pagination_params(page, limit)
+        if not pagination_validation["valid"]:
+            raise ValueError(pagination_validation["errors"][0])
+
+        page = pagination_validation["data"]["page"]
+        limit = pagination_validation["data"]["limit"]
+
+        # Use data service for aggregated data
+        return RatingDataService.get_restaurant_ratings_with_aggregation(
+            restaurant_id, page, limit
+        )
+
+    @staticmethod
+    def get_user_restaurant_ratings(user_id: str) -> List[Dict[str, Any]]:
+        """Get all restaurant ratings given by a specific user"""
+        # Validate user ID
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
+        ratings = RestaurantRatingRepository.get_by_user_id(user_id)
+        return [rating.to_dict() for rating in ratings]
+
+    @staticmethod
+    def get_user_rating(user_id: str, restaurant_id: str) -> Optional[Dict[str, Any]]:
+        """Get specific rating by user for a restaurant"""
+        # Validate IDs
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
+        restaurant_validation = RatingValidator.validate_entity_id(
+            restaurant_id, "restaurant"
+        )
+        if not restaurant_validation["valid"]:
+            raise ValueError(restaurant_validation["errors"][0])
+
+        rating = RestaurantRatingRepository.get_user_rating(user_id, restaurant_id)
+        return rating.to_dict() if rating else None
+
+    @staticmethod
+    def get_restaurant_rating_statistics(restaurant_id: str) -> Dict[str, Any]:
+        """Get restaurant rating statistics"""
+        # Validate restaurant ID
+        entity_validation = RatingValidator.validate_entity_id(
+            restaurant_id, "restaurant"
+        )
+        if not entity_validation["valid"]:
+            raise ValueError(entity_validation["errors"][0])
+
+        return RatingDataService.get_restaurant_rating_statistics(restaurant_id)
+
+    @staticmethod
+    def create_or_update_rating(
+        user_id: str,
+        restaurant_id: str,
+        rating_value: float,
+        comment: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create or update restaurant rating with validation"""
+        logger.info(
+            f"Creating/updating restaurant rating {restaurant_id} from user {user_id}"
+        )
+
+        # Validate input data
+        rating_data = {
+            "user_id": user_id,
+            "restaurant_id": restaurant_id,
+            "rating": rating_value,
+            "comment": comment,
         }
 
-    @staticmethod
-    def get_user_restaurant_ratings(user_id):
-        return RestaurantRatingRepository.get_by_user_id(user_id)
+        validation_result = RatingValidator.validate_restaurant_rating_data(rating_data)
+        if not validation_result["valid"]:
+            raise ValueError("; ".join(validation_result["errors"]))
 
-    @staticmethod
-    def get_user_rating(user_id, restaurant_id):
-        return RestaurantRatingRepository.get_user_rating(user_id, restaurant_id)
-
-    @staticmethod
-    def get_restaurant_average_rating(restaurant_id):
-        return RestaurantRatingRepository.get_restaurant_average_rating(restaurant_id)
-
-    @staticmethod
-    def get_restaurant_rating_stats(restaurant_id):
-        """Get restaurant rating statistics"""
-        avg_rating = RestaurantRatingRepository.get_restaurant_average_rating(
-            restaurant_id
-        )
-        rating_count = RestaurantRatingRepository.get_restaurant_rating_count(
-            restaurant_id
-        )
-
-        return {"average_rating": avg_rating, "total_ratings": rating_count}
-
-    @staticmethod
-    def create_or_update_rating(user_id, restaurant_id, rating_value, comment=None):
-        logger.info(
-            f"Membuat/memperbarui rating restaurant {restaurant_id} dari pengguna {user_id}"
-        )
-
-        # Verify user and restaurant exist
-        user = UserRepository.get_by_id(user_id)
-        restaurant = RestaurantRepository.get_by_id(restaurant_id)
-
-        if not user or not restaurant:
-            logger.warning(
-                f"Pengguna {user_id} atau restaurant {restaurant_id} tidak ditemukan"
-            )
-            return None
-
-        # Validate rating value
-        if not (1 <= rating_value <= 5):
-            logger.warning(
-                f"Rating value tidak valid: {rating_value}. Harus antara 1-5"
-            )
-            return None
+        validated_data = validation_result["data"]
 
         # Check if rating already exists
         existing_rating = RestaurantRatingRepository.get_user_rating(
-            user_id, restaurant_id
+            validated_data["user_id"], validated_data["restaurant_id"]
         )
 
         if existing_rating:
             # Update existing rating
-            existing_rating.rating = rating_value
-            if comment is not None:
-                existing_rating.comment = comment
+            existing_rating.rating = validated_data["rating"]
+            if "comment" in validated_data:
+                existing_rating.comment = validated_data["comment"]
             updated_rating = RestaurantRatingRepository.update(existing_rating)
-
-            # Update restaurant's average rating
-            RestaurantRatingService._update_restaurant_average_rating(restaurant_id)
-
-            return updated_rating
+            logger.info(
+                f"Restaurant rating updated for {restaurant_id} by user {user_id}"
+            )
+            return updated_rating.to_dict()
         else:
             # Create new rating
             new_rating = RestaurantRating(
-                user_id=user_id,
-                restaurant_id=restaurant_id,
-                rating=rating_value,
-                comment=comment,
+                user_id=validated_data["user_id"],
+                restaurant_id=validated_data["restaurant_id"],
+                rating=validated_data["rating"],
+                comment=validated_data.get("comment"),
             )
             created_rating = RestaurantRatingRepository.create(new_rating)
-
-            # Update restaurant's average rating
-            RestaurantRatingService._update_restaurant_average_rating(restaurant_id)
-
-            return created_rating
+            logger.info(
+                f"New restaurant rating created for {restaurant_id} by user {user_id}"
+            )
+            return created_rating.to_dict()
 
     @staticmethod
-    def delete_rating(user_id, restaurant_id):
-        logger.info(
-            f"Menghapus rating restaurant {restaurant_id} dari pengguna {user_id}"
+    def delete_rating(user_id: str, restaurant_id: str) -> bool:
+        """Delete a restaurant rating with validation"""
+        # Validate IDs
+        user_validation = RatingValidator.validate_entity_id(user_id, "user")
+        if not user_validation["valid"]:
+            raise ValueError(user_validation["errors"][0])
+
+        restaurant_validation = RatingValidator.validate_entity_id(
+            restaurant_id, "restaurant"
         )
+        if not restaurant_validation["valid"]:
+            raise ValueError(restaurant_validation["errors"][0])
+
+        logger.info(f"Deleting restaurant rating {restaurant_id} from user {user_id}")
         rating = RestaurantRatingRepository.get_user_rating(user_id, restaurant_id)
 
         if not rating:
             return False
 
         success = RestaurantRatingRepository.delete(rating)
-
         if success:
-            # Update restaurant's average rating after deletion
-            RestaurantRatingService._update_restaurant_average_rating(restaurant_id)
+            logger.info(
+                f"Restaurant rating deleted for {restaurant_id} by user {user_id}"
+            )
 
         return success
-
-    @staticmethod
-    def _update_restaurant_average_rating(restaurant_id):
-        """Update restaurant's rating_average field"""
-        try:
-            restaurant = RestaurantRepository.get_by_id(restaurant_id)
-            if restaurant:
-                avg_rating = RestaurantRatingRepository.get_restaurant_average_rating(
-                    restaurant_id
-                )
-                update_data = {"rating_average": avg_rating if avg_rating else 0.0}
-                RestaurantRepository.update(restaurant_id, update_data)
-                logger.info(
-                    f"Restaurant {restaurant_id} rating_average updated to {avg_rating}"
-                )
-        except Exception as e:
-            logger.error(f"Error updating restaurant average rating: {str(e)}")

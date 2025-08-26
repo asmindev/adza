@@ -49,84 +49,13 @@ class Food(db.Model):
         super(Food, self).__init__(**kwargs)
 
     def to_dict(self):
-        images = [image.to_dict() for image in self.images] if self.images else []
-        main_image = next((image for image in images if image["is_main"]), None)
-        if not main_image:
-            main_image = images[0] if images else None
-            # update the main image to the first one if no main image is set
-            if main_image:
-                main_image["is_main"] = True
-        ratings = [rating.to_dict() for rating in self.ratings]
-
-        # Safer sorting that handles None values
-        def safe_created_at_key(item):
-            return item.get("created_at", "") or ""
-
-        ratings = (
-            sorted(ratings, key=safe_created_at_key, reverse=True) if ratings else []
-        )
-        ratings = {
-            "average": (
-                sum(r["rating"] for r in ratings) / len(ratings) if ratings else 0
-            ),
-            "count": len(ratings),
-            "data": ratings,
-        }
-        reviews = [review.to_dict() for review in self.reviews] if self.reviews else []
-        reviews = (
-            sorted(reviews, key=safe_created_at_key, reverse=True) if reviews else []
-        )
-        reviews = {
-            "review_count": len(reviews),
-            "data": reviews,
-        }
-
-        # Include restaurant info if available
-        restaurant_info = None
-        category_info = None
-        if self.restaurant_id:
-            # Import here to avoid circular import
-            from app.modules.restaurant.models import Restaurant
-
-            restaurant = Restaurant.query.get(self.restaurant_id)
-            if restaurant:
-                restaurant_info = {
-                    "id": restaurant.id,
-                    "name": restaurant.name,
-                    "address": restaurant.address,
-                    "latitude": restaurant.latitude,
-                    "longitude": restaurant.longitude,
-                }
-
-                # Get category from restaurant
-                if restaurant and restaurant.categories:
-                    # Since restaurant can have multiple categories, let's get all of them
-                    # or just the first one if there are multiple
-                    categories_info = []
-                    for category in restaurant.categories:
-                        categories_info.append(
-                            {
-                                "id": category.id,
-                                "name": category.name,
-                                "description": category.description,
-                            }
-                        )
-                    # For backward compatibility, also set category_info to the first category
-                    if categories_info:
-                        category_info = categories_info[0]
-
+        """Simple ORM serialization - no business logic"""
         return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
-            "category": category_info,
             "price": self.price,
             "restaurant_id": self.restaurant_id,
-            "restaurant": restaurant_info,
-            "main_image": main_image,
-            "images": images,
-            "ratings": ratings,
-            "reviews": reviews,
             "created_at": (
                 self.created_at.isoformat() + "Z" if self.created_at else None
             ),
@@ -167,12 +96,23 @@ class FoodImage(db.Model):
         super(FoodImage, self).__init__(**kwargs)
 
     def to_dict(self):
-        if self.image_url.startswith("http"):
+        """Simple ORM serialization with URL generation"""
+        # Generate appropriate URL based on image_url format
+        if self.image_url and self.image_url.startswith("http"):
             image_url = self.image_url
+        elif self.filename:
+            try:
+                from flask import url_for
+
+                image_url = url_for(
+                    "food.serve_static", filename=self.filename, _external=True
+                )
+            except Exception:
+                # Fallback if url_for fails
+                image_url = self.image_url or self.filename
         else:
-            image_url = url_for(
-                "food.serve_static", filename=self.filename, _external=True
-            )
+            image_url = self.image_url
+
         return {
             "id": self.id,
             "food_id": self.food_id,

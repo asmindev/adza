@@ -270,3 +270,202 @@ Get personalized food recommendations for a user.
     "message": "User not found"
 }
 ```
+
+
+### User Favorite Categories
+
+#### Get User's Favorite Categories
+
+Get all favorite categories for a specific user.
+
+-   **URL:** `/users/:user_id/favorite-categories`
+-   **Method:** `GET`
+-   **Authentication Required:** Yes (Admin or Owner)
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "User favorite categories retrieved successfully",
+    "data": [
+        {
+            "id": "1",
+            "name": "Italian Food",
+            "created_at": "2024-01-01T00:00:00Z"
+        },
+        {
+            "id": "2", 
+            "name": "Fast Food",
+            "created_at": "2024-01-02T00:00:00Z"
+        }
+    ]
+}
+```
+
+#### Add Category to User's Favorites
+
+Add a category to a user's favorite list.
+
+-   **URL:** `/users/:user_id/favorite-categories/:category_id`
+-   **Method:** `POST`
+-   **Authentication Required:** Yes (Admin or Owner)
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "Category added to favorites successfully",
+    "data": {
+        "user_id": "123",
+        "category_id": "456",
+        "created_at": "2024-01-01T00:00:00Z"
+    }
+}
+```
+
+**Error Response:**
+
+```json
+{
+    "error": true,
+    "message": "Category already in favorites"
+}
+```
+
+#### Remove Category from User's Favorites
+
+Remove a category from a user's favorite list.
+
+-   **URL:** `/users/:user_id/favorite-categories/:category_id`
+-   **Method:** `DELETE`
+-   **Authentication Required:** Yes (Admin or Owner)
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "Category removed from favorites successfully"
+}
+```
+
+**Error Response:**
+
+```json
+{
+    "error": true,
+    "message": "Category not found in favorites"
+}
+```
+
+#### Check if Category is in User's Favorites
+
+Check whether a specific category is in a user's favorites.
+
+-   **URL:** `/users/:user_id/favorite-categories/:category_id/check`
+-   **Method:** `GET`
+-   **Authentication Required:** Yes (Admin or Owner)
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "Favorite status retrieved successfully",
+    "data": {
+        "is_favorite": true
+    }
+}
+```
+
+### Current User (Me) Endpoints
+
+#### Get Current User's Favorite Categories
+
+Get all favorite categories for the currently authenticated user.
+
+-   **URL:** `/me/favorite-categories`
+-   **Method:** `GET`
+-   **Authentication Required:** Yes
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "User favorite categories retrieved successfully",
+    "data": [
+        {
+            "id": "1",
+            "name": "Italian Food",
+            "created_at": "2024-01-01T00:00:00Z"
+        },
+        {
+            "id": "2",
+            "name": "Fast Food", 
+            "created_at": "2024-01-02T00:00:00Z"
+        }
+    ]
+}
+```
+
+#### Add Category to Current User's Favorites
+
+Add a category to the current user's favorite list.
+
+-   **URL:** `/me/favorite-categories/:category_id`
+-   **Method:** `POST`
+-   **Authentication Required:** Yes
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "Category added to favorites successfully",
+    "data": {
+        "user_id": "123",
+        "category_id": "456",
+        "created_at": "2024-01-01T00:00:00Z"
+    }
+}
+```
+
+#### Remove Category from Current User's Favorites
+
+Remove a category from the current user's favorite list.
+
+-   **URL:** `/me/favorite-categories/:category_id`
+-   **Method:** `DELETE`
+-   **Authentication Required:** Yes
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "Category removed from favorites successfully"
+}
+```
+
+#### Check if Category is in Current User's Favorites
+
+Check whether a specific category is in the current user's favorites.
+
+-   **URL:** `/me/favorite-categories/:category_id/check`
+-   **Method:** `GET`
+-   **Authentication Required:** Yes
+
+**Success Response:**
+
+```json
+{
+    "error": false,
+    "message": "Favorite status retrieved successfully",
+    "data": {
+        "is_favorite": true
+    }
+}
+```

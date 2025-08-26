@@ -51,32 +51,10 @@ class User(db.Model):
         super(User, self).__init__(**kwargs)
 
     def to_dict(self):
-        def safe_created_at_key(item):
-            return item.get("created_at", "") or ""
-
-        reviews = [review.to_dict() for review in self.reviews] if self.reviews else []
-        reviews = (
-            sorted(reviews, key=safe_created_at_key, reverse=True) if reviews else []
-        )
-
-        # Combine food ratings and restaurant ratings
-        food_ratings = (
-            [rating.to_dict() for rating in self.food_ratings]
-            if self.food_ratings
-            else []
-        )
-        restaurant_ratings = (
-            [rating.to_dict() for rating in self.restaurant_ratings]
-            if self.restaurant_ratings
-            else []
-        )
-        all_ratings = food_ratings + restaurant_ratings
-        all_ratings = (
-            sorted(all_ratings, key=safe_created_at_key, reverse=True)
-            if all_ratings
-            else []
-        )
-
+        """
+        Basic serialization method - only includes core user data
+        Relations should be handled by service layer with proper queries
+        """
         return {
             "id": self.id,
             "name": self.name,
@@ -84,10 +62,6 @@ class User(db.Model):
             "email": self.email,
             "role": self.role,
             "onboarding_completed": self.onboarding_completed,
-            "reviews": reviews,
-            "ratings": all_ratings,
-            "food_ratings": food_ratings,
-            "restaurant_ratings": restaurant_ratings,
             "created_at": (
                 self.created_at.isoformat() + "Z" if self.created_at else None
             ),
@@ -95,13 +69,3 @@ class User(db.Model):
                 self.updated_at.isoformat() + "Z" if self.updated_at else None
             ),
         }
-
-    @property
-    def is_admin(self):
-        """Helper property to easily check if user is an admin"""
-        return self.role == "admin"
-
-    @property
-    def is_onboarding_completed(self):
-        """Helper property to easily check if user has completed onboarding"""
-        return self.onboarding_completed

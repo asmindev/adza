@@ -2,7 +2,6 @@ from flask import Blueprint, request, g
 from .service import CategoryService, UserFavoriteCategoryService
 from app.utils.auth import token_required, admin_required
 from app.utils.response import ResponseHelper
-from app.modules.user.service import UserService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,21 +12,25 @@ category_bp = Blueprint("category", __name__)
 @category_bp.route("/categories", methods=["GET"])
 def get_categories():
     """
-    Get all categories with optional search.
+    Get all categories with optional search and stats.
 
     Query Parameters:
         search (str): Search term for category name
+        include_stats (bool): Whether to include statistics (default: false)
 
     Returns:
         JSON response with categories list
     """
     try:
-        search = request.args.get("search", "")
+        search = request.args.get("search", "").strip()
+        include_stats = request.args.get("include_stats", "false").lower() == "true"
 
         if search:
-            result = CategoryService.search_categories(search)
+            result = CategoryService.search_categories(
+                search, include_details=include_stats
+            )
         else:
-            result = CategoryService.get_all_categories()
+            result = CategoryService.get_all_categories(include_stats=include_stats)
 
         if result["success"]:
             return ResponseHelper.success(
@@ -48,11 +51,17 @@ def get_category(category_id):
     Args:
         category_id (str): Category ID
 
+    Query Parameters:
+        include_details (bool): Whether to include detailed information (default: false)
+
     Returns:
         JSON response with category data
     """
     try:
-        result = CategoryService.get_category_by_id(category_id)
+        include_details = request.args.get("include_details", "false").lower() == "true"
+        result = CategoryService.get_category_by_id(
+            category_id, include_details=include_details
+        )
 
         if result["success"]:
             return ResponseHelper.success(
@@ -73,7 +82,9 @@ def create_category():
 
     Expected JSON payload:
     {
-        "name": "string"
+        "name": "string",
+        "description": "string (optional)",
+        "icon": "string (optional)"
     }
 
     Returns:
@@ -84,12 +95,6 @@ def create_category():
         if not data:
             return ResponseHelper.validation_error("Request data is required")
 
-        # Validate required fields
-        required_fields = ["name"]
-        for field in required_fields:
-            if field not in data or not data[field]:
-                return ResponseHelper.validation_error(f"{field} is required")
-
         result = CategoryService.create_category(data)
 
         if result["success"]:
@@ -97,7 +102,7 @@ def create_category():
                 data=result["data"], message=result["message"], status_code=201
             )
         else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
+            return ResponseHelper.validation_error(result["message"])
     except Exception as e:
         logger.error(f"Error in create_category: {str(e)}")
         return ResponseHelper.internal_server_error(f"Internal server error: {str(e)}")
@@ -114,7 +119,10 @@ def update_category(category_id):
 
     Expected JSON payload:
     {
-        "name": "string (optional)"
+        "name": "string (optional)",
+        "description": "string (optional)",
+        "icon": "string (optional)",
+        "is_active": "boolean (optional)"
     }
 
     Returns:
@@ -125,14 +133,17 @@ def update_category(category_id):
         if not data:
             return ResponseHelper.validation_error("Request data is required")
 
-        result = CategoryService.update_category(category_id, data)
+        # Get current user for authorization (passed from admin_required decorator)
+        current_user = getattr(g, "current_user", None)
+
+        result = CategoryService.update_category(category_id, data, user=current_user)
 
         if result["success"]:
             return ResponseHelper.success(
                 data=result["data"], message=result["message"]
             )
         else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
+            return ResponseHelper.validation_error(result["message"])
     except Exception as e:
         logger.error(f"Error in update_category: {str(e)}")
         return ResponseHelper.internal_server_error(f"Internal server error: {str(e)}")
@@ -151,7 +162,10 @@ def delete_category(category_id):
         JSON response confirming deletion
     """
     try:
-        result = CategoryService.delete_category(category_id)
+        # Get current user for authorization (passed from admin_required decorator)
+        current_user = getattr(g, "current_user", None)
+
+        result = CategoryService.delete_category(category_id, user=current_user)
 
         if result["success"]:
             return ResponseHelper.success(message=result["message"])
@@ -195,11 +209,17 @@ def get_user_favorite_categories():
     """
     Get current user's favorite categories.
 
+    Query Parameters:
+        include_details (bool): Whether to include detailed information (default: true)
+
     Returns:
         JSON response with user's favorite categories
     """
     try:
-        result = UserFavoriteCategoryService.get_user_favorite_categories(g.user_id)
+        include_details = request.args.get("include_details", "true").lower() == "true"
+        result = UserFavoriteCategoryService.get_user_favorite_categories(
+            g.user_id, include_details=include_details
+        )
 
         if result["success"]:
             return ResponseHelper.success(
@@ -270,30 +290,29 @@ def remove_favorite_category(category_id):
 def get_restaurants_by_category(category_id):
     """
     Get restaurants by category ID.
+    Note: This endpoint should be moved to restaurant module to maintain proper separation
 
     Args:
         category_id (str): Category ID
 
     Returns:
-        JSON response with restaurants in the category
+        JSON response indicating this endpoint should be accessed through restaurant module
     """
     try:
-        from app.modules.restaurant.service import RestaurantService
-
-        # Get category to ensure it exists
+        # Check if category exists first
         category_result = CategoryService.get_category_by_id(category_id)
         if not category_result["success"]:
             return ResponseHelper.not_found("Category", category_id)
 
-        # Get restaurants in this category
-        restaurants = RestaurantService.get_restaurants_by_category(category_id)
-
-        if restaurants["success"]:
-            return ResponseHelper.success(
-                data=restaurants["data"], message=restaurants["message"]
-            )
-        else:
-            return ResponseHelper.error(message=restaurants["message"], status_code=400)
+        # Return message directing to proper endpoint
+        return ResponseHelper.success(
+            data={
+                "category": category_result["data"],
+                "redirect_to": f"/restaurants?category_id={category_id}",
+                "message": "Please use the restaurants endpoint with category_id parameter",
+            },
+            message="Category found. Use restaurant endpoints for restaurant data.",
+        )
 
     except Exception as e:
         logger.error(f"Error in get_restaurants_by_category: {str(e)}")

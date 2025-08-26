@@ -5,73 +5,36 @@ from app.utils import db_logger as logger
 
 class ReviewRepository:
     @staticmethod
-    def get_by_food_id(food_id, page=1, limit=10):
-        logger.debug(
-            f"Mengambil review untuk makanan dengan ID: {food_id}, page={page}, limit={limit}"
+    def get_by_food_id(food_id):
+        """Get all reviews for a specific food, ordered by creation date"""
+        logger.debug(f"Mengambil review untuk makanan dengan ID: {food_id}")
+        return Review.query.filter_by(food_id=food_id).order_by(
+            Review.created_at.desc()
         )
-
-        query = Review.query.filter_by(food_id=food_id)
-
-        # Get total count for pagination
-        total_count = query.count()
-
-        # Apply pagination
-        reviews = query.order_by(Review.created_at.desc()).paginate(
-            page=page, per_page=limit, error_out=False
-        )
-
-        logger.info(
-            f"Berhasil mengambil {len(reviews.items)} review untuk makanan {food_id} (total {total_count})"
-        )
-        return {
-            "items": reviews.items,
-            "total": total_count,
-            "page": page,
-            "limit": limit,
-            "pages": reviews.pages,
-        }
 
     @staticmethod
-    def get_by_user_id(user_id, page=1, limit=10):
-        logger.debug(
-            f"Mengambil review dari pengguna dengan ID: {user_id}, page={page}, limit={limit}"
+    def get_by_user_id(user_id):
+        """Get all reviews by a specific user, ordered by creation date"""
+        logger.debug(f"Mengambil review dari pengguna dengan ID: {user_id}")
+        return Review.query.filter_by(user_id=user_id).order_by(
+            Review.created_at.desc()
         )
-
-        query = Review.query.filter_by(user_id=user_id)
-
-        # Get total count for pagination
-        total_count = query.count()
-
-        # Apply pagination
-        reviews = query.order_by(Review.created_at.desc()).paginate(
-            page=page, per_page=limit, error_out=False
-        )
-
-        logger.info(
-            f"Berhasil mengambil {len(reviews.items)} review dari pengguna {user_id} (total {total_count})"
-        )
-        return {
-            "items": reviews.items,
-            "total": total_count,
-            "page": page,
-            "limit": limit,
-            "pages": reviews.pages,
-        }
 
     @staticmethod
     def get_by_user_and_food(user_id, food_id):
+        """Get a specific review by user and food"""
         logger.debug(f"Mencari review untuk makanan {food_id} dari pengguna {user_id}")
-        review = Review.query.filter_by(user_id=user_id, food_id=food_id).first()
-        if review:
-            logger.info(f"Review ditemukan dengan ID: {review.id}")
-        else:
-            logger.info(
-                f"Tidak ada review untuk makanan {food_id} dari pengguna {user_id}"
-            )
-        return review
+        return Review.query.filter_by(user_id=user_id, food_id=food_id).first()
+
+    @staticmethod
+    def get_by_id(review_id):
+        """Get review by ID"""
+        logger.debug(f"Mencari review dengan ID: {review_id}")
+        return Review.query.get(review_id)
 
     @staticmethod
     def create(review):
+        """Create a new review"""
         try:
             db.session.add(review)
             db.session.commit()
@@ -84,6 +47,7 @@ class ReviewRepository:
 
     @staticmethod
     def update(review):
+        """Update an existing review"""
         try:
             db.session.commit()
             logger.info(f"Review dengan ID {review.id} berhasil diperbarui")
@@ -95,6 +59,7 @@ class ReviewRepository:
 
     @staticmethod
     def delete(review):
+        """Delete a review"""
         try:
             db.session.delete(review)
             db.session.commit()

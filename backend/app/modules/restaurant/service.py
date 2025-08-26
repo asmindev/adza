@@ -1,37 +1,42 @@
 from app.modules.restaurant.repository import RestaurantRepository
+from app.modules.restaurant.validators import RestaurantValidator
+from app.modules.restaurant.data_service import RestaurantDataService
 from app.utils import api_logger as logger
 
 
 class RestaurantService:
+    """Pure business logic for restaurant operations"""
+
     @staticmethod
     def create_restaurant(
         name, address, latitude, longitude, description=None, phone=None, email=None
     ):
-        """Create a new restaurant"""
+        """Create a new restaurant with validation"""
         try:
-            # Validate required fields
-            if not all([name, address, latitude, longitude]):
-                raise ValueError("Name, address, latitude, and longitude are required")
-
-            # Validate latitude and longitude ranges
-            if not (-90 <= latitude <= 90):
-                raise ValueError("Latitude must be between -90 and 90")
-            if not (-180 <= longitude <= 180):
-                raise ValueError("Longitude must be between -180 and 180")
-
+            # Prepare data for validation
             restaurant_data = {
                 "name": name,
-                "description": description,
                 "address": address,
-                "phone": phone,
-                "email": email,
                 "latitude": latitude,
                 "longitude": longitude,
+                "description": description,
+                "phone": phone,
+                "email": email,
             }
 
-            restaurant = RestaurantRepository.create(restaurant_data)
+            # Validate all data using validator
+            validated_data = RestaurantValidator.validate_restaurant_creation_data(
+                restaurant_data
+            )
+
+            # Create restaurant using repository
+            restaurant = RestaurantRepository.create(validated_data)
             logger.info(f"Restaurant service: Created restaurant {restaurant.name}")
             return restaurant
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(f"Restaurant service: Error creating restaurant - {str(e)}")
             raise e
@@ -40,55 +45,73 @@ class RestaurantService:
     def get_all_restaurants(page=1, limit=20, search=None):
         """Get all restaurants with pagination and search"""
         try:
-            result = RestaurantRepository.get_all(page=page, limit=limit, search=search)
+            # Validate pagination parameters
+            validated_page, validated_limit = RestaurantValidator.validate_pagination(
+                page, limit
+            )
+
+            # Validate search term
+            validated_search = RestaurantValidator.validate_search_term(search)
+
+            # Get enriched data from data service
+            result = RestaurantDataService.get_enriched_restaurant_list(
+                page=validated_page, limit=validated_limit, search=validated_search
+            )
+
             logger.info(
-                f"Restaurant service: Retrieved {len(result['items'])} restaurants (total {result['total']})"
+                f"Restaurant service: Retrieved {result['metadata']['count']} restaurants"
             )
             return result
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(f"Restaurant service: Error retrieving restaurants - {str(e)}")
             raise e
 
     @staticmethod
-    def get_restaurants_by_category(category_id, page=1, limit=20):
-        """Get restaurants by category"""
+    def get_restaurant_by_id(restaurant_id):
+        """Get restaurant by ID with validation"""
         try:
-            result = RestaurantRepository.get_by_category(
-                category_id, page=page, limit=limit
-            )
-            logger.info(
-                f"Restaurant service: Retrieved {len(result['items'])} restaurants for category {category_id}"
-            )
-            return {
-                "success": True,
-                "data": [restaurant.to_dict() for restaurant in result["items"]],
-                "pagination": {
-                    "page": result["page"],
-                    "limit": result["limit"],
-                    "total": result["total"],
-                    "pages": result["pages"],
-                },
-                "message": "Restaurants retrieved successfully",
-            }
+            # Validate restaurant ID
+            validated_id = RestaurantValidator.validate_restaurant_id(restaurant_id)
+
+            # Get restaurant with context from data service
+            result = RestaurantDataService.get_restaurant_with_context(validated_id)
+
+            if result:
+                logger.info(
+                    f"Restaurant service: Found restaurant {result['restaurant']['name']}"
+                )
+                return result[
+                    "restaurant"
+                ]  # Return just the restaurant data for consistency
+            else:
+                logger.warning(
+                    f"Restaurant service: Restaurant not found with ID {restaurant_id}"
+                )
+                return None
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
-            logger.error(
-                f"Restaurant service: Error retrieving restaurants by category - {str(e)}"
-            )
-            return {
-                "success": False,
-                "data": [],
-                "message": f"Error retrieving restaurants: {str(e)}",
-            }
+            logger.error(f"Restaurant service: Error retrieving restaurant - {str(e)}")
+            raise e
 
     @staticmethod
     def get_active_restaurants():
         """Get all active restaurants"""
         try:
-            restaurants = RestaurantRepository.get_active()
+            result = RestaurantDataService.get_active_restaurants_summary()
+            restaurants = result["restaurants"]
+
             logger.info(
                 f"Restaurant service: Retrieved {len(restaurants)} active restaurants"
             )
             return restaurants
+
         except Exception as e:
             logger.error(
                 f"Restaurant service: Error retrieving active restaurants - {str(e)}"
@@ -96,40 +119,31 @@ class RestaurantService:
             raise e
 
     @staticmethod
-    def get_restaurant_by_id(restaurant_id):
-        """Get restaurant by ID"""
-        try:
-            restaurant = RestaurantRepository.get_by_id(restaurant_id)
-            if restaurant:
-                logger.info(f"Restaurant service: Found restaurant {restaurant.name}")
-            else:
-                logger.warning(
-                    f"Restaurant service: Restaurant not found with ID {restaurant_id}"
-                )
-            return restaurant
-        except Exception as e:
-            logger.error(f"Restaurant service: Error retrieving restaurant - {str(e)}")
-            raise e
-
-    @staticmethod
     def get_restaurants_near_location(latitude, longitude, radius_km=5):
-        """Get restaurants near a specific location"""
+        """Get restaurants near a specific location with validation"""
         try:
-            # Validate latitude and longitude
-            if not (-90 <= latitude <= 90):
-                raise ValueError("Latitude must be between -90 and 90")
-            if not (-180 <= longitude <= 180):
-                raise ValueError("Longitude must be between -180 and 180")
-            if radius_km <= 0:
-                raise ValueError("Radius must be greater than 0")
-
-            restaurants = RestaurantRepository.get_by_location(
-                latitude, longitude, radius_km
+            # Validate coordinates
+            validated_lat, validated_lng = RestaurantValidator.validate_coordinates(
+                latitude, longitude
             )
+
+            # Validate radius
+            validated_radius = RestaurantValidator.validate_radius(radius_km)
+
+            # Get location-based data from data service
+            result = RestaurantDataService.get_location_based_restaurants(
+                validated_lat, validated_lng, int(validated_radius)
+            )
+
+            restaurants = result["restaurants"]
             logger.info(
                 f"Restaurant service: Found {len(restaurants)} restaurants near location"
             )
             return restaurants
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(
                 f"Restaurant service: Error finding restaurants near location - {str(e)}"
@@ -138,49 +152,71 @@ class RestaurantService:
 
     @staticmethod
     def search_restaurants(name):
-        """Search restaurants by name"""
+        """Search restaurants by name with validation"""
         try:
-            if not name or not name.strip():
+            # Validate search term
+            validated_name = RestaurantValidator.validate_search_term(name)
+
+            if not validated_name:
                 raise ValueError("Search name cannot be empty")
 
-            restaurants = RestaurantRepository.search_by_name(name.strip())
+            # Get enhanced search results from data service
+            result = RestaurantDataService.search_restaurants_enhanced(validated_name)
+            restaurants = result["restaurants"]
+
             logger.info(
                 f"Restaurant service: Found {len(restaurants)} restaurants matching '{name}'"
             )
             return restaurants
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(f"Restaurant service: Error searching restaurants - {str(e)}")
             raise e
 
     @staticmethod
     def update_restaurant(restaurant_id, update_data):
-        """Update restaurant"""
+        """Update restaurant with validation"""
         try:
-            # Validate latitude and longitude if provided
-            if "latitude" in update_data and not (-90 <= update_data["latitude"] <= 90):
-                raise ValueError("Latitude must be between -90 and 90")
-            if "longitude" in update_data and not (
-                -180 <= update_data["longitude"] <= 180
-            ):
-                raise ValueError("Longitude must be between -180 and 180")
+            # Validate restaurant ID
+            validated_id = RestaurantValidator.validate_restaurant_id(restaurant_id)
 
-            restaurant = RestaurantRepository.update(restaurant_id, update_data)
+            # Validate update data
+            validated_data = RestaurantValidator.validate_restaurant_update_data(
+                update_data
+            )
+
+            # Update using repository
+            restaurant = RestaurantRepository.update(validated_id, validated_data)
+
             if restaurant:
                 logger.info(f"Restaurant service: Updated restaurant {restaurant.name}")
             else:
                 logger.warning(
                     f"Restaurant service: Restaurant not found for update with ID {restaurant_id}"
                 )
+
             return restaurant
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(f"Restaurant service: Error updating restaurant - {str(e)}")
             raise e
 
     @staticmethod
     def delete_restaurant(restaurant_id):
-        """Delete restaurant"""
+        """Delete restaurant with validation"""
         try:
-            result = RestaurantRepository.delete(restaurant_id)
+            # Validate restaurant ID
+            validated_id = RestaurantValidator.validate_restaurant_id(restaurant_id)
+
+            # Delete using repository
+            result = RestaurantRepository.delete(validated_id)
+
             if result:
                 logger.info(
                     f"Restaurant service: Deleted restaurant with ID {restaurant_id}"
@@ -189,31 +225,48 @@ class RestaurantService:
                 logger.warning(
                     f"Restaurant service: Restaurant not found for deletion with ID {restaurant_id}"
                 )
+
             return result
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(f"Restaurant service: Error deleting restaurant - {str(e)}")
             raise e
 
     @staticmethod
     def toggle_restaurant_status(restaurant_id):
-        """Toggle restaurant active status"""
+        """Toggle restaurant active status with validation"""
         try:
-            restaurant = RestaurantRepository.get_by_id(restaurant_id)
+            # Validate restaurant ID
+            validated_id = RestaurantValidator.validate_restaurant_id(restaurant_id)
+
+            # Get current restaurant
+            restaurant = RestaurantRepository.get_by_id(validated_id)
             if not restaurant:
                 logger.warning(
                     f"Restaurant service: Restaurant not found with ID {restaurant_id}"
                 )
                 return None
 
+            # Toggle status
             new_status = not restaurant.is_active
             updated_restaurant = RestaurantRepository.update(
-                restaurant_id, {"is_active": new_status}
+                validated_id, {"is_active": new_status}
             )
-            status_text = "activated" if new_status else "deactivated"
-            logger.info(
-                f"Restaurant service: Restaurant {updated_restaurant.name} {status_text}"
-            )
+
+            if updated_restaurant:
+                status_text = "activated" if new_status else "deactivated"
+                logger.info(
+                    f"Restaurant service: Restaurant {updated_restaurant.name} {status_text}"
+                )
+
             return updated_restaurant
+
+        except ValueError as e:
+            logger.warning(f"Restaurant service: Validation error - {str(e)}")
+            raise e
         except Exception as e:
             logger.error(
                 f"Restaurant service: Error toggling restaurant status - {str(e)}"
@@ -222,4 +275,22 @@ class RestaurantService:
 
     @staticmethod
     def get_restaurant_list():
-        return RestaurantRepository.get_restaurant_list()
+        """Get simple restaurant list for selection purposes"""
+        try:
+            return RestaurantDataService.get_simple_restaurant_list()
+        except Exception as e:
+            logger.error(
+                f"Restaurant service: Error getting restaurant list - {str(e)}"
+            )
+            raise e
+
+    @staticmethod
+    def get_restaurant_statistics():
+        """Get restaurant statistics"""
+        try:
+            return RestaurantDataService.get_restaurant_statistics()
+        except Exception as e:
+            logger.error(
+                f"Restaurant service: Error getting restaurant statistics - {str(e)}"
+            )
+            raise e
