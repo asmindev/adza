@@ -50,7 +50,7 @@ class EnhancedRatingCalculator:
             return 0.5  # Return neutral if no variation
         return (value - min_val) / (max_val - min_val)
 
-    def calculate_place_score(self, restaurant: Restaurant) -> float:
+    def calculate_place_score(self, restaurant: Optional[Restaurant]) -> float:
         """
         Calculate normalized place quality score using actual restaurant ratings
         This uses the RestaurantRating model to get real user ratings for the place/tempat
@@ -64,18 +64,18 @@ class EnhancedRatingCalculator:
         if not restaurant:
             return 0.5  # Neutral score if no restaurant
 
-        # Import here to avoid circular imports
-        from app.modules.rating.repository import RestaurantRatingRepository
-
         try:
+            # Import here to avoid circular imports
+            from app.modules.rating.models import RestaurantRating
+
             # Get actual restaurant ratings from RestaurantRating table
-            restaurant_ratings = RestaurantRatingRepository.get_by_restaurant_id(
-                restaurant.id
-            )
+            restaurant_ratings = RestaurantRating.query.filter_by(
+                restaurant_id=restaurant.id
+            ).all()
 
             if not restaurant_ratings:
                 # If no specific restaurant ratings, fallback to restaurant.rating_average
-                place_rating = restaurant.rating_average or 2.5
+                place_rating = getattr(restaurant, "rating_average", None) or 2.5
                 logger.debug(
                     f"No restaurant ratings found for {restaurant.name}, using rating_average: {place_rating}"
                 )
@@ -86,6 +86,9 @@ class EnhancedRatingCalculator:
                 logger.debug(
                     f"Calculated place quality for {restaurant.name}: {place_rating:.2f} from {len(restaurant_ratings)} ratings"
                 )
+
+            # Ensure place_rating is within valid range
+            place_rating = max(1.0, min(5.0, place_rating))
 
             # Normalize to 0-1 range
             normalized_score = self.normalize_to_range(place_rating, 1.0, 5.0)
@@ -99,8 +102,9 @@ class EnhancedRatingCalculator:
             logger.warning(
                 f"Error calculating place score for restaurant {restaurant.id}: {str(e)}"
             )
-            # Fallback to restaurant rating_average
-            place_rating = restaurant.rating_average or 2.5
+            # Fallback to restaurant rating_average or default
+            place_rating = getattr(restaurant, "rating_average", None) or 2.5
+            place_rating = max(1.0, min(5.0, place_rating))
             return self.normalize_to_range(place_rating, 1.0, 5.0)
 
     def calculate_price_score(self, food_price: float, user_price_pref: float) -> float:
@@ -130,8 +134,7 @@ class EnhancedRatingCalculator:
     def calculate_food_quality_score(self, food: Food) -> float:
         """
         Calculate normalized food quality score
-        For now, we'll use the food's average rating as a proxy for quality
-        In future, this could be a separate field in the food model
+        Uses the food's average rating as a proxy for quality
 
         Args:
             food: Food object
@@ -139,14 +142,32 @@ class EnhancedRatingCalculator:
         Returns:
             Normalized food quality score (0-1)
         """
-        if not food or not food.ratings:
-            return 0.5  # Neutral score if no ratings
+        if not food:
+            return 0.5  # Neutral score if no food
 
-        # Calculate average rating for the food
-        total_rating = sum(rating.rating for rating in food.ratings)
-        avg_rating = total_rating / len(food.ratings)
+        try:
+            # Query ratings directly to avoid relationship loading issues
+            from app.modules.rating.models import FoodRating
 
-        return self.normalize_to_range(avg_rating, 1.0, 5.0)
+            food_ratings = FoodRating.query.filter_by(food_id=food.id).all()
+
+            if not food_ratings:
+                return 0.5  # Neutral score if no ratings
+
+            # Calculate average rating for the food
+            total_rating = sum(rating.rating for rating in food_ratings)
+            avg_rating = total_rating / len(food_ratings)
+
+            # Ensure rating is within valid range
+            avg_rating = max(1.0, min(5.0, avg_rating))
+
+            return self.normalize_to_range(avg_rating, 1.0, 5.0)
+
+        except Exception as e:
+            logger.warning(
+                f"Error calculating food quality score for food {food.id}: {str(e)}"
+            )
+            return 0.5  # Neutral score on error
 
     def calculate_adjusted_rating(
         self,
@@ -166,7 +187,12 @@ class EnhancedRatingCalculator:
             Adjusted rating (1-5 range)
         """
         # Calculate component scores
-        place_score = self.calculate_place_score(food.restaurant)
+        # Get restaurant object
+        restaurant = None
+        if food.restaurant_id:
+            restaurant = Restaurant.query.get(food.restaurant_id)
+
+        place_score = self.calculate_place_score(restaurant)
         price_score = (
             self.calculate_price_score(food.price, user_price_pref)
             if user_price_pref

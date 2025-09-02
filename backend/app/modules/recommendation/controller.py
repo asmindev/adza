@@ -8,7 +8,7 @@ from app.utils.response import ResponseHelper
 recommendation_blueprint = Blueprint("recommendation", __name__)
 
 
-@recommendation_blueprint.route("/recommendations", methods=["GET"])
+@recommendation_blueprint.route("/recommendation", methods=["GET"])
 @token_required
 def get_recommendations():
     """Get personalized food recommendations using enhanced collaborative filtering"""
@@ -122,6 +122,7 @@ def get_recommendations():
             beta=beta,
             gamma=gamma,
         )
+        logger.info(recommendations)
 
         if recommendations is None:
             logger.warning(f"User {user_id} tidak ditemukan")
@@ -133,6 +134,7 @@ def get_recommendations():
             )
             # Fallback to popular foods
             popular_foods = RecommendationService.get_popular_foods(n=limit)
+            logger.info(popular_foods)
             if popular_foods:
                 return ResponseHelper.success(
                     data={
@@ -160,10 +162,11 @@ def get_recommendations():
         return ResponseHelper.internal_server_error("Failed to get recommendations")
 
 
-@recommendation_blueprint.route("/recommendations/top-rated", methods=["GET"])
-def get_top_rated():
-    """Get top-rated foods based on user ratings"""
-    logger.info("GET /top-rated - Mengambil makanan teratas berdasarkan rating pengguna")
+# before : top-rated
+@recommendation_blueprint.route("/popular", methods=["GET"])
+def get_popular():
+    """Get popular foods based on user ratings"""
+    logger.info("GET /popular - Mengambil makanan populer berdasarkan rating pengguna")
     try:
         # Get top-rated foods using the service
         top_rated_foods = RecommendationService.get_popular_foods(

@@ -4,7 +4,7 @@ Collaborative Filtering Recommender
 
 from collections import defaultdict
 import numpy as np
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from app.modules.food.models import Food
 from app.modules.user.models import User
@@ -34,13 +34,22 @@ class CollaborativeFilteringRecommender:
         user = User.query.get(user_id)
         if not user:
             logger.error(f"User dengan ID {user_id} tidak ditemukan")
-            return None
+            return []
 
         # Load or train the SVD model
         algo = ModelTrainer.train_svd_model()
         if algo is None:
             logger.error("Model collaborative filtering tidak tersedia")
             # Fall back to the memory-based CF if model isn't available
+            return (
+                CollaborativeFilteringRecommender._memory_based_collaborative_filtering(
+                    user_id, n
+                )
+            )
+
+        # Validate model
+        if not ModelTrainer.validate_model(algo):
+            logger.error("Model SVD tidak valid")
             return (
                 CollaborativeFilteringRecommender._memory_based_collaborative_filtering(
                     user_id, n
@@ -65,15 +74,22 @@ class CollaborativeFilteringRecommender:
 
         # Predict ratings for unrated foods using SVD model
         predictions = []
-        logger.info(f"Loaded {len(foods)} foods for prediction")
+        logger.info(f"Predicting ratings for {len(foods)} foods")
         for food in foods:
             if food.id not in rated_foods:
                 try:
                     # Use the trained SVD model for predictions
-                    predicted_rating = algo.predict(user_id, food.id).est
+                    prediction = algo.predict(user_id, food.id)
+                    predicted_rating = prediction.est
+
+                    # Ensure predicted rating is within valid range
+                    predicted_rating = max(1.0, min(5.0, predicted_rating))
+
                     predictions.append((food, predicted_rating))
                 except Exception as e:
-                    logger.error(f"Error saat memprediksi rating: {str(e)}")
+                    logger.debug(
+                        f"Error predicting rating for food {food.id}: {str(e)}"
+                    )
                     # Skip this food if there's an error
 
         # Sort by predicted rating in descending order and take top n
@@ -128,7 +144,7 @@ class CollaborativeFilteringRecommender:
         user = User.query.get(user_id)
         if not user:
             logger.error(f"User dengan ID {user_id} tidak ditemukan")
-            return None
+            return []
 
         # Train SVD model with enhanced ratings
         algo = ModelTrainer.train_svd_model(
@@ -142,6 +158,11 @@ class CollaborativeFilteringRecommender:
         if algo is None:
             logger.error("Enhanced collaborative filtering model tidak tersedia")
             # Fall back to standard CF
+            return CollaborativeFilteringRecommender.get_recommendations(user_id, n)
+
+        # Validate model
+        if not ModelTrainer.validate_model(algo):
+            logger.error("Enhanced model SVD tidak valid")
             return CollaborativeFilteringRecommender.get_recommendations(user_id, n)
 
         # Get all foods with price filtering
@@ -177,15 +198,22 @@ class CollaborativeFilteringRecommender:
 
         # Predict ratings for unrated foods using enhanced SVD model
         predictions = []
-        logger.info(f"Loaded {len(foods)} foods for enhanced prediction")
+        logger.info(f"Predicting enhanced ratings for {len(foods)} foods")
         for food in foods:
             if food.id not in rated_foods:
                 try:
                     # Use the enhanced trained SVD model for predictions
-                    predicted_rating = algo.predict(user_id, food.id).est
+                    prediction = algo.predict(user_id, food.id)
+                    predicted_rating = prediction.est
+
+                    # Ensure predicted rating is within valid range
+                    predicted_rating = max(1.0, min(5.0, predicted_rating))
+
                     predictions.append((food, predicted_rating))
                 except Exception as e:
-                    logger.error(f"Error saat memprediksi enhanced rating: {str(e)}")
+                    logger.debug(
+                        f"Error predicting enhanced rating for food {food.id}: {str(e)}"
+                    )
                     # Skip this food if there's an error
 
         # Sort by predicted rating in descending order and take top n
@@ -217,89 +245,122 @@ class CollaborativeFilteringRecommender:
         """
         logger.info(f"Using memory-based collaborative filtering for user {user_id}")
 
-        # Get all ratings
-        ratings = FoodRating.query.all()
-        if not ratings:
-            logger.warning("Tidak ada data rating untuk rekomendasi")
-            return []
+        try:
+            # Get all ratings
+            ratings = FoodRating.query.all()
+            if not ratings:
+                logger.warning("Tidak ada data rating untuk rekomendasi")
+                return []
 
-        # Create user-item rating matrix
-        user_ratings = defaultdict(dict)
-        for rating in ratings:
-            user_ratings[rating.user_id][rating.food_id] = rating.rating
+            # Create user-item rating matrix
+            user_ratings = defaultdict(dict)
+            for rating in ratings:
+                user_ratings[rating.user_id][rating.food_id] = rating.rating
 
-        # Check if user has ratings
-        if user_id not in user_ratings or not user_ratings[user_id]:
-            logger.warning(f"User {user_id} belum memberikan rating")
-            return []
+            # Check if user has ratings
+            if user_id not in user_ratings or not user_ratings[user_id]:
+                logger.warning(f"User {user_id} belum memberikan rating")
+                return []
 
-        # Calculate similarity between users
-        target_user_ratings = user_ratings[user_id]
-        similarities = {}
-        for other_user_id, other_ratings in user_ratings.items():
-            if other_user_id == user_id:
-                continue
+            # Calculate similarity between users
+            target_user_ratings = user_ratings[user_id]
+            similarities = {}
 
-            # Find common foods rated by both users
-            common_foods = set(target_user_ratings.keys()) & set(other_ratings.keys())
-            if not common_foods:
-                continue
+            for other_user_id, other_ratings in user_ratings.items():
+                if other_user_id == user_id:
+                    continue
 
-            # Calculate Pearson correlation
-            target_ratings = [target_user_ratings[food_id] for food_id in common_foods]
-            other_ratings_list = [other_ratings[food_id] for food_id in common_foods]
-
-            if len(common_foods) < 2:
-                continue  # Need at least 2 points for correlation
-
-            correlation = np.corrcoef(target_ratings, other_ratings_list)[0, 1]
-            if not np.isnan(correlation):
-                similarities[other_user_id] = correlation
-
-        # Get predicted ratings for foods the user hasn't rated yet
-        all_foods = set()
-        for ratings_dict in user_ratings.values():
-            all_foods.update(ratings_dict.keys())
-
-        unrated_foods = all_foods - set(target_user_ratings.keys())
-        predicted_ratings = {}
-
-        for food_id in unrated_foods:
-            numerator = 0
-            denominator = 0
-
-            for other_user_id, similarity in similarities.items():
-                if food_id in user_ratings[other_user_id]:
-                    numerator += similarity * user_ratings[other_user_id][food_id]
-                    denominator += abs(similarity)
-
-            if denominator > 0:
-                predicted_ratings[food_id] = round(numerator / denominator, 2)
-
-        # Sort by predicted rating and get top n
-        sorted_predictions = sorted(
-            predicted_ratings.items(), key=lambda x: x[1], reverse=True
-        )[:n]
-
-        # Get food details
-        recommendations = []
-        for food_id, predicted_rating in sorted_predictions:
-            food = Food.query.get(food_id)
-            if food:
-                food_dict = food.to_dict()
-                recommendations.append(
-                    {
-                        "food": food_dict,
-                        "predicted_rating": predicted_rating,
-                        "normalized_rating_score": round(predicted_rating / 5, 2),
-                        "normalized_review_similarity": 0,  # Will be calculated in hybrid approach
-                        "hybrid_score": round(
-                            predicted_rating / 5, 2
-                        ),  # Default to rating score
-                    }
+                # Find common foods rated by both users
+                common_foods = set(target_user_ratings.keys()) & set(
+                    other_ratings.keys()
                 )
+                if len(common_foods) < 2:  # Need at least 2 common items
+                    continue
 
-        logger.info(
-            f"Berhasil menghasilkan {len(recommendations)} rekomendasi kolaboratif"
-        )
-        return recommendations
+                # Calculate Pearson correlation
+                target_ratings_list = [
+                    target_user_ratings[food_id] for food_id in common_foods
+                ]
+                other_ratings_list = [
+                    other_ratings[food_id] for food_id in common_foods
+                ]
+
+                try:
+                    # Check for constant ratings (zero variance)
+                    if (
+                        len(set(target_ratings_list)) == 1
+                        or len(set(other_ratings_list)) == 1
+                    ):
+                        continue
+
+                    correlation = np.corrcoef(target_ratings_list, other_ratings_list)[
+                        0, 1
+                    ]
+                    if (
+                        not np.isnan(correlation) and correlation > 0
+                    ):  # Only positive correlations
+                        similarities[other_user_id] = correlation
+                except Exception as e:
+                    logger.debug(
+                        f"Error calculating correlation with user {other_user_id}: {str(e)}"
+                    )
+                    continue
+
+            if not similarities:
+                logger.warning(f"No similar users found for user {user_id}")
+                return []
+
+            # Get predicted ratings for foods the user hasn't rated yet
+            all_foods = set()
+            for ratings_dict in user_ratings.values():
+                all_foods.update(ratings_dict.keys())
+
+            unrated_foods = all_foods - set(target_user_ratings.keys())
+            predicted_ratings = {}
+
+            for food_id in unrated_foods:
+                numerator = 0
+                denominator = 0
+
+                for other_user_id, similarity in similarities.items():
+                    if food_id in user_ratings[other_user_id]:
+                        numerator += similarity * user_ratings[other_user_id][food_id]
+                        denominator += abs(similarity)
+
+                if denominator > 0:
+                    predicted_rating = numerator / denominator
+                    # Ensure rating is within valid range
+                    predicted_rating = max(1.0, min(5.0, predicted_rating))
+                    predicted_ratings[food_id] = round(predicted_rating, 2)
+
+            # Sort by predicted rating and get top n
+            sorted_predictions = sorted(
+                predicted_ratings.items(), key=lambda x: x[1], reverse=True
+            )[:n]
+
+            # Get food details
+            recommendations = []
+            for food_id, predicted_rating in sorted_predictions:
+                food = Food.query.get(food_id)
+                if food:
+                    recommendations.append(
+                        {
+                            "food": food.to_dict(),
+                            "predicted_rating": predicted_rating,
+                            "normalized_rating_score": round(predicted_rating / 5, 2),
+                            "normalized_review_similarity": 0,  # Will be calculated in hybrid approach
+                            "hybrid_score": round(
+                                predicted_rating / 5, 2
+                            ),  # Default to rating score
+                            "method": "memory_based_cf",
+                        }
+                    )
+
+            logger.info(
+                f"Berhasil menghasilkan {len(recommendations)} rekomendasi memory-based collaborative filtering"
+            )
+            return recommendations
+
+        except Exception as e:
+            logger.error(f"Error in memory-based collaborative filtering: {str(e)}")
+            return []

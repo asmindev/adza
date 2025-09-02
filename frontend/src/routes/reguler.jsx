@@ -2,11 +2,13 @@ import RootLayout from "@/layout/RootLayout";
 import Login from "@/pages/auth/Login";
 import FoodDetailPage from "@/pages/detail/FoodDetailPage";
 import Home from "@/pages/home/Home";
+import Recommendation from "@/pages/recommendation/page";
 import RouteNavigationPage from "@/pages/navigation/RouteNavigationPage";
 import UserProfile from "@/pages/profile/UserProfile";
 import RestaurantDetail from "@/pages/restaurants/detail/RestaurantDetail";
 import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
 import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
+import Popular from "@/pages/popular/page";
 
 const REGULAR_ROUTES = [
     {
@@ -41,6 +43,9 @@ const REGULAR_ROUTES = [
                 path: "navigation/food/:foodId",
                 Component: RouteNavigationPage,
             },
+
+            { path: "recommendation", Component: Recommendation },
+            { path: "popular", Component: Popular },
         ],
     },
     {

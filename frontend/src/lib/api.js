@@ -53,6 +53,7 @@ export const fetchWithToken = async (url, options = {}) => {
     };
 
     const response = await fetch(`${API_BASE_URL}${url}`, {
+        method: "GET", // Default to GET for SWR
         ...options,
         headers,
     });
@@ -109,7 +110,7 @@ export const apiService = {
     // Dashboard
     dashboard: {
         getStats: () => apiClient.get("/dashboard/stats"),
-        getTopRatedFoods: () => apiClient.get("/recommendations/top-rated"),
+        getTopRatedFoods: () => apiClient.get("/recommendation/popular"),
         getRecentActivity: () => apiClient.get("/dashboard/recent-activity"),
     },
 
@@ -119,11 +120,12 @@ export const apiService = {
             apiClient.get(
                 `/api/v1/foods?page=${page}&limit=${limit}&search=${search}`
             ),
+        getRecommendation: () => apiClient.get("/api/v1/recommendation"),
+        getPopular: () => apiClient.get("/api/v1/popular"),
         getById: (id) => apiClient.get(`/api/v1/foods/${id}`),
         create: (data) => {
             // kalau ada images, maka gunakan formData
             if (data.images) {
-                console.log("data", data);
                 const formData = new FormData();
                 formData.append("name", data.name);
                 formData.append("description", data.description);
@@ -133,7 +135,6 @@ export const apiService = {
                 for (let i = 0; i < data.images.length; i++) {
                     formData.append("images", data.images[i].file);
                 }
-                console.log("formData", formData);
                 return apiClient.post("/api/v1/foods", formData, {
                     headers: {
                         "Content-Type": "multipart/form-data",

@@ -52,12 +52,36 @@ class Food(db.Model):
 
     def to_dict(self):
         """Simple ORM serialization - no business logic"""
+        # Get main image URL
+        main_image = None
+        all_images = []
+
+        # Query images directly to avoid relationship loading issues
+        try:
+            food_images = db.session.query(FoodImage).filter_by(food_id=self.id).all()
+
+            for image in food_images:
+                image_dict = image.to_dict()
+                all_images.append(image_dict)
+                if image.is_main and main_image is None:
+                    main_image = image_dict["image_url"]
+
+            # If no main image is set, use the first image as main
+            if main_image is None and all_images:
+                main_image = all_images[0]["image_url"]
+        except Exception as e:
+            logger.warning(f"Error loading images for food {self.id}: {str(e)}")
+            main_image = None
+            all_images = []
+
         return {
             "id": self.id,
             "name": self.name,
             "description": self.description,
             "price": self.price,
             "restaurant_id": self.restaurant_id,
+            "image_url": main_image,
+            "images": all_images,
             "created_at": (
                 self.created_at.isoformat() + "Z" if self.created_at else None
             ),
