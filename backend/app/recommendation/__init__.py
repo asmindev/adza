@@ -2,12 +2,9 @@
 Recommendation System Package
 """
 
-from .service import RecommendationService
-from .collaborative_filtering import CollaborativeFilteringRecommender
-from .popular import PopularFoodRecommender
+from .service import RecommendationService, HybridRecommendationSystem
 
 __all__ = [
     "RecommendationService",
-    "CollaborativeFilteringRecommender",
-    "PopularFoodRecommender",
+    "HybridRecommendationSystem",
 ]
