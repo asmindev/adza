@@ -13,18 +13,7 @@ export function FoodCollectionSection({
     isLoadingMore,
 }) {
     return (
-        <div className="container mx-auto px-4 py-16">
-            {/* Section Header */}
-            <div className="mb-12 text-center">
-                <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                    Koleksi Makanan Pilihan
-                </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                    Nikmati berbagai hidangan lezat yang telah dipilih khusus
-                    untuk Anda
-                </p>
-            </div>
-
+        <div className="container mx-auto px-4 py-8">
             {/* Food Grid */}
             <FoodGrid
                 foods={foods}

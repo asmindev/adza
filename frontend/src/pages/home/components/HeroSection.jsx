@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { HERO_CONSTANTS } from "../utils";
 
 /**
  * Hero Section Component
@@ -23,8 +24,7 @@ export function HeroSection() {
                 <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                     style={{
-                        backgroundImage:
-                            "url('https://cdn.rri.co.id/berita/10/images/1706597617604-6/ols2xpnjja8j69y.jpeg')",
+                        backgroundImage: `url(${HERO_CONSTANTS.DEFAULT_IMAGE})`,
                     }}
                 />
 
@@ -45,7 +45,7 @@ export function HeroSection() {
                             variants={titleVariants}
                             transition={{ delay: 0.2, duration: 0.8 }}
                         >
-                            Lapar?
+                            {HERO_CONSTANTS.TITLE}
                         </motion.h1>
 
                         <motion.p
@@ -53,7 +53,7 @@ export function HeroSection() {
                             variants={titleVariants}
                             transition={{ delay: 0.4, duration: 0.8 }}
                         >
-                            Cari rekomendasi kuliner di Kendari
+                            {HERO_CONSTANTS.SUBTITLE}
                         </motion.p>
                     </motion.div>
                 </div>

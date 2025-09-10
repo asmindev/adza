@@ -52,6 +52,6 @@ export const PAGINATION_CONSTANTS = {
 export const HERO_CONSTANTS = {
     DEFAULT_IMAGE:
         "https://cdn.rri.co.id/berita/10/images/1706597617604-6/ols2xpnjja8j69y.jpeg",
-    TITLE: "Lapar?",
+    TITLE: "Laparr?",
     SUBTITLE: "Cari rekomendasi kuliner di Kendari",
 };

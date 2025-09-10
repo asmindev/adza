@@ -7,7 +7,7 @@ import { apiService } from "@/lib/api";
  * @param {string} searchQuery - Query pencarian (optional)
  * @returns {Object} - Object dengan data dan functions
  */
-export function usePaginatedFoods(initialLimit = 20, searchQuery = null) {
+export function usePaginatedFoods(initialLimit = 5, searchQuery = null) {
     const [foods, setFoods] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -63,6 +63,13 @@ export function usePaginatedFoods(initialLimit = 20, searchQuery = null) {
         },
         [limit, search]
     );
+
+    // Update internal search when external searchQuery changes
+    useEffect(() => {
+        if (searchQuery !== search) {
+            setSearch(searchQuery);
+        }
+    }, [searchQuery, search]);
 
     // Load initial data when limit or search changes
     useEffect(() => {

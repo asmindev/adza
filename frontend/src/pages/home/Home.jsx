@@ -19,8 +19,10 @@ import { useInfiniteScroll } from "./hooks/useInfiniteScroll";
 export default function Home() {
     const [searchQuery, setSearchQuery] = useState("");
 
-    const { foods, error, loading, hasMore, loadMore, search } =
-        usePaginatedFoods(PAGINATION_CONSTANTS.DEFAULT_LIMIT, searchQuery);
+    const { foods, error, loading, hasMore, loadMore } = usePaginatedFoods(
+        PAGINATION_CONSTANTS.DEFAULT_LIMIT,
+        searchQuery
+    );
 
     const { isLoadingMore } = useInfiniteScroll(loadMore, {
         hasMore,
@@ -36,6 +38,7 @@ export default function Home() {
 
     const onSearch = useCallback((query) => {
         setSearchQuery(query);
+        console.log("Searching for:", query);
     }, []);
 
     // Loading and error states
@@ -43,9 +46,9 @@ export default function Home() {
         return <ErrorState error={error} />;
     }
 
-    if (loading && (!foods || foods.length === 0)) {
-        return <LoadingState />;
-    }
+    // if (loading && (!foods || foods.length === 0)) {
+    //     return <LoadingState />;
+    // }
 
     // Main render
     return (
@@ -56,7 +59,7 @@ export default function Home() {
             {/* Search Section */}
             <SearchSection
                 onSearch={onSearch}
-                searchValue={search || ""}
+                searchValue={searchQuery}
                 isLoading={loading}
             />
 

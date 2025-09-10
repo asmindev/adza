@@ -48,11 +48,7 @@ export function SearchBar({
                         onChange={handleInputChange}
                         placeholder={placeholder}
                         disabled={disabled}
-                        className="w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                                   bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                                   placeholder-gray-500 dark:placeholder-gray-400
-                                   focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                                   disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full pl-10 pr-10 py-2 rounded-lg disabled:cursor-not-allowed border"
                     />
 
                     {/* Clear Button */}
@@ -92,12 +88,12 @@ export function SearchSection({
     isLoading = false,
 }) {
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="text-center mb-8">
+        <div className="container mx-auto px-4">
+            <div className="text-center">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
                     Cari Makanan Favorit Anda
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Temukan berbagai pilihan makanan lezat di Kendari
                 </p>
 
