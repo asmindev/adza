@@ -9,10 +9,15 @@ import RestaurantDetail from "@/pages/restaurants/detail/RestaurantDetail";
 import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
 import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
 import Popular from "@/pages/popular/page";
+import onboardingMiddleware from "@/middleware/onboarding_middleware";
+import OnboardingPage from "@/pages/onboarding/page";
 
 const REGULAR_ROUTES = [
     {
+        path: "/",
         Component: RootLayout,
+        unstable_middleware: [onboardingMiddleware],
+        // loader: userLoader,
         children: [
             {
                 path: "/",
@@ -46,6 +51,7 @@ const REGULAR_ROUTES = [
 
             { path: "recommendation", Component: Recommendation },
             { path: "popular", Component: Popular },
+            { path: "preferences", Component: OnboardingPage },
         ],
     },
     {

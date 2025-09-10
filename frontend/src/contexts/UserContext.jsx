@@ -131,6 +131,7 @@ export default function UserProvider({ children }) {
     // The context value that will be provided
     const contextValue = {
         user,
+        setUser,
         loading,
         login,
         logout,

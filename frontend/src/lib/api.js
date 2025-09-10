@@ -203,6 +203,33 @@ export const apiService = {
             apiClient.post(`/api/v1/foods/${foodId}/reviews`, data),
         delete: (id) => apiClient.delete(`/api/v1/reviews/${id}`),
     },
+
+    // Categories
+    categories: {
+        getAll: (includeStats = false) =>
+            apiClient.get(`/api/v1/categories?include_stats=${includeStats}`),
+        getById: (id) => apiClient.get(`/api/v1/categories/${id}`),
+        getMostFavorite: (limit = 10) =>
+            apiClient.get(`/api/v1/categories/most-favorite?limit=${limit}`),
+    },
+
+    // User favorite categories
+    userFavoriteCategories: {
+        getMyFavorites: () => apiClient.get("/api/v1/me/favorite-categories"),
+        addFavorites: (categoryIds) => {
+            console.log("Adding favorites", categoryIds);
+            return apiClient.post("/api/v1/me/favorite-categories", {
+                category_ids: categoryIds,
+            });
+        },
+        removeFromFavorites: (categoryId) =>
+            apiClient.delete(`/api/v1/me/favorite-categories/${categoryId}`),
+        checkIsFavorite: (categoryId) =>
+            apiClient.get(`/api/v1/me/favorite-categories/${categoryId}/check`),
+    }, // User onboarding
+    onboarding: {
+        complete: () => apiClient.put("/api/v1/me/onboarding"),
+    },
 };
 
 // SWR Custom hooks
