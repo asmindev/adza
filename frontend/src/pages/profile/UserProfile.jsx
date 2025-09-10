@@ -9,6 +9,7 @@ import { PasswordChangeForm } from "./components/PasswordChangeForm";
 import { LogoutSection } from "./components/LogoutSection";
 import { RatedFoods } from "./components/RatedFoods";
 import { ReviewedFoods } from "./components/ReviewedFoods";
+import PreferencesSection from "./components/PreferencesSection";
 
 export default function UserProfile() {
     const { user, stats, isLoading, error, mutate } = useProfile();
@@ -139,6 +140,7 @@ export default function UserProfile() {
                             />
                         </div>
                         <div className="grid gap-6 lg:grid-cols-2">
+                            <PreferencesSection />
                             <LogoutSection />
                         </div>
                     </TabsContent>
