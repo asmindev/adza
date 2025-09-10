@@ -2,9 +2,8 @@
 Recommendation System Package
 """
 
-from .service import RecommendationService, HybridRecommendationSystem
+from .service import Recomendations
 
 __all__ = [
-    "RecommendationService",
-    "HybridRecommendationSystem",
+    "Recomendations",
 ]

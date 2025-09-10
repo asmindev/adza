@@ -13,6 +13,7 @@ from surprise import Dataset, Reader, SVD
 from surprise.model_selection import cross_validate
 import warnings
 
+from app.extensions import db
 from app.modules.rating.models import FoodRating, RestaurantRating
 from app.modules.food.models import Food
 from app.modules.restaurant.models import Restaurant
@@ -22,12 +23,20 @@ from app.utils import training_logger as logger
 warnings.filterwarnings("ignore")
 
 
-class HybridRecommendationSystem:
+class Recomendations:
     """
     Hybrid Recommendation System that combines:
     1. Food ratings (collaborative filtering with SVD)
     2. Restaurant ratings (collaborative filtering with SVD)
     Combined with alpha parameter weighting
+
+    This is the main and only class for the recommendation system.
+    It includes all functionality:
+    - Data preparation and cleaning
+    - SVD model training for both food and restaurant ratings
+    - Model validation with RMSE/MAE metrics
+    - Hybrid prediction combining both rating types
+    - Compatibility methods for existing applications
     """
 
     def __init__(self, alpha: float = 0.7, n_factors: int = 100, n_epochs: int = 20):
@@ -410,71 +419,26 @@ class HybridRecommendationSystem:
 
         return results
 
-
-# Convenience functions for easy usage
-def create_and_train_hybrid_system(alpha: float = 0.7) -> HybridRecommendationSystem:
-    """
-    Create and train a new hybrid recommendation system
-
-    Args:
-        alpha: Weight for food ratings (0-1), restaurant weight = 1-alpha
-
-    Returns:
-        Trained HybridRecommendationSystem instance
-    """
-    system = HybridRecommendationSystem(alpha=alpha)
-    results = system.train_full_system()
-
-    if results["success"]:
-        logger.info("Hybrid recommendation system ready for predictions")
-        return system
-    else:
-        logger.error(f"Failed to train system: {results['error']}")
-        return None
-
-
-def get_hybrid_recommendations(
-    user_id: str, alpha: float = 0.7, limit: int = 10
-) -> List[Dict[str, Any]]:
-    """
-    Get hybrid recommendations for a user
-
-    Args:
-        user_id: User ID to generate recommendations for
-        alpha: Weight for food ratings (0-1)
-        limit: Number of recommendations to return
-
-    Returns:
-        List of recommended foods with hybrid scores
-    """
-    system = create_and_train_hybrid_system(alpha=alpha)
-    if system:
-        return system.predict_hybrid_recommendations(user_id, limit)
-    return []
-
-
-# Compatibility class for existing application
-class RecommendationService:
-    """
-    Compatibility wrapper for existing recommendation service functionality
-    """
-
-    @staticmethod
     def get_recommendations(
+        self,
         user_id: str,
         user_price_preferences: Optional[Dict] = None,
         price_filter: Optional[Dict] = None,
         n: int = 10,
-        alpha: float = 0.7,
+        alpha: Optional[float] = None,
         beta: float = 0.2,
         gamma: float = 0.2,
-    ):
+    ) -> List[Dict[str, Any]]:
         """
         Get recommendations using the hybrid system (compatibility method)
         """
         try:
+            # Use instance alpha if not provided
+            if alpha is None:
+                alpha = self.alpha
+
             # Use hybrid system for recommendations
-            recommendations = get_hybrid_recommendations(user_id, alpha, n)
+            recommendations = self.predict_hybrid_recommendations(user_id, n)
 
             if not recommendations:
                 return []
@@ -502,25 +466,97 @@ class RecommendationService:
             return formatted_recommendations
 
         except Exception as e:
-            logger.error(
-                f"Error in RecommendationService.get_recommendations: {str(e)}"
-            )
+            logger.error(f"Error in Recomendations.get_recommendations: {str(e)}")
             return []
 
-    @staticmethod
-    def get_popular_foods(n: int = 10):
+    def get_popular_foods(self, n: int = 10) -> List[Dict[str, Any]]:
         """
-        Get popular foods (fallback method)
+        Get popular foods with detailed information including ratings and restaurant data
         """
         try:
-            # Simple fallback implementation
-            from app.modules.food.models import Food
             from sqlalchemy import func
 
-            # Get foods with basic popularity ranking
+            # Query foods with their ratings and restaurant information
             foods = Food.query.limit(n).all()
-            return [food.to_dict() for food in foods]
+
+            result = []
+
+            for food in foods:
+                # Get ratings statistics for this food
+                rating_query = (
+                    db.session.query(
+                        func.avg(FoodRating.rating).label("average"),
+                        func.count(FoodRating.rating).label("count"),
+                    )
+                    .filter(FoodRating.food_id == food.id)
+                    .first()
+                )
+
+                # Get restaurant information
+                restaurant_info = None
+                if food.restaurant_id:
+                    restaurant = Restaurant.query.get(food.restaurant_id)
+                    if restaurant:
+                        restaurant_info = {"id": restaurant.id, "name": restaurant.name}
+
+                # Format ratings - handle None values
+                avg_rating = 0.0
+                count_rating = 0
+
+                if (
+                    rating_query
+                    and hasattr(rating_query, "average")
+                    and rating_query.average
+                ):
+                    avg_rating = round(float(rating_query.average), 1)
+
+                if (
+                    rating_query
+                    and hasattr(rating_query, "count")
+                    and rating_query.count is not None
+                ):
+                    count_rating = rating_query.count
+
+                ratings_info = {"average": avg_rating, "count": count_rating}
+
+                # Get food dictionary and add additional fields
+                food_dict = food.to_dict()
+                food_dict["price"] = float(food_dict.get("price", 0.0))
+                food_dict["ratings"] = ratings_info
+                food_dict["restaurant"] = restaurant_info
+                food_dict["main_image"] = food_dict.get("image_url", None)
+
+                # Add to result list
+                result.append(food_dict)
+
+            return result
 
         except Exception as e:
             logger.error(f"Error getting popular foods: {str(e)}")
             return []
+
+
+# Convenience function for easy usage
+def create_hybrid_system(alpha: float = 0.7) -> Recomendations:
+    """
+    Create and train a new hybrid recommendation system
+
+    Args:
+        alpha: Weight for food ratings (0-1), restaurant weight = 1-alpha
+
+    Returns:
+        Trained Recomendations instance
+    """
+    system = Recomendations(alpha=alpha)
+    results = system.train_full_system()
+
+    if results["success"]:
+        logger.info("Hybrid recommendation system ready for predictions")
+        return system
+    else:
+        logger.error(f"Failed to train system: {results['error']}")
+        raise Exception(f"Training failed: {results['error']}")
+
+
+# For backward compatibility
+RecommendationService = Recomendations

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, g
-from app.recommendation.service import RecommendationService
+from app.recommendation.service import Recomendations
 from app.recommendation.config import RecommendationConfig
 from app.utils import api_logger as logger
 from app.utils.auth import token_required
@@ -52,12 +52,12 @@ def get_recommendations():
             f"Limit must be between {RecommendationConfig.MIN_RECOMMENDATIONS} and {RecommendationConfig.MAX_RECOMMENDATIONS}"
         )
 
-    # Validate enhancement parameters using config method
-    is_valid, error_msg = RecommendationConfig.validate_enhancement_params(
-        alpha, beta, gamma
-    )
-    if not is_valid:
-        return ResponseHelper.validation_error(error_msg)
+    # # Validate enhancement parameters using config method
+    # is_valid, error_msg = RecommendationConfig.validate_enhancement_params(
+    #     alpha, beta, gamma
+    # )
+    # if not is_valid:
+    #     return ResponseHelper.validation_error(error_msg)
 
     try:
         # Calculate user price preferences
@@ -113,7 +113,19 @@ def get_recommendations():
             logger.info("No price preference provided, using empty preferences")
 
         # Call the unified get_recommendations method
-        recommendations = RecommendationService.get_recommendations(
+        rec_system = Recomendations(alpha=alpha)
+        # Train the system first
+        train_results = rec_system.train_full_system()
+
+        if not train_results["success"]:
+            logger.error(
+                f"Failed to train recommendation system: {train_results['error']}"
+            )
+            return ResponseHelper.internal_server_error(
+                "Recommendation system training failed"
+            )
+
+        recommendations = rec_system.get_recommendations(
             user_id=user_id,
             user_price_preferences=user_price_preferences,
             price_filter=price_filter,
@@ -133,7 +145,8 @@ def get_recommendations():
                 f"Tidak ada rekomendasi untuk user {user_id}, menggunakan makanan populer"
             )
             # Fallback to popular foods
-            popular_foods = RecommendationService.get_popular_foods(n=limit)
+            rec_system_fallback = Recomendations()
+            popular_foods = rec_system_fallback.get_popular_foods(n=limit)
             logger.info(popular_foods)
             if popular_foods:
                 return ResponseHelper.success(
@@ -169,7 +182,8 @@ def get_popular():
     logger.info("GET /popular - Mengambil makanan populer berdasarkan rating pengguna")
     try:
         # Get top-rated foods using the service
-        top_rated_foods = RecommendationService.get_popular_foods(
+        rec_system_top = Recomendations()
+        top_rated_foods = rec_system_top.get_popular_foods(
             n=RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
         )
         if not top_rated_foods:

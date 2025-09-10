@@ -16,6 +16,7 @@ def generate_foods_data():
             "price": 8000,
             "category": "Rice",
             "restaurant_id": restaurant_uuids["restaurant6"],
+            "image_url": "https://example.com/images/nasi-tahu-tempe.jpg",
         },
         {
             "id": food_uuids["food2"],
@@ -24,6 +25,7 @@ def generate_foods_data():
             "price": 12000,
             "category": "Noodles",
             "restaurant_id": restaurant_uuids["restaurant6"],
+            "image_url": "https://example.com/images/mie-instan.jpg",
         },
         # Mid-range options (15k-25k)
         {
@@ -33,6 +35,7 @@ def generate_foods_data():
             "price": 15000,
             "category": "Rice",
             "restaurant_id": restaurant_uuids["restaurant1"],
+            "image_url": "https://example.com/images/nasi-kuning.jpg",
         },
         {
             "id": food_uuids["food4"],
@@ -41,6 +44,7 @@ def generate_foods_data():
             "price": 20000,
             "category": "Chicken",
             "restaurant_id": restaurant_uuids["restaurant1"],
+            "image_url": "https://example.com/images/ayam-geprek.jpg",
         },
         {
             "id": food_uuids["food5"],
@@ -49,6 +53,7 @@ def generate_foods_data():
             "price": 18000,
             "category": "Noodles",
             "restaurant_id": restaurant_uuids["restaurant2"],
+            "image_url": "https://example.com/images/mie-bakso.jpg",
         },
         {
             "id": food_uuids["food6"],
@@ -57,6 +62,7 @@ def generate_foods_data():
             "price": 18000,
             "category": "Noodles",
             "restaurant_id": restaurant_uuids["restaurant2"],
+            "image_url": "https://example.com/images/mie-ayam.jpg",
         },
         {
             "id": food_uuids["food7"],
@@ -65,6 +71,7 @@ def generate_foods_data():
             "price": 22000,
             "category": "Fast Food",
             "restaurant_id": restaurant_uuids["restaurant4"],
+            "image_url": "https://example.com/images/burger-classic.jpg",
         },
         {
             "id": food_uuids["food8"],
@@ -73,6 +80,7 @@ def generate_foods_data():
             "price": 25000,
             "category": "Chicken",
             "restaurant_id": restaurant_uuids["restaurant4"],
+            "image_url": "https://example.com/images/fried-chicken.jpg",
         },
         # Higher-end options (25k-40k)
         {
@@ -82,6 +90,7 @@ def generate_foods_data():
             "price": 35000,
             "category": "Noodles",
             "restaurant_id": restaurant_uuids["restaurant3"],
+            "image_url": "https://example.com/images/tonkotsu-ramen.jpg",
         },
         {
             "id": food_uuids["food10"],
@@ -90,6 +99,7 @@ def generate_foods_data():
             "price": 32000,
             "category": "Noodles",
             "restaurant_id": restaurant_uuids["restaurant3"],
+            "image_url": "https://example.com/images/miso-ramen.jpg",
         },
         {
             "id": food_uuids["food11"],
@@ -98,6 +108,7 @@ def generate_foods_data():
             "price": 45000,
             "category": "Seafood",
             "restaurant_id": restaurant_uuids["restaurant5"],
+            "image_url": "https://example.com/images/grilled-salmon.jpg",
         },
         {
             "id": food_uuids["food12"],
@@ -106,6 +117,7 @@ def generate_foods_data():
             "price": 38000,
             "category": "Seafood",
             "restaurant_id": restaurant_uuids["restaurant5"],
+            "image_url": "https://example.com/images/seafood-platter.jpg",
         },
         # Premium options (40k+)
         {
@@ -115,6 +127,7 @@ def generate_foods_data():
             "price": 85000,
             "category": "Steak",
             "restaurant_id": restaurant_uuids["restaurant7"],
+            "image_url": "https://example.com/images/wagyu-steak.jpg",
         },
         {
             "id": food_uuids["food14"],
@@ -123,6 +136,7 @@ def generate_foods_data():
             "price": 95000,
             "category": "Seafood",
             "restaurant_id": restaurant_uuids["restaurant7"],
+            "image_url": "https://example.com/images/lobster-thermidor.jpg",
         },
         {
             "id": food_uuids["food15"],
@@ -131,6 +145,7 @@ def generate_foods_data():
             "price": 75000,
             "category": "Duck",
             "restaurant_id": restaurant_uuids["restaurant7"],
+            "image_url": "https://example.com/images/duck-confit.jpg",
         },
         # Additional variety
         {
@@ -140,6 +155,7 @@ def generate_foods_data():
             "price": 28000,
             "category": "Soup",
             "restaurant_id": restaurant_uuids["restaurant5"],
+            "image_url": "https://example.com/images/tom-yum.jpg",
         },
         {
             "id": food_uuids["food17"],
@@ -148,6 +164,7 @@ def generate_foods_data():
             "price": 16000,
             "category": "Rice",
             "restaurant_id": restaurant_uuids["restaurant1"],
+            "image_url": "https://example.com/images/nasi-gudeg.jpg",
         },
         {
             "id": food_uuids["food18"],
@@ -156,6 +173,7 @@ def generate_foods_data():
             "price": 14000,
             "category": "Salad",
             "restaurant_id": restaurant_uuids["restaurant6"],
+            "image_url": "https://example.com/images/gado-gado.jpg",
         },
         {
             "id": food_uuids["food19"],
@@ -164,6 +182,7 @@ def generate_foods_data():
             "price": 30000,
             "category": "Beef",
             "restaurant_id": restaurant_uuids["restaurant1"],
+            "image_url": "https://example.com/images/beef-rendang.jpg",
         },
         {
             "id": food_uuids["food20"],
@@ -172,6 +191,7 @@ def generate_foods_data():
             "price": 26000,
             "category": "Fish",
             "restaurant_id": restaurant_uuids["restaurant4"],
+            "image_url": "https://example.com/images/fish-chips.jpg",
         },
     ]
 

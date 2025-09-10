@@ -71,6 +71,3 @@ def generate_food_ratings_data(foods_data, restaurants_data):
             )
 
     return ratings_data
-
-    # Return the generated ratings data
-    return ratings_data
