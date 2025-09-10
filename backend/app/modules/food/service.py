@@ -62,18 +62,29 @@ class FoodService:
 
     @staticmethod
     def get_all_foods_with_details(
-        page: int = 1, limit: int = 10, search: Optional[Text] = None
+        page: int = 1,
+        limit: int = 10,
+        search: Optional[Text] = None,
+        user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get paginated foods with aggregated details"""
+        """
+        Get paginated foods with aggregated details
+
+        Args:
+            page: Page number
+            limit: Items per page
+            search: Search term (if provided, ignores user preferences)
+            user_id: User ID for filtering by favorite categories (ignored if search is provided)
+        """
         # Basic validation
         if page < 1:
             page = 1
         if limit < 1 or limit > 100:
             limit = 10
 
-        # Get paginated results
+        # Get paginated results with user preferences filtering
         result = FoodRepository.get_all_with_limit(
-            page=page, limit=limit, search=search
+            page=page, limit=limit, search=search, user_id=user_id
         )
 
         # Use service method that includes main image

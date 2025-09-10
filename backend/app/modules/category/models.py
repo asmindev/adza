@@ -106,11 +106,10 @@ class UserFavoriteCategory(db.Model):
     __table_args__ = (db.UniqueConstraint("user_id", "category_id"),)
 
     def __init__(self, **kwargs):
-        # Generate UUID if not provided
-        if "id" not in kwargs:
-            kwargs["id"] = str(uuid.uuid4())
-        # remove created_at from kwargs if they exist
+        # Remove created_at from kwargs if they exist
         kwargs.pop("created_at", None)
+        # Don't manually set id - let autoincrement handle it
+        kwargs.pop("id", None)
         super(UserFavoriteCategory, self).__init__(**kwargs)
 
     def __repr__(self):

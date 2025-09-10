@@ -94,14 +94,22 @@ def create_food():
 
 
 @food_blueprint.route("/foods", methods=["GET"])
+@has_login
 def get_foods():
     """
     Get all foods with pagination.
 
+    If user is logged in and no search parameter provided:
+        - Returns foods based on user's favorite categories
+    If search parameter is provided:
+        - Returns all foods matching search term (ignores user preferences)
+    If user is not logged in:
+        - Returns all foods
+
     Query Parameters:
         page (int): Page number (default: 1)
         limit (int): Items per page (default: 20, max: 100)
-        search (str): Search term for food name
+        search (str): Search term for food name (when provided, ignores user preferences)
 
     Returns:
         JSON response with paginated food list
@@ -116,9 +124,25 @@ def get_foods():
 
         logger.info(f"Pagination params: page={page}, limit={limit}, search={search}")
 
+        # Get user ID if logged in
+        user_id = g.user_id if hasattr(g, "user_id") else None
+
+        # Determine if we should use user preferences
+        use_user_preferences = user_id and not search
+
+        if use_user_preferences:
+            logger.info(f"Using user preferences for user {user_id}")
+        elif search:
+            logger.info(f"Search mode - ignoring user preferences")
+        else:
+            logger.info("No user logged in - showing all foods")
+
         # Use service layer
         result = FoodService.get_all_foods_with_details(
-            page=page, limit=limit, search=search
+            page=page,
+            limit=limit,
+            search=search,
+            user_id=user_id if use_user_preferences else None,
         )
 
         foods = result["items"]
@@ -134,6 +158,7 @@ def get_foods():
                     "total": result["total"],
                     "pages": result["pages"],
                 },
+                "filtered_by_preferences": use_user_preferences,
             },
             message="Foods retrieved successfully",
         )

@@ -318,185 +318,6 @@ def change_password():
         return ResponseHelper.internal_server_error("Failed to change password")
 
 
-# User Favorite Categories endpoints
-@user_blueprint.route("/users/<string:user_id>/favorite-categories", methods=["GET"])
-@user_matches_or_admin
-def get_user_favorite_categories(user_id):
-    """
-    Get user's favorite categories.
-
-    Args:
-        user_id (str): User ID
-
-    Returns:
-        JSON response with user's favorite categories
-    """
-    logger.info(
-        f"GET /users/{user_id}/favorite-categories - Mengambil kategori favorit pengguna"
-    )
-
-    # Check if user exists
-    user = UserService.get_user_by_id(user_id)
-    if not user:
-        logger.warning(f"Pengguna dengan ID {user_id} tidak ditemukan")
-        return ResponseHelper.not_found("User", user_id)
-
-    try:
-        result = UserFavoriteCategoryService.get_user_favorite_categories(user_id)
-
-        if result["success"]:
-            logger.info(
-                f"Berhasil mengambil {len(result['data'])} kategori favorit untuk pengguna {user_id}"
-            )
-            return ResponseHelper.success(
-                data=result["data"], message=result["message"]
-            )
-        else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
-    except Exception as e:
-        logger.error(f"Gagal mengambil kategori favorit pengguna {user_id}: {str(e)}")
-        return ResponseHelper.internal_server_error(
-            "Failed to get user favorite categories"
-        )
-
-
-@user_blueprint.route(
-    "/users/<string:user_id>/favorite-categories/<string:category_id>", methods=["POST"]
-)
-@user_matches_or_admin
-def add_user_favorite_category(user_id, category_id):
-    """
-    Add category to user's favorites.
-
-    Args:
-        user_id (str): User ID
-        category_id (str): Category ID
-
-    Returns:
-        JSON response confirming addition to favorites
-    """
-    logger.info(
-        f"POST /users/{user_id}/favorite-categories/{category_id} - Menambahkan kategori ke favorit pengguna"
-    )
-
-    # Check if user exists
-    user = UserService.get_user_by_id(user_id)
-    if not user:
-        logger.warning(f"Pengguna dengan ID {user_id} tidak ditemukan")
-        return ResponseHelper.not_found("User", user_id)
-
-    try:
-        result = UserFavoriteCategoryService.add_favorite_category(user_id, category_id)
-
-        if result["success"]:
-            logger.info(
-                f"Berhasil menambahkan kategori {category_id} ke favorit pengguna {user_id}"
-            )
-            return ResponseHelper.success(
-                data=result["data"], message=result["message"], status_code=201
-            )
-        else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
-    except Exception as e:
-        logger.error(
-            f"Gagal menambahkan kategori {category_id} ke favorit pengguna {user_id}: {str(e)}"
-        )
-        return ResponseHelper.internal_server_error("Failed to add favorite category")
-
-
-@user_blueprint.route(
-    "/users/<string:user_id>/favorite-categories/<string:category_id>",
-    methods=["DELETE"],
-)
-@user_matches_or_admin
-def remove_user_favorite_category(user_id, category_id):
-    """
-    Remove category from user's favorites.
-
-    Args:
-        user_id (str): User ID
-        category_id (str): Category ID
-
-    Returns:
-        JSON response confirming removal from favorites
-    """
-    logger.info(
-        f"DELETE /users/{user_id}/favorite-categories/{category_id} - Menghapus kategori dari favorit pengguna"
-    )
-
-    # Check if user exists
-    user = UserService.get_user_by_id(user_id)
-    if not user:
-        logger.warning(f"Pengguna dengan ID {user_id} tidak ditemukan")
-        return ResponseHelper.not_found("User", user_id)
-
-    try:
-        result = UserFavoriteCategoryService.remove_favorite_category(
-            user_id, category_id
-        )
-
-        if result["success"]:
-            logger.info(
-                f"Berhasil menghapus kategori {category_id} dari favorit pengguna {user_id}"
-            )
-            return ResponseHelper.success(message=result["message"])
-        else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
-    except Exception as e:
-        logger.error(
-            f"Gagal menghapus kategori {category_id} dari favorit pengguna {user_id}: {str(e)}"
-        )
-        return ResponseHelper.internal_server_error(
-            "Failed to remove favorite category"
-        )
-
-
-@user_blueprint.route(
-    "/users/<string:user_id>/favorite-categories/<string:category_id>/check",
-    methods=["GET"],
-)
-@user_matches_or_admin
-def check_user_favorite_category(user_id, category_id):
-    """
-    Check if category is in user's favorites.
-
-    Args:
-        user_id (str): User ID
-        category_id (str): Category ID
-
-    Returns:
-        JSON response with favorite status
-    """
-    logger.info(
-        f"GET /users/{user_id}/favorite-categories/{category_id}/check - Mengecek status favorit kategori"
-    )
-
-    # Check if user exists
-    user = UserService.get_user_by_id(user_id)
-    if not user:
-        logger.warning(f"Pengguna dengan ID {user_id} tidak ditemukan")
-        return ResponseHelper.not_found("User", user_id)
-
-    try:
-        result = UserFavoriteCategoryService.check_is_favorite(user_id, category_id)
-
-        if result["success"]:
-            is_favorite = result["data"]["is_favorite"]
-            logger.info(
-                f"Status favorit kategori {category_id} untuk pengguna {user_id}: {is_favorite}"
-            )
-            return ResponseHelper.success(
-                data=result["data"], message=result["message"]
-            )
-        else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
-    except Exception as e:
-        logger.error(
-            f"Gagal mengecek status favorit kategori {category_id} untuk pengguna {user_id}: {str(e)}"
-        )
-        return ResponseHelper.internal_server_error("Failed to check favorite status")
-
-
 # Convenience endpoints for current user (me)
 @user_blueprint.route("/me/favorite-categories", methods=["GET"])
 @token_required
@@ -530,41 +351,77 @@ def get_my_favorite_categories():
         return ResponseHelper.internal_server_error("Failed to get favorite categories")
 
 
-@user_blueprint.route("/me/favorite-categories/<string:category_id>", methods=["POST"])
+# Convenience endpoints for current user (me): add multiple favorite categories
+@user_blueprint.route("/me/favorite-categories", methods=["POST"])
 @token_required
-def add_my_favorite_category(category_id):
+def add_my_favorite_categories():
     """
-    Add category to current user's favorites.
+    Add multiple categories to current user's favorites.
 
-    Args:
-        category_id (str): Category ID
+    Expected JSON payload:
+    {
+        "category_ids": ["category_id_1", "category_id_2", ...]
+    }
 
     Returns:
         JSON response confirming addition to favorites
     """
     logger.info(
-        f"POST /me/favorite-categories/{category_id} - Menambahkan kategori ke favorit pengguna yang sedang login"
+        "POST /me/favorite-categories - Menambahkan kategori ke favorit pengguna yang sedang login"
     )
 
+    data = request.get_json()
+
+    if not data or "category_ids" not in data:
+        logger.warning("Permintaan tidak valid: category_ids tidak ditemukan")
+        return ResponseHelper.validation_error("Missing required field: category_ids")
+
+    category_ids = data["category_ids"]
+
+    if not isinstance(category_ids, list) or not category_ids:
+        logger.warning("category_ids harus berupa list dan tidak boleh kosong")
+        return ResponseHelper.validation_error("category_ids must be a non-empty list")
+
+    logger.info(f"Menambahkan {len(category_ids)} kategori: {category_ids}")
+
     try:
-        result = UserFavoriteCategoryService.add_favorite_category(
-            g.user_id, category_id
+        results = []
+        errors = []
+
+        for category_id in category_ids:
+            result = UserFavoriteCategoryService.add_favorite_category(
+                g.user_id, category_id
+            )
+
+            if result["success"]:
+                results.append(result["data"])
+                logger.info(f"Berhasil menambahkan kategori {category_id}")
+            else:
+                errors.append({"category_id": category_id, "error": result["message"]})
+                logger.warning(
+                    f"Gagal menambahkan kategori {category_id}: {result['message']}"
+                )
+
+        if errors:
+            logger.warning(f"Beberapa kategori gagal ditambahkan: {errors}")
+            return ResponseHelper.success(
+                data={"added": results, "errors": errors},
+                message=f"Partially successful: {len(results)} added, {len(errors)} failed",
+                status_code=207,  # Multi-Status
+            )
+
+        logger.info(f"Berhasil menambahkan {len(results)} kategori ke favorit")
+        return ResponseHelper.success(
+            data=results,
+            message=f"Successfully added {len(results)} categories to favorites",
+            status_code=201,
         )
 
-        if result["success"]:
-            logger.info(
-                f"Berhasil menambahkan kategori {category_id} ke favorit pengguna yang sedang login"
-            )
-            return ResponseHelper.success(
-                data=result["data"], message=result["message"], status_code=201
-            )
-        else:
-            return ResponseHelper.error(message=result["message"], status_code=400)
     except Exception as e:
         logger.error(
-            f"Gagal menambahkan kategori {category_id} ke favorit pengguna yang sedang login: {str(e)}"
+            f"Gagal menambahkan kategori ke favorit pengguna yang sedang login: {str(e)}"
         )
-        return ResponseHelper.internal_server_error("Failed to add favorite category")
+        return ResponseHelper.internal_server_error("Failed to add favorite categories")
 
 
 @user_blueprint.route(
@@ -642,3 +499,29 @@ def check_my_favorite_category(category_id):
             f"Gagal mengecek status favorit kategori {category_id} untuk pengguna yang sedang login: {str(e)}"
         )
         return ResponseHelper.internal_server_error("Failed to check favorite status")
+
+
+@user_blueprint.route("/me/onboarding", methods=["PUT"])
+@token_required
+def complete_onboarding():
+    """
+    Mark current user's onboarding as completed.
+
+    Returns:
+        JSON response confirming onboarding completion
+    """
+    logger.info(
+        "PUT /me/onboarding - Menandai onboarding pengguna yang sedang login sebagai selesai"
+    )
+
+    try:
+        result = UserService.complete_onboarding(g.user_id)
+
+        if result:
+            logger.info("Berhasil menandai onboarding sebagai selesai")
+            return ResponseHelper.success(message="Onboarding completed successfully")
+        else:
+            return ResponseHelper.error(message="Failed to complete onboarding")
+    except Exception as e:
+        logger.error(f"Gagal menandai onboarding sebagai selesai: {str(e)}")
+        return ResponseHelper.internal_server_error("Failed to complete onboarding")

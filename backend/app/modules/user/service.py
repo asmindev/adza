@@ -280,3 +280,28 @@ class UserService:
     def get_user_statistics(user_id: str) -> Optional[Dict[str, Any]]:
         """Get user statistics"""
         return UserDataService.get_user_statistics(user_id)
+
+    # complete_onboarding
+    @staticmethod
+    def complete_onboarding(user_id: str) -> bool:
+        """Mark user's onboarding as completed"""
+        logger.info(f"Completing onboarding for user ID: {user_id}")
+        user = UserRepository.get_by_id(user_id)
+        if not user:
+            logger.warning(f"User with ID {user_id} not found")
+            return False
+
+        if user.onboarding_completed:
+            logger.info(f"User ID {user_id} has already completed onboarding")
+            return True
+
+        user.onboarding_completed = True
+        try:
+            UserRepository.update(user)
+            logger.info(f"Onboarding marked as completed for user ID: {user_id}")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Failed to complete onboarding for user ID {user_id}: {str(e)}"
+            )
+            return False

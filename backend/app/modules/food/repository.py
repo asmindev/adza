@@ -12,21 +12,25 @@ class FoodRepository:
         return foods
 
     @staticmethod
-    def get_all_with_limit(page=1, limit=10, search=None):
+    def get_all_with_limit(page=1, limit=10, search=None, user_id=None):
         logger.debug(
-            f"Mengambil makanan dengan pagination: page={page}, limit={limit}, search={search}"
+            f"Mengambil makanan dengan pagination: page={page}, limit={limit}, search={search}, user_id={user_id}"
         )
 
-        # Import Restaurant here to avoid circular imports
+        # Import models here to avoid circular imports
         from app.modules.restaurant.models import Restaurant
+        from app.modules.category.models import (
+            Category,
+            UserFavoriteCategory,
+            restaurant_categories,
+        )
 
         # Join with restaurant table to include restaurant information
-        # Use proper attribute access for the backref
         query = Food.query.join(
             Restaurant, Food.restaurant_id == Restaurant.id, isouter=True
         )
 
-        # Apply search filter if provided
+        # Apply search filter if provided (search overrides user preferences)
         if search:
             search_term = f"%{search}%"
             query = query.filter(
@@ -39,6 +43,32 @@ class FoodRepository:
                 )
             )
             logger.info(f"Menerapkan filter pencarian: {search}")
+
+        # If no search provided and user_id exists, filter by user's favorite categories
+        elif user_id:
+            # Get user's favorite category IDs as a list
+            favorite_category_ids = [
+                row[0]
+                for row in db.session.query(UserFavoriteCategory.category_id)
+                .filter_by(user_id=user_id)
+                .all()
+            ]
+
+            # Only apply filter if user has favorite categories
+            if favorite_category_ids:
+                # Filter foods by restaurants that have user's favorite categories
+                # Join with restaurant_categories to get restaurants with favorite categories
+                query = query.join(
+                    restaurant_categories,
+                    Restaurant.id == restaurant_categories.c.restaurant_id,
+                ).filter(restaurant_categories.c.category_id.in_(favorite_category_ids))
+                logger.info(
+                    f"Menerapkan filter kategori favorit untuk user: {user_id} dengan {len(favorite_category_ids)} kategori"
+                )
+            else:
+                logger.info(
+                    f"User {user_id} belum memiliki kategori favorit, menampilkan semua makanan"
+                )
 
         # Get total count for pagination
         total_count = query.count()
