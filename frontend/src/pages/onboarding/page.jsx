@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +106,12 @@ export default function OnboardingPage() {
         (selectedCategories.length / categories.length) * 100,
         100
     );
+
+    useEffect(() => {
+        if (user && user.onboarding_completed) {
+            navigate("/");
+        }
+    }, [user, navigate]);
 
     // Loading state
     if (isLoading) {
