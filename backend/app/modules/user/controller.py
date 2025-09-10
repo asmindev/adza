@@ -351,12 +351,12 @@ def get_my_favorite_categories():
         return ResponseHelper.internal_server_error("Failed to get favorite categories")
 
 
-# Convenience endpoints for current user (me): add multiple favorite categories
 @user_blueprint.route("/me/favorite-categories", methods=["POST"])
 @token_required
 def add_my_favorite_categories():
     """
-    Add multiple categories to current user's favorites.
+    Replace all current user's favorite categories with new ones.
+    This will first delete all existing favorites, then add the new ones.
 
     Expected JSON payload:
     {
@@ -364,10 +364,10 @@ def add_my_favorite_categories():
     }
 
     Returns:
-        JSON response confirming addition to favorites
+        JSON response confirming replacement of favorites
     """
     logger.info(
-        "POST /me/favorite-categories - Menambahkan kategori ke favorit pengguna yang sedang login"
+        "POST /me/favorite-categories - Mengganti semua kategori favorit pengguna yang sedang login"
     )
 
     data = request.get_json()
@@ -382,9 +382,25 @@ def add_my_favorite_categories():
         logger.warning("category_ids harus berupa list dan tidak boleh kosong")
         return ResponseHelper.validation_error("category_ids must be a non-empty list")
 
-    logger.info(f"Menambahkan {len(category_ids)} kategori: {category_ids}")
+    logger.info(f"Mengganti dengan {len(category_ids)} kategori: {category_ids}")
 
     try:
+        # Step 1: Delete all existing favorite categories
+        logger.info("Step 1: Menghapus semua kategori favorit yang ada")
+        delete_result = UserFavoriteCategoryService.clear_all_favorite_categories(
+            g.user_id
+        )
+
+        if delete_result["success"]:
+            logger.info(f"Berhasil menghapus semua kategori favorit yang ada")
+        else:
+            logger.warning(
+                f"Gagal menghapus kategori favorit yang ada: {delete_result['message']}"
+            )
+            # Continue anyway, as user might not have any favorites yet
+
+        # Step 2: Add new favorite categories
+        logger.info("Step 2: Menambahkan kategori favorit yang baru")
         results = []
         errors = []
 
@@ -410,18 +426,20 @@ def add_my_favorite_categories():
                 status_code=207,  # Multi-Status
             )
 
-        logger.info(f"Berhasil menambahkan {len(results)} kategori ke favorit")
+        logger.info(f"Berhasil mengganti dengan {len(results)} kategori favorit baru")
         return ResponseHelper.success(
             data=results,
-            message=f"Successfully added {len(results)} categories to favorites",
+            message=f"Successfully replaced with {len(results)} favorite categories",
             status_code=201,
         )
 
     except Exception as e:
         logger.error(
-            f"Gagal menambahkan kategori ke favorit pengguna yang sedang login: {str(e)}"
+            f"Gagal mengganti kategori favorit pengguna yang sedang login: {str(e)}"
         )
-        return ResponseHelper.internal_server_error("Failed to add favorite categories")
+        return ResponseHelper.internal_server_error(
+            "Failed to replace favorite categories"
+        )
 
 
 @user_blueprint.route(

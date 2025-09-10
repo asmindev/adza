@@ -459,6 +459,37 @@ class UserFavoriteCategoryService:
             }
 
     @staticmethod
+    def clear_all_favorite_categories(user_id: str) -> Dict[str, Any]:
+        """
+        Clear all favorite categories for a user
+
+        Args:
+            user_id (str): User ID
+
+        Returns:
+            dict: Service response with success status and message
+        """
+        try:
+            result = UserFavoriteCategoryRepository.clear_all_user_favorites(user_id)
+            if result["success"]:
+                return {
+                    "success": True,
+                    "message": f"Cleared {result['deleted_count']} favorite categories",
+                    "deleted_count": result["deleted_count"],
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Error clearing favorites: {result['error']}",
+                }
+        except Exception as e:
+            logger.error(f"Error clearing user favorite categories: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Error clearing favorite categories: {str(e)}",
+            }
+
+    @staticmethod
     def check_is_favorite(user_id: str, category_id: str) -> Dict[str, Any]:
         """
         Check if category is in user favorites

@@ -135,6 +135,19 @@ class UserFavoriteCategoryRepository:
         return False
 
     @staticmethod
+    def clear_all_user_favorites(user_id):
+        """Remove all favorite categories for a specific user"""
+        try:
+            deleted_count = UserFavoriteCategory.query.filter_by(
+                user_id=user_id
+            ).delete()
+            db.session.commit()
+            return {"success": True, "deleted_count": deleted_count}
+        except Exception as e:
+            db.session.rollback()
+            return {"success": False, "error": str(e)}
+
+    @staticmethod
     def get_category_favorite_count(category_id):
         """Get number of users who have this category as favorite"""
         return UserFavoriteCategory.query.filter_by(category_id=category_id).count()
