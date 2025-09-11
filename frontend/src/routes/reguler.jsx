@@ -12,8 +12,21 @@ import Popular from "@/pages/popular/page";
 import onboardingMiddleware from "@/middleware/onboarding_middleware";
 import OnboardingPage from "@/pages/onboarding/page";
 import Register from "@/pages/auth/Register";
+import auth, { profileLoader } from "@/middleware/authenticated_middleware";
 
 const REGULAR_ROUTES = [
+    {
+        unstable_middleware: [auth],
+        path: "/login",
+        loader: profileLoader,
+        Component: Login,
+    },
+    {
+        unstable_middleware: [auth],
+        loader: profileLoader,
+        path: "/register",
+        Component: Register,
+    },
     {
         path: "/",
         Component: RootLayout,
@@ -54,14 +67,6 @@ const REGULAR_ROUTES = [
             { path: "popular", Component: Popular },
             { path: "preferences", Component: OnboardingPage },
         ],
-    },
-    {
-        path: "/login",
-        Component: Login,
-    },
-    {
-        path: "/register",
-        Component: Register,
     },
 ];
 

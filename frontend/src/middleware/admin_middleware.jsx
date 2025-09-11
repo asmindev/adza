@@ -1,24 +1,21 @@
 import { userContext } from "@/contexts/context";
 import { redirect } from "react-router";
 
-async function adminMiddleware({ context }) {
-    try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const is_admin = user && user.role === "admin";
-        console.log({ is_admin });
-        if (!user) {
-            throw redirect("/login");
-        }
+async function adminMiddleware({ context }, next) {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
 
-        if (!is_admin) {
-            console.log("Admin Middleware - Not Authorized");
-            throw redirect("/");
-        }
-        context.set(userContext, user);
-    } catch (error) {
-        console.error("Admin Middleware Error:", error);
+    if (!user) {
         throw redirect("/login");
     }
+
+    const is_admin = user && user.role === "admin";
+    if (!is_admin) {
+        console.log("Admin Middleware - Not Authorized");
+        throw redirect("/");
+    }
+
+    context.set(userContext, user);
+    return next();
 }
 
 export default adminMiddleware;

@@ -1,20 +1,30 @@
-import { userContext } from "@/contexts/context";
+import { redirect } from "react-router";
 
-async function onboardingMiddleware({ context }, next) {
+async function onboardingMiddleware({ request }, next) {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+
+    // Skip middleware for auth pages and preferences page
+    if (
+        pathname === "/login" ||
+        pathname === "/register" ||
+        pathname === "/preferences"
+    ) {
+        return next();
+    }
+
     console.log("Onboarding Middleware - Checking onboarding status");
-    const user = JSON.parse(localStorage.getItem("user"));
-    console.log({ user });
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
     if (user) {
         const hasCompletedOnboarding = user.onboarding_completed;
-        console.log({ hasCompletedOnboarding });
         if (!hasCompletedOnboarding) {
             console.log("Onboarding Middleware - Redirecting to preferences");
-            window.location.href = "/preferences";
-            return;
+            throw redirect("/preferences");
         }
-        context.set(userContext, user);
     }
-    await next();
+
+    return next();
 }
 
 export default onboardingMiddleware;
