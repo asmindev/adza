@@ -263,6 +263,15 @@ class Recomendations:
             logger.error(f"✗ Model validation failed: {str(e)}")
             return {}
 
+    def is_system_ready(self) -> bool:
+        """Check if the recommendation system is ready for predictions"""
+        return (
+            self.food_svd_model is not None
+            and self.restaurant_svd_model is not None
+            and self.food_ratings_df is not None
+            and self.restaurant_ratings_df is not None
+        )
+
     def predict_hybrid_recommendations(
         self, user_id: str, limit: int = 10
     ) -> List[Dict[str, Any]]:
@@ -279,6 +288,14 @@ class Recomendations:
         try:
             logger.info(f"Generating hybrid recommendations for user {user_id}")
 
+            # Check if system is ready
+            if not self.is_system_ready():
+                logger.warning("System not ready. Training models first...")
+                training_result = self.train_full_system()
+                if not training_result["success"]:
+                    logger.error("Failed to train models for recommendations")
+                    return []
+
             # Get all foods and their restaurants
             foods = Food.query.all()
             if not foods:
@@ -286,11 +303,13 @@ class Recomendations:
                 return []
 
             # Get user's existing food ratings
-            user_food_ratings = set(
-                self.food_ratings_df[self.food_ratings_df["user_id"] == user_id][
-                    "food_id"
-                ].values
-            )
+            user_food_ratings = set()
+            if self.food_ratings_df is not None and len(self.food_ratings_df) > 0:
+                user_ratings = self.food_ratings_df[
+                    self.food_ratings_df["user_id"] == user_id
+                ]["food_id"]
+                if len(user_ratings) > 0:
+                    user_food_ratings = set(user_ratings.tolist())
 
             recommendations = []
 
@@ -304,6 +323,13 @@ class Recomendations:
                     food_prediction = self.food_svd_model.predict(user_id, food.id)
                     food_score = food_prediction.est
 
+                    # Ensure food score is within valid range
+                    if food_score <= 0:
+                        food_score = 2.5  # default neutral score
+                        logger.debug(
+                            f"Food {food.id} has 0 rating for user {user_id}, using default score 2.5"
+                        )
+
                     # Get restaurant for this food
                     restaurant = Restaurant.query.get(food.restaurant_id)
                     restaurant_score = 2.5  # default neutral score
@@ -313,7 +339,17 @@ class Recomendations:
                         restaurant_prediction = self.restaurant_svd_model.predict(
                             user_id, restaurant.id
                         )
-                        restaurant_score = restaurant_prediction.est
+                        predicted_score = restaurant_prediction.est
+
+                        # If prediction is 0 or very low, use default score
+                        if predicted_score > 0:
+                            restaurant_score = predicted_score
+                        else:
+                            # Keep default 2.5 score and log this case
+                            logger.debug(
+                                f"Restaurant {restaurant.id} has 0 rating for user {user_id}, using default score 2.5"
+                            )
+                        # else keep the default 2.5 score
 
                     # Normalize scores to 0-1 range
                     food_normalized = (food_score - 1.0) / 4.0  # Scale 1-5 to 0-1
