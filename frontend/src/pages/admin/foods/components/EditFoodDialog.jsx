@@ -230,20 +230,39 @@ export default function EditFoodDialog({
         setIsSubmitting(true);
 
         try {
-            // Prepare the images data
-            const imagesData = images.map((img) => ({
-                id: img.id || null, // Include ID for existing images
-                image_url: img.url || "",
-                file: img.file || null,
-                is_main: img.isMain,
-                isExisting: img.isExisting || false,
-            }));
+            // Separate new images from existing images
+            const newImages = images.filter(
+                (img) => !img.isExisting && img.file
+            );
+            const existingImages = images.filter((img) => img.isExisting);
 
-            // Add images to form data
-            const formData = {
-                ...data,
-                images: imagesData,
-            };
+            // Find deleted images (compare with original foodData.images)
+            const deletedImageIds = [];
+            if (foodData.images) {
+                foodData.images.forEach((originalImg) => {
+                    const stillExists = existingImages.find(
+                        (img) => img.id === originalImg.id
+                    );
+                    if (!stillExists) {
+                        deletedImageIds.push(originalImg.id);
+                    }
+                });
+            }
+
+            // Prepare images data in the format expected by API service
+            const formData = { ...data };
+
+            // Only add images data if there are changes
+            if (newImages.length > 0 || deletedImageIds.length > 0) {
+                formData.images = {
+                    new_images: newImages,
+                    deleted_image_ids: deletedImageIds,
+                };
+            }
+
+            console.log("Sending form data:", formData); // Debug log
+            console.log("New images:", newImages.length); // Debug log
+            console.log("Deleted image IDs:", deletedImageIds); // Debug log
 
             // Submit data
             await apiService.foods.update(foodData.id, formData);

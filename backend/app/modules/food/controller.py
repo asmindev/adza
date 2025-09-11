@@ -412,6 +412,7 @@ def serve_static(filename):
         Static file response
     """
     food_folder_images = current_app.config.get("FOODS_IMAGES_PATH")
+    logger.debug(f"Serving static file: {filename} from {food_folder_images}")
     if not food_folder_images:
         return ResponseHelper.error("Static files path not configured", 500)
     return send_from_directory(food_folder_images, filename)

@@ -288,8 +288,9 @@ class FoodService:
         logger.info(f"Processing {len(images)} images for food {food_id}")
 
         # Get or create image directory
-        image_dir = FoodService._get_food_image_directory(food_id)
-        os.makedirs(image_dir, exist_ok=True)
+        image_dir = current_app.config.get("FOODS_IMAGES_PATH") or os.path.join(
+            "app", "assets", "images", "foods"
+        )
 
         for image in images:
             if image and image.filename:
