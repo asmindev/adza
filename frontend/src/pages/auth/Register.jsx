@@ -15,9 +15,13 @@ import { toast } from "sonner";
 const registerSchema = z
     .object({
         name: z.string().min(2, { message: "Nama minimal 2 karakter" }),
-        username: z.string()
+        username: z
+            .string()
             .min(3, { message: "Username minimal 3 karakter" })
-            .regex(/^[a-zA-Z0-9_]+$/, { message: "Username hanya boleh mengandung huruf, angka, dan underscore" }),
+            .regex(/^[a-zA-Z0-9_]+$/, {
+                message:
+                    "Username hanya boleh mengandung huruf, angka, dan underscore",
+            }),
         email: z.string().email({ message: "Format email tidak valid" }),
         password: z.string().min(6, { message: "Password minimal 6 karakter" }),
         confirmPassword: z
