@@ -28,29 +28,72 @@ class UserDataService:
         user_data = user.to_dict()
 
         try:
-            # Safely get and process reviews
+            # Safely get and process reviews with detailed information
             reviews = []
             if hasattr(user, "reviews") and user.reviews:
-                reviews = [review.to_dict() for review in user.reviews]
+                for review in user.reviews:
+                    review_dict = review.to_dict()
+                    # Add food details if available
+                    if hasattr(review, "food") and review.food:
+                        food_data = review.food.to_dict()
+                        # Add restaurant info to food data if available
+                        if (
+                            hasattr(review.food, "restaurant")
+                            and review.food.restaurant
+                        ):
+                            food_data["restaurant"] = review.food.restaurant.to_dict()
+                        review_dict["food"] = food_data
+                    # Add restaurant details if available (for direct restaurant reviews)
+                    if hasattr(review, "restaurant") and review.restaurant:
+                        review_dict["restaurant"] = review.restaurant.to_dict()
+                    reviews.append(review_dict)
+
                 # Sort reviews by created_at (most recent first)
                 reviews = sorted(
                     reviews, key=lambda x: x.get("created_at", ""), reverse=True
                 )
 
-            # Safely get and process ratings
+            # Safely get and process ratings with detailed information
             food_ratings = []
             restaurant_ratings = []
 
             if hasattr(user, "food_ratings") and user.food_ratings:
-                food_ratings = [rating.to_dict() for rating in user.food_ratings]
+                for rating in user.food_ratings:
+                    rating_dict = rating.to_dict()
+                    # Add food details
+                    if hasattr(rating, "food") and rating.food:
+                        food_data = rating.food.to_dict()
+                        # Add restaurant info to food data if available
+                        if (
+                            hasattr(rating.food, "restaurant")
+                            and rating.food.restaurant
+                        ):
+                            food_data["restaurant"] = rating.food.restaurant.to_dict()
+                        rating_dict["food"] = food_data
+                    food_ratings.append(rating_dict)
 
             if hasattr(user, "restaurant_ratings") and user.restaurant_ratings:
-                restaurant_ratings = [
-                    rating.to_dict() for rating in user.restaurant_ratings
-                ]
+                for rating in user.restaurant_ratings:
+                    rating_dict = rating.to_dict()
+                    # Add restaurant details
+                    if hasattr(rating, "restaurant") and rating.restaurant:
+                        rating_dict["restaurant"] = rating.restaurant.to_dict()
+                    restaurant_ratings.append(rating_dict)
 
-            # Combine all ratings and sort
-            all_ratings = food_ratings + restaurant_ratings
+            # Combine all ratings and sort (keep detailed information)
+            all_ratings = []
+
+            # Add food ratings with type identifier
+            for rating in food_ratings:
+                rating["rating_type"] = "food"
+                all_ratings.append(rating)
+
+            # Add restaurant ratings with type identifier
+            for rating in restaurant_ratings:
+                rating["rating_type"] = "restaurant"
+                all_ratings.append(rating)
+
+            # Sort by created_at (most recent first)
             all_ratings = sorted(
                 all_ratings, key=lambda x: x.get("created_at", ""), reverse=True
             )

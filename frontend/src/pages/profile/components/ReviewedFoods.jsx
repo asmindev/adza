@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Clock, Star, ThumbsUp, Eye, Quote } from "lucide-react";
 import { formatDate, truncateText } from "../utils/profile.utils";
 import { useState } from "react";
+import { Link } from "react-router";
 
 export const ReviewedFoods = ({ reviews = [], showAll = false }) => {
     const [expanded, setExpanded] = useState(showAll);
@@ -61,9 +62,10 @@ export const ReviewedFoods = ({ reviews = [], showAll = false }) => {
             <CardContent className="pt-0">
                 <div className="space-y-4">
                     {displayReviews.map((review) => (
-                        <div
+                        <Link
+                            to={`/food/${review.food?.id}`}
                             key={review.id}
-                            className="p-4 border rounded-lg hover:bg-accent transition-colors"
+                            className="p-4 border rounded-lg hover:bg-accent transition-colors block w-full"
                         >
                             <Quote className="w-4 h-4 text-muted-foreground opacity-50 mb-2" />
 
@@ -123,7 +125,7 @@ export const ReviewedFoods = ({ reviews = [], showAll = false }) => {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
 

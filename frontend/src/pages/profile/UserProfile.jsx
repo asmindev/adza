@@ -13,6 +13,7 @@ import PreferencesSection from "./components/PreferencesSection";
 
 export default function UserProfile() {
     const { user, stats, isLoading, error, mutate } = useProfile();
+    console.log(user);
     const [activeTab, setActiveTab] = useState("overview");
 
     // Loading state
@@ -100,13 +101,11 @@ export default function UserProfile() {
                     <TabsContent value="overview" className="space-y-6">
                         <div className="grid gap-6 lg:grid-cols-2">
                             <RatedFoods
-                                foodRatings={
-                                    user.food_ratings?.slice(0, 3) || []
-                                }
+                                foodRatings={user.food_ratings || []}
                                 showAll={false}
                             />
                             <ReviewedFoods
-                                reviews={user.reviews?.slice(0, 3) || []}
+                                reviews={user.reviews || []}
                                 showAll={false}
                             />
                         </div>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Star, Clock, ChefHat, Eye } from "lucide-react";
 import { formatDate, formatRating } from "../utils/profile.utils";
 import { useState } from "react";
+import { Link } from "react-router";
 
 export const RatedFoods = ({ foodRatings = [], showAll = false }) => {
     const [expanded, setExpanded] = useState(showAll);
@@ -63,9 +64,10 @@ export const RatedFoods = ({ foodRatings = [], showAll = false }) => {
             <CardContent className="pt-0">
                 <div className="space-y-3">
                     {displayRatings.map((rating) => (
-                        <div
+                        <Link
+                            to={`/food/${rating.food?.id}`}
                             key={rating.id}
-                            className="p-4 border rounded-lg hover:bg-accent transition-colors"
+                            className="p-4 border rounded-lg hover:bg-accent transition-colors block w-full"
                         >
                             <div className="flex items-start gap-3">
                                 {/* Food Icon */}
@@ -117,7 +119,7 @@ export const RatedFoods = ({ foodRatings = [], showAll = false }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
 

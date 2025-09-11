@@ -1,9 +1,14 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import useSWR from "swr";
 import { apiService } from "../../lib/api";
 import FoodCard from "@/components/food/FoodCard";
+import { useNavigate } from "react-router";
 
 export default function Recommendation() {
+    const navigate = useNavigate();
+    const [countdown, setCountdown] = useState(60);
+    const [redirecting, setRedirecting] = useState(false);
+
     // Menggunakan SWR untuk mengambil data rekomendasi dengan autentikasi token dari api.js
     const {
         data,
@@ -16,12 +21,35 @@ export default function Recommendation() {
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
-            errorRetryCount: 3,
+            errorRetryCount: 0,
             errorRetryInterval: 5000,
         }
     );
 
+    const foodItems = data?.data?.data?.recommendations || data?.data || [];
+
+    // Timer redirect ke popular foods jika tidak ada rekomendasi atau ada error
+    useEffect(() => {
+        if (!isLoading && (error || foodItems.length === 0)) {
+            setRedirecting(true);
+            const timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        navigate("/popular");
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            return () => clearInterval(timer);
+        }
+    }, [isLoading, error, foodItems.length, navigate]);
+
     const handleRefresh = () => {
+        setRedirecting(false);
+        setCountdown(5);
         refreshRecommendations();
     };
 
@@ -39,28 +67,46 @@ export default function Recommendation() {
     }
 
     if (error) {
+        console.error("Error fetching recommendations:", error);
         return (
             <div className="flex flex-col justify-center items-center min-h-[400px]">
                 <div className="text-center max-w-md">
                     <div className="text-red-500 text-lg mb-4">
-                        Failed to load recommendations
+                        Rekomendasi belum tersedia
                     </div>
                     <div className="text-gray-600 text-sm mb-6">
                         {error.message ||
                             "Something went wrong while fetching recommendations"}
                     </div>
+                    {redirecting ? (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <p className="text-blue-700 text-sm mb-2">
+                                Redirecting to popular foods in {countdown}{" "}
+                                seconds...
+                            </p>
+                            <div className="w-full bg-blue-200 rounded-full h-2">
+                                <div
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
+                                    style={{
+                                        width: `${
+                                            ((5 - countdown) / 5) * 100
+                                        }%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    ) : null}
                     <button
                         onClick={handleRefresh}
                         className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                        disabled={redirecting}
                     >
-                        Try Again
+                        {redirecting ? "Redirecting..." : "Try Again"}
                     </button>
                 </div>
             </div>
         );
     }
-
-    const foodItems = data?.data?.data?.recommendations || data?.data || [];
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -99,11 +145,30 @@ export default function Recommendation() {
                             Start rating some foods to get personalized
                             recommendations tailored to your taste!
                         </p>
+                        {redirecting ? (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <p className="text-blue-700 text-sm mb-2">
+                                    Redirecting to popular foods in {countdown}{" "}
+                                    seconds...
+                                </p>
+                                <div className="w-full bg-blue-200 rounded-full h-2">
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
+                                        style={{
+                                            width: `${
+                                                ((5 - countdown) / 5) * 100
+                                            }%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        ) : null}
                         <button
                             onClick={handleRefresh}
                             className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            disabled={redirecting}
                         >
-                            Check Again
+                            {redirecting ? "Redirecting..." : "Check Again"}
                         </button>
                     </div>
                 </div>

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, g
-from app.recommendation.service import Recomendations
+from app.recommendation.service import Recommendations
 from app.recommendation.config import RecommendationConfig
 from app.utils import api_logger as logger
 from app.utils.auth import token_required
@@ -113,7 +113,7 @@ def get_recommendations():
             logger.info("No price preference provided, using empty preferences")
 
         # Call the unified get_recommendations method
-        rec_system = Recomendations(alpha=alpha)
+        rec_system = Recommendations(alpha=alpha)
         # Train the system first
         train_results = rec_system.train_full_system()
 
@@ -182,7 +182,7 @@ def get_popular():
     logger.info("GET /popular - Mengambil makanan populer berdasarkan rating pengguna")
     try:
         # Get top-rated foods using the service
-        rec_system_top = Recomendations()
+        rec_system_top = Recommendations()
         top_rated_foods = rec_system_top.get_popular_foods(
             n=RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
         )

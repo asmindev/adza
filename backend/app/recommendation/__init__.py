@@ -2,8 +2,8 @@
 Recommendation System Package
 """
 
-from .service import Recomendations
+from .service import Recommendations
 
 __all__ = [
-    "Recomendations",
+    "Recommendations",
 ]
