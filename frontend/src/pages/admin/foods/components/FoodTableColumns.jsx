@@ -36,9 +36,11 @@ export const createFoodColumns = (setDeleteFoodId, setEditFoodData) => [
                         <ImageIcon className="size-6 text-gray-400" />
                     )}
                 </div>
-                <div className="space-y-1">
-                    <span className="font-medium">{row.original.name}</span>
-                    <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                <div className="space-y-1 w-32">
+                    <span className="font-medium truncate block">
+                        {row.original.name}
+                    </span>
+                    <p className="text-sm text-muted-foreground truncate">
                         {row.original.description || "Tidak ada deskripsi"}
                     </p>
                 </div>
@@ -49,10 +51,10 @@ export const createFoodColumns = (setDeleteFoodId, setEditFoodData) => [
         accessorKey: "restaurant",
         header: "Restoran",
         cell: ({ row }) => (
-            <div className="space-y-1">
+            <div className="space-y-1 w-32">
                 <div className="flex items-center">
-                    <Store className="h-3 w-3 mr-1" />
-                    <span className="font-medium">
+                    <Store className="size-15 mr-1" />
+                    <span className="font-medium truncate">
                         {row.original.restaurant?.name || "Tidak ada restoran"}
                     </span>
                 </div>
@@ -75,15 +77,6 @@ export const createFoodColumns = (setDeleteFoodId, setEditFoodData) => [
                     }).format(row.original.price)}
                 </span>
             </div>
-        ),
-    },
-    {
-        accessorKey: "category",
-        header: "Kategori",
-        cell: ({ row }) => (
-            <Badge variant="outline">
-                {row.original.category || "Tidak ada kategori"}
-            </Badge>
         ),
     },
     {

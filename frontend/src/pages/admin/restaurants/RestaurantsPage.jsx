@@ -27,6 +27,7 @@ export default function RestaurantsPage() {
         setSorting,
         refreshData,
     } = useRestaurants();
+    console.log({ pageIndex, pageSize, totalPages, totalCount });
 
     return (
         <div className="space-y-6">

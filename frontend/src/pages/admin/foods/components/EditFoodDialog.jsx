@@ -64,7 +64,6 @@ export default function EditFoodDialog({
         defaultValues: {
             name: "",
             description: "",
-            category: "",
             price: 0,
             restaurant_id: "",
             ingredients: [],
@@ -78,7 +77,6 @@ export default function EditFoodDialog({
             form.reset({
                 name: foodData.name || "",
                 description: foodData.description || "",
-                category: foodData.category || "",
                 price: foodData.price || 0,
                 restaurant_id: foodData.restaurant_id || "",
                 ingredients: foodData.ingredients || [],
@@ -515,24 +513,7 @@ export default function EditFoodDialog({
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <FormField
-                                control={form.control}
-                                name="category"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Kategori</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                placeholder="Kategori"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
                             <FormField
                                 control={form.control}
                                 name="price"

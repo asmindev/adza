@@ -19,16 +19,11 @@ def create_restaurant():
         if not data:
             return ResponseHelper.validation_error("No data provided")
 
+        # Log what fields are being sent for creation
+        logger.info(f"Creating restaurant with fields: {list(data.keys())}")
+
         # Use service layer for validation and creation
-        restaurant = RestaurantService.create_restaurant(
-            name=data.get("name"),
-            address=data.get("address"),
-            latitude=data.get("latitude"),
-            longitude=data.get("longitude"),
-            description=data.get("description"),
-            phone=data.get("phone"),
-            email=data.get("email"),
-        )
+        restaurant = RestaurantService.create_restaurant(data)
 
         logger.info(f"Restaurant created successfully: {restaurant.name}")
         return ResponseHelper.success(
@@ -172,6 +167,12 @@ def update_restaurant(restaurant_id):
         if not data:
             return ResponseHelper.validation_error("No data provided")
 
+        # Log what fields are being updated
+        updated_fields = list(data.keys())
+        logger.info(
+            f"Updating restaurant {restaurant_id} with fields: {updated_fields}"
+        )
+
         # Use service layer for validation and update
         restaurant = RestaurantService.update_restaurant(restaurant_id, data)
 
@@ -181,7 +182,8 @@ def update_restaurant(restaurant_id):
 
         logger.info(f"Restaurant updated successfully: {restaurant.name}")
         return ResponseHelper.success(
-            data=restaurant.to_dict(), message="Restaurant updated successfully"
+            data=restaurant.to_dict(),
+            message=f"Restaurant updated successfully. {len(updated_fields)} field(s) modified: {', '.join(updated_fields)}",
         )
 
     except ValueError as e:

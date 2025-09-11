@@ -56,6 +56,27 @@ class Restaurant(db.Model):
 
     def to_dict(self):
         """Simple serialization of restaurant model"""
+        # Get categories from many-to-many relationship
+        categories_data = []
+        try:
+            # Query categories directly using the association table
+            from app.modules.category.models import restaurant_categories, Category
+
+            category_ids = db.session.execute(
+                db.select(restaurant_categories.c.category_id).where(
+                    restaurant_categories.c.restaurant_id == self.id
+                )
+            ).fetchall()
+
+            if category_ids:
+                categories = Category.query.filter(
+                    Category.id.in_([cat_id[0] for cat_id in category_ids])
+                ).all()
+                categories_data = [cat.to_dict() for cat in categories]
+        except Exception:
+            # If there's any error, just return empty categories
+            categories_data = []
+
         return {
             "id": self.id,
             "name": self.name,
@@ -67,6 +88,7 @@ class Restaurant(db.Model):
             "longitude": self.longitude,
             "rating_average": self.rating_average,
             "is_active": self.is_active,
+            "categories": categories_data,
             "created_at": (
                 self.created_at.isoformat() + "Z" if self.created_at else None
             ),

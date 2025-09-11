@@ -62,29 +62,30 @@ export const createRestaurantColumns = (
         ),
     },
     {
-        accessorKey: "foods",
-        header: "Menu",
+        accessorKey: "categories",
+        header: "Kategori",
         cell: ({ row }) => {
-            const foodCount = row.original.foods?.length || 0;
-            const avgPrice =
-                foodCount > 0
-                    ? row.original.foods.reduce(
-                          (sum, food) => sum + food.price,
-                          0
-                      ) / foodCount
-                    : 0;
+            const categories = row.original.categories || [];
+            if (categories.length === 0) {
+                return (
+                    <Badge variant="outline" className="text-muted-foreground">
+                        Tidak ada kategori
+                    </Badge>
+                );
+            }
 
             return (
-                <div className="space-y-1">
-                    <span className="font-medium">{foodCount} makanan</span>
-                    <div className="text-sm text-muted-foreground">
-                        Rata-rata:{" "}
-                        {new Intl.NumberFormat("id-ID", {
-                            style: "currency",
-                            currency: "IDR",
-                            minimumFractionDigits: 0,
-                        }).format(avgPrice)}
-                    </div>
+                <div className="flex flex-wrap gap-1">
+                    {categories.slice(0, 2).map((category) => (
+                        <Badge key={category.id} variant="secondary">
+                            {category.name}
+                        </Badge>
+                    ))}
+                    {categories.length > 2 && (
+                        <Badge variant="outline" className="text-xs">
+                            +{categories.length - 2}
+                        </Badge>
+                    )}
                 </div>
             );
         },

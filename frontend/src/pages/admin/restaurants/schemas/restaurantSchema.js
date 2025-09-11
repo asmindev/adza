@@ -10,6 +10,7 @@ export const restaurantSchema = z.object({
     latitude: z.number().optional(),
     longitude: z.number().optional(),
     is_active: z.boolean().default(true),
+    category_ids: z.array(z.string()).optional().default([]),
 });
 
 // For future additions or validations specific to restaurant edit form

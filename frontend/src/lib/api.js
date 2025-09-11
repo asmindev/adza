@@ -211,6 +211,9 @@ export const apiService = {
         getById: (id) => apiClient.get(`/api/v1/categories/${id}`),
         getMostFavorite: (limit = 10) =>
             apiClient.get(`/api/v1/categories/most-favorite?limit=${limit}`),
+        create: (data) => apiClient.post("/api/v1/categories", data),
+        update: (id, data) => apiClient.put(`/api/v1/categories/${id}`, data),
+        delete: (id) => apiClient.delete(`/api/v1/categories/${id}`),
     },
 
     // User favorite categories

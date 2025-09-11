@@ -8,21 +8,14 @@ class RestaurantService:
     """Pure business logic for restaurant operations"""
 
     @staticmethod
-    def create_restaurant(
-        name, address, latitude, longitude, description=None, phone=None, email=None
-    ):
+    @staticmethod
+    def create_restaurant(restaurant_data):
         """Create a new restaurant with validation"""
         try:
-            # Prepare data for validation
-            restaurant_data = {
-                "name": name,
-                "address": address,
-                "latitude": latitude,
-                "longitude": longitude,
-                "description": description,
-                "phone": phone,
-                "email": email,
-            }
+            # Log what fields are being processed
+            logger.info(
+                f"Restaurant service: Creating restaurant with fields: {list(restaurant_data.keys())}"
+            )
 
             # Validate all data using validator
             validated_data = RestaurantValidator.validate_restaurant_creation_data(
@@ -188,14 +181,26 @@ class RestaurantService:
                 update_data
             )
 
+            # Get original restaurant for comparison
+            original_restaurant = RestaurantRepository.get_by_id(validated_id)
+            if not original_restaurant:
+                logger.warning(
+                    f"Restaurant service: Restaurant not found for update with ID {restaurant_id}"
+                )
+                return None
+
+            # Log what fields are being updated
+            updated_fields = list(validated_data.keys())
+            logger.info(
+                f"Restaurant service: Updating fields {updated_fields} for restaurant {original_restaurant.name}"
+            )
+
             # Update using repository
             restaurant = RestaurantRepository.update(validated_id, validated_data)
 
             if restaurant:
-                logger.info(f"Restaurant service: Updated restaurant {restaurant.name}")
-            else:
-                logger.warning(
-                    f"Restaurant service: Restaurant not found for update with ID {restaurant_id}"
+                logger.info(
+                    f"Restaurant service: Successfully updated restaurant {restaurant.name}"
                 )
 
             return restaurant

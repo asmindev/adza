@@ -196,6 +196,21 @@ class RestaurantValidator:
                 raise ValueError("Invalid email format")
             validated_data["email"] = email if email else None
 
+        # Category IDs validation (optional)
+        category_ids = data.get("category_ids")
+        if category_ids is not None:
+            if not isinstance(category_ids, list):
+                raise ValueError("category_ids must be a list")
+
+            # Validate each category ID
+            validated_category_ids = []
+            for cat_id in category_ids:
+                if not isinstance(cat_id, str) or not cat_id.strip():
+                    raise ValueError("Each category ID must be a non-empty string")
+                validated_category_ids.append(cat_id.strip())
+
+            validated_data["category_ids"] = validated_category_ids
+
         return validated_data
 
     @staticmethod
@@ -274,6 +289,23 @@ class RestaurantValidator:
             if not isinstance(is_active, bool):
                 raise ValueError("is_active must be a boolean value")
             validated_data["is_active"] = is_active
+
+        if "category_ids" in data:
+            category_ids = data["category_ids"]
+            if category_ids is not None:
+                if not isinstance(category_ids, list):
+                    raise ValueError("category_ids must be a list")
+
+                # Validate each category ID
+                validated_category_ids = []
+                for cat_id in category_ids:
+                    if not isinstance(cat_id, str) or not cat_id.strip():
+                        raise ValueError("Each category ID must be a non-empty string")
+                    validated_category_ids.append(cat_id.strip())
+
+                validated_data["category_ids"] = validated_category_ids
+            else:
+                validated_data["category_ids"] = []
 
         return validated_data
 

@@ -11,10 +11,6 @@ export const foodSchema = z.object({
         .string()
         .min(10, { message: "Deskripsi harus minimal 10 karakter" })
         .max(500, { message: "Deskripsi tidak boleh lebih dari 500 karakter" }),
-    category: z
-        .string()
-        .min(2, { message: "Kategori harus minimal 2 karakter" })
-        .max(50, { message: "Kategori tidak boleh lebih dari 50 karakter" }),
     price: z
         .number({
             required_error: "Harga diperlukan",

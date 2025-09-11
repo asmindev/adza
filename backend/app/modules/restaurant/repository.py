@@ -8,8 +8,41 @@ class RestaurantRepository:
     def create(restaurant_data):
         """Create a new restaurant"""
         try:
+            # Handle category_ids separately if provided
+            category_ids = restaurant_data.pop("category_ids", None)
+
             restaurant = Restaurant(**restaurant_data)
             db.session.add(restaurant)
+
+            # Handle categories if provided
+            if category_ids:
+                from app.modules.category.models import Category, restaurant_categories
+
+                logger.info(
+                    f"Processing category_ids for new restaurant: {category_ids}"
+                )
+
+                categories = Category.query.filter(Category.id.in_(category_ids)).all()
+                logger.info(f"Found {len(categories)} categories to add")
+
+                # Flush to get the restaurant ID
+                db.session.flush()
+
+                # Add categories using direct insert to association table
+                for category in categories:
+                    db.session.execute(
+                        restaurant_categories.insert().values(
+                            restaurant_id=restaurant.id, category_id=category.id
+                        )
+                    )
+                    logger.info(f"Added category: {category.name}")
+
+                logger.info(
+                    f"Added restaurant categories: {len(categories)} categories"
+                )
+            else:
+                logger.info("No categories provided for new restaurant")
+
             db.session.commit()
             logger.info(f"Restaurant created: {restaurant.name}")
             return restaurant
@@ -76,7 +109,16 @@ class RestaurantRepository:
     def get_by_category(category_id, page=1, limit=20):
         """Get restaurants by category with pagination"""
         try:
-            query = Restaurant.query.filter_by(category_id=category_id, is_active=True)
+            # Use join to filter restaurants by category through many-to-many relationship
+            from app.modules.category.models import restaurant_categories
+
+            query = Restaurant.query.join(
+                restaurant_categories,
+                Restaurant.id == restaurant_categories.c.restaurant_id,
+            ).filter(
+                restaurant_categories.c.category_id == category_id,
+                Restaurant.is_active == True,
+            )
 
             # Get total count for pagination
             total_count = query.count()
@@ -143,9 +185,55 @@ class RestaurantRepository:
                 logger.warning(f"Restaurant not found for update: {restaurant_id}")
                 return None
 
+            # Handle category_ids separately if provided
+            category_ids = update_data.pop("category_ids", None)
+
+            # Update regular fields
             for key, value in update_data.items():
                 if hasattr(restaurant, key):
                     setattr(restaurant, key, value)
+
+            # Handle categories if provided
+            if category_ids is not None:
+                from app.modules.category.models import Category, restaurant_categories
+
+                logger.info(f"Processing category_ids: {category_ids}")
+
+                # Clear existing categories by deleting from association table
+                try:
+                    db.session.execute(
+                        restaurant_categories.delete().where(
+                            restaurant_categories.c.restaurant_id == restaurant.id
+                        )
+                    )
+                    logger.info("Categories cleared successfully")
+                except Exception as e:
+                    logger.error(f"Error clearing categories: {str(e)}")
+
+                # Add new categories
+                if category_ids:  # Only if not empty
+                    try:
+                        categories = Category.query.filter(
+                            Category.id.in_(category_ids)
+                        ).all()
+                        logger.info(f"Found {len(categories)} categories to add")
+
+                        # Add categories using direct insert to association table
+                        for category in categories:
+                            db.session.execute(
+                                restaurant_categories.insert().values(
+                                    restaurant_id=restaurant.id, category_id=category.id
+                                )
+                            )
+                            logger.info(f"Added category: {category.name}")
+
+                        logger.info(
+                            f"Updated restaurant categories: {len(categories)} categories"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error adding categories: {str(e)}")
+                else:
+                    logger.info("No categories to add (empty category_ids)")
 
             db.session.commit()
             logger.info(f"Restaurant updated: {restaurant.name}")
