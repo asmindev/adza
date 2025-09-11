@@ -11,6 +11,7 @@ import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
 import Popular from "@/pages/popular/page";
 import onboardingMiddleware from "@/middleware/onboarding_middleware";
 import OnboardingPage from "@/pages/onboarding/page";
+import Register from "@/pages/auth/Register";
 
 const REGULAR_ROUTES = [
     {
@@ -57,6 +58,10 @@ const REGULAR_ROUTES = [
     {
         path: "/login",
         Component: Login,
+    },
+    {
+        path: "/register",
+        Component: Register,
     },
 ];
 
