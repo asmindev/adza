@@ -86,6 +86,7 @@ class FoodService:
         result = FoodRepository.get_all_with_limit(
             page=page, limit=limit, search=search, user_id=user_id
         )
+        logger.info(f"result: {result['total_foods']} foods found")
 
         # Use service method that includes main image
         foods_dict = []
@@ -99,6 +100,7 @@ class FoodService:
             "page": result["page"],
             "limit": result["limit"],
             "pages": result["pages"],
+            "count": result["total_foods"],
         }
 
     @staticmethod

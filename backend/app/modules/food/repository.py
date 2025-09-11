@@ -20,7 +20,6 @@ class FoodRepository:
         # Import models here to avoid circular imports
         from app.modules.restaurant.models import Restaurant
         from app.modules.category.models import (
-            Category,
             UserFavoriteCategory,
             restaurant_categories,
         )
@@ -77,6 +76,7 @@ class FoodRepository:
         foods = query.order_by(Food.created_at.desc()).paginate(
             page=page, per_page=limit, error_out=False
         )
+        total_foods_count = Food.query.count()
 
         logger.info(
             f"Berhasil mengambil {len(foods.items)} makanan (total {total_count})"
@@ -87,6 +87,7 @@ class FoodRepository:
             "page": page,
             "limit": limit,
             "pages": foods.pages,
+            "total_foods": total_foods_count,
         }
 
     @staticmethod

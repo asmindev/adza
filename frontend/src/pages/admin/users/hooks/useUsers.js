@@ -14,7 +14,11 @@ export const useUsers = () => {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     // Fetch users with SWR
-    const { data, error, mutate } = useSWR(
+    const {
+        data: response,
+        error,
+        mutate,
+    } = useSWR(
         [`/users`, pageIndex, pageSize, debouncedSearchTerm],
         () =>
             apiService.users.getAll(
@@ -30,8 +34,12 @@ export const useUsers = () => {
         }
     );
 
-    const users = data?.data?.data?.users || [];
-    const totalCount = users?.length;
+    let data = response?.data || {};
+    console.log({ data });
+
+    const users = data?.data || [];
+    console.log({ users });
+    const totalCount = data?.meta?.pagination?.total || 0;
     const totalPages = Math.ceil(totalCount / pageSize);
     const isLoading = !data && !error;
 

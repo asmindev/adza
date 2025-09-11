@@ -28,6 +28,7 @@ export default function UsersPage() {
         setSorting,
         refreshData,
     } = useUsers();
+    console.log({ pageIndex, pageSize, totalPages, totalCount });
 
     return (
         <div className="space-y-6">

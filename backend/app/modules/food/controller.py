@@ -158,6 +158,7 @@ def get_foods():
                     "total": result["total"],
                     "pages": result["pages"],
                 },
+                "count": result["count"],
                 "filtered_by_preferences": use_user_preferences,
             },
             message="Foods retrieved successfully",

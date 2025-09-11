@@ -14,7 +14,11 @@ export const useFoods = () => {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
     // Fetch foods with SWR using real API
-    const { data, error, mutate } = useSWR(
+    const {
+        data: response,
+        error,
+        mutate,
+    } = useSWR(
         [`/foods`, pageIndex, pageSize, debouncedSearchTerm],
         () =>
             apiService.foods.getAll(
@@ -30,8 +34,10 @@ export const useFoods = () => {
         }
     );
 
-    const foods = data?.data?.data?.foods || [];
-    const totalCount = data?.data?.data?.count || 0;
+    let data = response?.data?.data || {};
+
+    const foods = data?.foods || [];
+    const totalCount = data?.count || 0;
     const totalPages = Math.ceil(totalCount / pageSize);
     const isLoading = !data && !error;
 
