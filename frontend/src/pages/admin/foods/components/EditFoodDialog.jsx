@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { foodUpdateSchema } from "../schemas/foodSchema";
 import { Upload, X, ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Combobox } from "@/components/ui/combobox";
 import useSWR from "swr";
 import apiService from "@/lib/api";
 
@@ -157,32 +158,11 @@ export default function EditFoodDialog({
             "image/*": [".jpeg", ".jpg", ".png", ".gif", ".webp"],
         },
         maxSize: 5 * 1024 * 1024, // 5MB
+        noClick: false, // Allow click
+        noKeyboard: false, // Allow keyboard
+        noDrag: false, // Allow drag
+        preventDropOnDocument: true, // Prevent dropping on document
     });
-
-    // Handle URL addition
-    const handleAddUrl = (url) => {
-        if (
-            !url ||
-            !url.match(/^https?:\/\/.+\.(jpeg|jpg|png|gif|webp)(\?.*)?$/i)
-        ) {
-            toast.error("Mohon masukkan URL gambar yang valid");
-            return;
-        }
-
-        setImages((prev) => {
-            const newImage = {
-                url,
-                preview: url,
-                status: "success",
-                isMain: prev.length === 0,
-                isExisting: false,
-            };
-            return [...prev, newImage];
-        });
-
-        // Clear the URL input
-        form.setValue("imageUrl", "");
-    };
 
     // Set main image
     const handleSetMainImage = (index) => {
@@ -309,7 +289,7 @@ export default function EditFoodDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto z-50">
                 <DialogHeader>
                     <DialogTitle>Edit Makanan</DialogTitle>
                     <DialogDescription>
@@ -322,172 +302,195 @@ export default function EditFoodDialog({
                         onSubmit={form.handleSubmit(onSubmit)}
                         className="space-y-4"
                     >
-                        {/* Food Images Section */}
-                        <div className="space-y-2">
-                            <FormLabel>Gambar Makanan</FormLabel>
+                        <div className="space-y-4 pb-4 border-b max-h-96 overflow-y-auto px-2">
+                            {/* Food Images Section */}
+                            <div className="space-y-2">
+                                <FormLabel>Gambar Makanan</FormLabel>
 
-                            {/* Dropzone */}
-                            <div
-                                {...getRootProps()}
-                                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                                    isDragActive
-                                        ? "border-primary bg-primary/5"
-                                        : "border-gray-300 hover:border-primary/50"
-                                }`}
-                            >
-                                <input {...getInputProps()} />
-                                <div className="flex flex-col items-center justify-center space-y-2">
-                                    <Upload className="h-8 w-8 text-gray-400" />
-                                    {isDragActive ? (
-                                        <p className="text-sm text-gray-600">
-                                            Letakkan gambar di sini...
+                                <div className="border-2 border-dashed rounded-2xl p-3 space-y-3">
+                                    {/* Dropzone */}
+                                    <div
+                                        {...getRootProps()}
+                                        className={`rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                                            isDragActive
+                                                ? "border-primary bg-primary/5 border-2 border-dashed"
+                                                : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                                        }`}
+                                    >
+                                        <input {...getInputProps()} />
+                                        <Upload className="mx-auto h-6 w-6 text-gray-400" />
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            {isDragActive
+                                                ? "Letakkan gambar di sini..."
+                                                : "Klik atau drag gambar"}
                                         </p>
-                                    ) : (
-                                        <>
-                                            <p className="text-sm text-gray-600">
-                                                Tarik & letakkan gambar di sini,
-                                                atau klik untuk memilih
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                Mendukung: JPG, PNG, GIF, WEBP
-                                                (maks 5MB)
-                                            </p>
-                                        </>
+                                        <p className="text-xs text-gray-500">
+                                            JPG, PNG, GIF, WEBP (maks 5MB)
+                                        </p>
+                                    </div>
+
+                                    {/* Loading */}
+                                    {isUploading && (
+                                        <div className="flex items-center justify-center p-2 gap-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                                            <span className="text-sm text-gray-600">
+                                                Mengunggah...
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* Image Previews */}
+                                    {images.length > 0 && (
+                                        <div className="space-y-2">
+                                            <div className="text-sm font-medium text-gray-700">
+                                                Preview ({images.length} gambar)
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {images.map((img, i) => (
+                                                    <div
+                                                        key={img.id || i}
+                                                        className={`group relative rounded-md overflow-hidden border ${
+                                                            img.isMain
+                                                                ? "ring-2 ring-primary"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        <img
+                                                            src={img.preview}
+                                                            alt={`Pratinjau ${
+                                                                i + 1
+                                                            }`}
+                                                            className="size-12 object-cover"
+                                                            onError={(e) =>
+                                                                (e.target.src =
+                                                                    "https://via.placeholder.com/150?text=Error")
+                                                            }
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                                            <Button
+                                                                type="button"
+                                                                variant="secondary"
+                                                                size="sm"
+                                                                disabled={
+                                                                    img.isMain
+                                                                }
+                                                                onClick={() =>
+                                                                    handleSetMainImage(
+                                                                        i
+                                                                    )
+                                                                }
+                                                                className="h-5 w-5 p-0"
+                                                            >
+                                                                <ImagePlus className="h-3 w-3" />
+                                                            </Button>
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    handleRemoveImage(
+                                                                        i
+                                                                    )
+                                                                }
+                                                                className="h-5 w-5 p-0"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* URL Input */}
-                            <div className="flex items-center space-x-2 mt-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
-                                    name="imageUrl"
+                                    name="name"
                                     render={({ field }) => (
-                                        <FormItem className="flex-1">
+                                        <FormItem>
+                                            <FormLabel>Nama</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    placeholder="Atau masukkan URL gambar: https://example.com/image.jpg"
+                                                    placeholder="Nama makanan"
                                                     {...field}
                                                 />
                                             </FormControl>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() =>
-                                        handleAddUrl(form.getValues("imageUrl"))
-                                    }
-                                >
-                                    Tambah URL
-                                </Button>
+
+                                <FormField
+                                    control={form.control}
+                                    name="restaurant_id"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Restoran</FormLabel>
+                                            <FormControl>
+                                                <Combobox
+                                                    className="truncate"
+                                                    items={restaurants.map(
+                                                        (restaurant) => ({
+                                                            value: restaurant.id,
+                                                            label: restaurant.name,
+                                                        })
+                                                    )}
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                    placeholder="Pilih restoran..."
+                                                    searchPlaceholder="Cari restoran..."
+                                                    emptyText="Restoran tidak ditemukan."
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
 
-                            {/* Loading indicator */}
-                            {isUploading && (
-                                <div className="flex items-center justify-center p-4">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                                    <span className="ml-2 text-sm text-gray-600">
-                                        Mengunggah...
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Image Previews */}
-                            {images.length > 0 && (
-                                <ScrollArea className="h-60 w-full rounded-md border p-2">
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        {images.map((image, index) => (
-                                            <div
-                                                key={image.id || index}
-                                                className={`group relative rounded-md overflow-hidden border ${
-                                                    image.isMain
-                                                        ? "ring-2 ring-primary"
-                                                        : ""
-                                                }`}
-                                            >
-                                                <img
-                                                    src={image.preview}
-                                                    alt={`Pratinjau ${
-                                                        index + 1
-                                                    }`}
-                                                    className="h-32 w-full object-cover"
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src =
-                                                            "https://via.placeholder.com/150?text=Error";
-                                                    }}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
+                                <FormField
+                                    control={form.control}
+                                    name="price"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Harga</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    {...field}
+                                                    onChange={(e) =>
+                                                        field.onChange(
+                                                            parseFloat(
+                                                                e.target.value
+                                                            )
+                                                        )
+                                                    }
                                                 />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
-                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <div className="flex space-x-1">
-                                                        <Button
-                                                            type="button"
-                                                            variant="secondary"
-                                                            size="sm"
-                                                            disabled={
-                                                                image.isMain
-                                                            }
-                                                            onClick={() =>
-                                                                handleSetMainImage(
-                                                                    index
-                                                                )
-                                                            }
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <ImagePlus className="h-4 w-4" />
-                                                            <span className="sr-only">
-                                                                Jadikan utama
-                                                            </span>
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="destructive"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                handleRemoveImage(
-                                                                    index
-                                                                )
-                                                            }
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                            <span className="sr-only">
-                                                                Hapus
-                                                            </span>
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {image.isMain && (
-                                                    <div className="absolute top-0 left-0 bg-primary text-white text-xs px-1 py-0.5">
-                                                        Utama
-                                                    </div>
-                                                )}
-
-                                                {image.isExisting && (
-                                                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 py-0.5">
-                                                        Tersimpan
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
-                            )}
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <FormField
                                 control={form.control}
-                                name="name"
+                                name="description"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Nama</FormLabel>
+                                        <FormLabel>Deskripsi</FormLabel>
                                         <FormControl>
-                                            <Input
-                                                placeholder="Nama makanan"
+                                            <Textarea
+                                                placeholder="Deskripsikan makanan..."
+                                                className="resize-none h-20"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -498,32 +501,29 @@ export default function EditFoodDialog({
 
                             <FormField
                                 control={form.control}
-                                name="restaurant_id"
+                                name="status"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Restoran</FormLabel>
+                                        <FormLabel>Status</FormLabel>
                                         <Select
                                             onValueChange={field.onChange}
                                             value={field.value}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Pilih restoran" />
+                                                    <SelectValue placeholder="Pilih status" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                {restaurants.map(
-                                                    (restaurant) => (
-                                                        <SelectItem
-                                                            key={restaurant.id}
-                                                            value={
-                                                                restaurant.id
-                                                            }
-                                                        >
-                                                            {restaurant.name}
-                                                        </SelectItem>
-                                                    )
-                                                )}
+                                                <SelectItem value="active">
+                                                    Aktif
+                                                </SelectItem>
+                                                <SelectItem value="inactive">
+                                                    Tidak Aktif
+                                                </SelectItem>
+                                                <SelectItem value="pending">
+                                                    Tertunda
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -531,84 +531,6 @@ export default function EditFoodDialog({
                                 )}
                             />
                         </div>
-
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-1">
-                            <FormField
-                                control={form.control}
-                                name="price"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Harga</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="number"
-                                                step="0.01"
-                                                placeholder="0.00"
-                                                {...field}
-                                                onChange={(e) =>
-                                                    field.onChange(
-                                                        parseFloat(
-                                                            e.target.value
-                                                        )
-                                                    )
-                                                }
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Deskripsi</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="Deskripsikan makanan..."
-                                            className="resize-none h-20"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="status"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Status</FormLabel>
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        value={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Pilih status" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="active">
-                                                Aktif
-                                            </SelectItem>
-                                            <SelectItem value="inactive">
-                                                Tidak Aktif
-                                            </SelectItem>
-                                            <SelectItem value="pending">
-                                                Tertunda
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
 
                         <DialogFooter>
                             <Button

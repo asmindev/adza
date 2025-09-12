@@ -3,14 +3,16 @@ import { redirect } from "react-router";
 async function onboardingMiddleware({ request }, next) {
     const url = new URL(request.url);
     const pathname = url.pathname;
+    console.log("Onboarding Middleware - Current Path:", pathname);
 
-    // Skip middleware for auth pages and preferences page
-    if (
-        pathname === "/login" ||
-        pathname === "/register" ||
-        pathname === "/preferences"
-    ) {
-        return next();
+    if (pathname === "/login" || pathname === "/register") {
+        console.log("Onboarding Middleware - Already Authenticated");
+        await next();
+    }
+
+    if (pathname === "/preferences") {
+        console.log("Onboarding Middleware - On Preferences Page");
+        await next();
     }
 
     console.log("Onboarding Middleware - Checking onboarding status");
@@ -20,11 +22,9 @@ async function onboardingMiddleware({ request }, next) {
         const hasCompletedOnboarding = user.onboarding_completed;
         if (!hasCompletedOnboarding) {
             console.log("Onboarding Middleware - Redirecting to preferences");
-            throw redirect("/preferences");
+            window.location.href = "/preferences";
         }
     }
-
-    return next();
 }
 
 export default onboardingMiddleware;
