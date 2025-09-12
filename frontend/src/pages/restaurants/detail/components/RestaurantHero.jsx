@@ -6,7 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 import StarRating from "./StarRating";
 
 function RestaurantHero({ restaurant }) {
@@ -28,7 +32,10 @@ function RestaurantHero({ restaurant }) {
                                     <PopoverTrigger asChild>
                                         <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-3 py-1 self-start cursor-pointer hover:bg-background/95 transition-colors">
                                             <StarRating
-                                                rating={restaurant.rating?.average || 0}
+                                                rating={
+                                                    restaurant.rating
+                                                        ?.average || 0
+                                                }
                                                 showRating={false}
                                             />
                                             <span className="font-semibold text-sm sm:text-base text-foreground">
@@ -37,50 +44,103 @@ function RestaurantHero({ restaurant }) {
                                                 ) || "0.0"}
                                             </span>
                                             <span className="text-xs sm:text-sm text-muted-foreground">
-                                                ({restaurant.rating?.total || 0})
+                                                ({restaurant.rating?.total || 0}
+                                                )
                                             </span>
                                         </div>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-80 p-4">
                                         <div className="space-y-3">
-                                            <h4 className="font-medium text-sm">Detail Rating</h4>
+                                            <h4 className="font-medium text-sm">
+                                                Detail Rating
+                                            </h4>
                                             <div className="space-y-2">
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-muted-foreground">Rating Rata-rata</span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        Rating Rata-rata
+                                                    </span>
                                                     <div className="flex items-center gap-2">
-                                                        <StarRating rating={restaurant.rating?.average || 0} showRating={false} size="sm" />
+                                                        <StarRating
+                                                            rating={
+                                                                restaurant
+                                                                    .rating
+                                                                    ?.average ||
+                                                                0
+                                                            }
+                                                            showRating={false}
+                                                            size="sm"
+                                                        />
                                                         <span className="font-medium text-sm">
-                                                            {restaurant.rating?.average?.toFixed(1) || "0.0"}
+                                                            {restaurant.rating?.average?.toFixed(
+                                                                1
+                                                            ) || "0.0"}
                                                         </span>
                                                     </div>
                                                 </div>
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-sm text-muted-foreground">Total Ulasan</span>
+                                                    <span className="text-sm text-muted-foreground">
+                                                        Total Ulasan
+                                                    </span>
                                                     <span className="font-medium text-sm">
-                                                        {restaurant.rating?.total || 0} ulasan
+                                                        {restaurant.rating
+                                                            ?.total || 0}{" "}
+                                                        ulasan
                                                     </span>
                                                 </div>
-                                                {restaurant.rating?.distribution && (
+                                                {restaurant.rating
+                                                    ?.distribution && (
                                                     <div className="space-y-1">
-                                                        <span className="text-sm text-muted-foreground">Distribusi Rating</span>
-                                                        {[5, 4, 3, 2, 1].map(star => {
-                                                            const count = restaurant.rating.distribution[star] || 0;
-                                                            const percentage = restaurant.rating.total > 0 
-                                                                ? (count / restaurant.rating.total * 100) 
-                                                                : 0;
-                                                            return (
-                                                                <div key={star} className="flex items-center gap-2 text-xs">
-                                                                    <span className="w-2 text-muted-foreground">{star}</span>
-                                                                    <div className="flex-1 bg-muted rounded-full h-2">
-                                                                        <div 
-                                                                            className="bg-primary h-2 rounded-full transition-all"
-                                                                            style={{ width: `${percentage}%` }}
-                                                                        />
+                                                        <span className="text-sm text-muted-foreground">
+                                                            Distribusi Rating
+                                                        </span>
+                                                        {[5, 4, 3, 2, 1].map(
+                                                            (star) => {
+                                                                const count =
+                                                                    restaurant
+                                                                        .rating
+                                                                        .distribution[
+                                                                        star
+                                                                    ] || 0;
+                                                                const percentage =
+                                                                    restaurant
+                                                                        .rating
+                                                                        .total >
+                                                                    0
+                                                                        ? (count /
+                                                                              restaurant
+                                                                                  .rating
+                                                                                  .total) *
+                                                                          100
+                                                                        : 0;
+                                                                return (
+                                                                    <div
+                                                                        key={
+                                                                            star
+                                                                        }
+                                                                        className="flex items-center gap-2 text-xs"
+                                                                    >
+                                                                        <span className="w-2 text-muted-foreground">
+                                                                            {
+                                                                                star
+                                                                            }
+                                                                        </span>
+                                                                        <div className="flex-1 bg-muted rounded-full h-2">
+                                                                            <div
+                                                                                className="bg-primary h-2 rounded-full transition-all"
+                                                                                style={{
+                                                                                    width: `${percentage}%`,
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                        <span className="w-8 text-muted-foreground">
+                                                                            {
+                                                                                count
+                                                                            }
+                                                                        </span>
                                                                     </div>
-                                                                    <span className="w-8 text-muted-foreground">{count}</span>
-                                                                </div>
-                                                            );
-                                                        })}
+                                                                );
+                                                            }
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
