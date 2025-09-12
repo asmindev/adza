@@ -15,6 +15,7 @@ export default function RootLayout() {
     /* ---------- Desktop Nav ---------- */
     const navLinks = [
         { label: "Beranda", href: "/" },
+        { label: "Restoran", href: "/restaurants", icon: ChefHat },
         { label: "Rekomendasi", href: "/recommendation" },
         { label: "Populer", href: "/popular" },
         ...(user ? [{ label: "Profile", href: "/profile", icon: User }] : []),

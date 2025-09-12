@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 // Import modular components
@@ -7,31 +7,78 @@ import RestaurantFilters from "./components/RestaurantFilters";
 import RestaurantSummary from "./components/RestaurantSummary";
 import {
     RestaurantLoadingSkeleton,
+    RestaurantLoadingMore,
     RestaurantErrorState,
     RestaurantEmptyState,
     RestaurantGrid,
+    InfiniteScrollTrigger,
+    LoadMoreButton,
 } from "./components/RestaurantStates";
 
 // Import hooks
-import { useRestaurantFilters } from "./hooks/useRestaurantFilters";
-import { useRestaurantData } from "@/hooks/useApiData";
+import { useInfiniteRestaurants } from "@/hooks/useInfiniteRestaurants";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function RestaurantsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortBy, setSortBy] = useState("name");
+    const [showFallbackButton, setShowFallbackButton] = useState(false);
+    const [lastLoadTime, setLastLoadTime] = useState(Date.now());
 
-    // Fetch restaurants data using custom hook
-    const { restaurants, totalCount, isLoading, error, refetch } =
-        useRestaurantData();
+    // Debounce search term to reduce API calls
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    // Filter and sort restaurants using custom hook
-    const filteredAndSortedRestaurants = useRestaurantFilters(
+    // Create filters object for the API
+    const filters = {
+        search: debouncedSearchTerm,
+        status: statusFilter,
+        sortBy: sortBy,
+    };
+
+    // Fetch restaurants data using infinite pagination hook with server-side filtering
+    const {
         restaurants,
-        searchTerm,
-        statusFilter,
-        sortBy
-    );
+        totalCount,
+        isLoading,
+        isLoadingMore,
+        error,
+        hasMore,
+        loadMore,
+        refresh,
+    } = useInfiniteRestaurants(20, filters);
+
+    // Infinite scroll trigger ref
+    const loadMoreRef = useInfiniteScroll(loadMore, hasMore, isLoadingMore);
+
+    // Track when data changes to reset fallback timer
+    useEffect(() => {
+        if (restaurants.length > 0) {
+            setLastLoadTime(Date.now());
+            setShowFallbackButton(false);
+        }
+    }, [restaurants.length]);
+
+    // Show fallback button after 5 seconds if hasMore but no new data loaded
+    useEffect(() => {
+        if (hasMore && !isLoading && !isLoadingMore && restaurants.length > 0) {
+            const timer = setTimeout(() => {
+                setShowFallbackButton(true);
+            }, 5000); // Show fallback after 5 seconds
+
+            return () => clearTimeout(timer);
+        } else {
+            setShowFallbackButton(false);
+        }
+    }, [hasMore, isLoading, isLoadingMore, restaurants.length, lastLoadTime]);
+
+    // Manual load more function for fallback button
+    const handleManualLoadMore = () => {
+        setShowFallbackButton(false);
+        setLastLoadTime(Date.now());
+        loadMore();
+    };
 
     // Reset filters function
     const handleResetFilters = () => {
@@ -42,7 +89,7 @@ export default function RestaurantsPage() {
 
     // Retry function for error state
     const handleRetry = () => {
-        refetch();
+        refresh();
     };
 
     return (
@@ -62,7 +109,7 @@ export default function RestaurantsPage() {
 
             {/* Results Summary */}
             <RestaurantSummary
-                filteredCount={filteredAndSortedRestaurants.length}
+                filteredCount={restaurants.length}
                 searchTerm={searchTerm}
                 onResetFilters={handleResetFilters}
             />
@@ -77,15 +124,46 @@ export default function RestaurantsPage() {
                     <RestaurantLoadingSkeleton />
                 ) : error ? (
                     <RestaurantErrorState onRetry={handleRetry} />
-                ) : filteredAndSortedRestaurants.length === 0 ? (
+                ) : restaurants.length === 0 ? (
                     <RestaurantEmptyState
                         searchTerm={searchTerm}
                         statusFilter={statusFilter}
                     />
                 ) : (
-                    <RestaurantGrid
-                        restaurants={filteredAndSortedRestaurants}
-                    />
+                    <>
+                        <RestaurantGrid restaurants={restaurants} />
+
+                        {/* Loading more skeleton */}
+                        {isLoadingMore && <RestaurantLoadingMore />}
+
+                        {/* Infinite scroll trigger */}
+                        {hasMore && !showFallbackButton && (
+                            <InfiniteScrollTrigger
+                                ref={loadMoreRef}
+                                hasMore={hasMore}
+                                isLoading={isLoadingMore}
+                            />
+                        )}
+
+                        {/* Fallback Load More Button */}
+                        {hasMore && showFallbackButton && (
+                            <LoadMoreButton
+                                onLoadMore={handleManualLoadMore}
+                                isLoading={isLoadingMore}
+                                hasMore={hasMore}
+                            />
+                        )}
+
+                        {/* End of results indicator */}
+                        {!hasMore && restaurants.length > 0 && (
+                            <div className="text-center py-8">
+                                <p className="text-muted-foreground">
+                                    Semua restoran telah dimuat (
+                                    {restaurants.length} restoran)
+                                </p>
+                            </div>
+                        )}
+                    </>
                 )}
             </motion.div>
         </div>

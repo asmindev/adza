@@ -48,46 +48,52 @@ export default function RestaurantFilters({
                                 />
                             </div>
                         </div>
+                        <div className="flex gap-4">
+                            {/* Status Filter */}
+                            <div className="min-w-[150px]">
+                                <Select
+                                    value={statusFilter}
+                                    onValueChange={setStatusFilter}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Semua Status
+                                        </SelectItem>
+                                        <SelectItem value="active">
+                                            Buka
+                                        </SelectItem>
+                                        <SelectItem value="inactive">
+                                            Tutup
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
-                        {/* Status Filter */}
-                        <div className="min-w-[150px]">
-                            <Select
-                                value={statusFilter}
-                                onValueChange={setStatusFilter}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">
-                                        Semua Status
-                                    </SelectItem>
-                                    <SelectItem value="active">Buka</SelectItem>
-                                    <SelectItem value="inactive">
-                                        Tutup
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Sort */}
-                        <div className="min-w-[150px]">
-                            <Select value={sortBy} onValueChange={setSortBy}>
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="name">
-                                        Nama A-Z
-                                    </SelectItem>
-                                    <SelectItem value="rating">
-                                        Rating Tertinggi
-                                    </SelectItem>
-                                    <SelectItem value="foods">
-                                        Terbanyak Menu
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
+                            {/* Sort */}
+                            <div className="min-w-[150px]">
+                                <Select
+                                    value={sortBy}
+                                    onValueChange={setSortBy}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="name">
+                                            Nama A-Z
+                                        </SelectItem>
+                                        <SelectItem value="rating">
+                                            Rating Tertinggi
+                                        </SelectItem>
+                                        <SelectItem value="foods">
+                                            Terbanyak Menu
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     </div>
                 </CardContent>

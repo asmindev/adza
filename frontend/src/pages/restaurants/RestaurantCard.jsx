@@ -10,7 +10,7 @@ export default function RestaurantCard({ restaurant }) {
 
     const averageRating = restaurant?.rating?.average || 0;
     const totalRatings = restaurant?.rating?.total || 0;
-    const foodsCount = restaurant?.foods?.length || 0;
+    const foodsCount = restaurant?.foods?.total || 0;
 
     return (
         <motion.div
@@ -41,15 +41,15 @@ export default function RestaurantCard({ restaurant }) {
 
                     {/* Rating */}
                     <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center gap-1">
+                        {/* <div className="flex items-center gap-1">
                             <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
                             <span className="font-semibold text-sm">
                                 {averageRating.toFixed(1)}
                             </span>
-                        </div>
-                        <span className="text-muted-foreground text-sm">
+                        </div> */}
+                        {/* <span className="text-muted-foreground text-sm">
                             ({totalRatings} ulasan)
-                        </span>
+                        </span> */}
                         <div className="flex items-center gap-1 ml-auto">
                             <Utensils className="h-4 w-4 text-primary" />
                             <span className="text-sm font-medium">

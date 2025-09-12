@@ -32,7 +32,6 @@ import { toast } from "sonner";
 import { foodUpdateSchema } from "../schemas/foodSchema";
 import { Upload, X, ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Combobox } from "@/components/ui/combobox";
 import useSWR from "swr";
 import apiService from "@/lib/api";
 
@@ -429,24 +428,34 @@ export default function EditFoodDialog({
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Restoran</FormLabel>
-                                            <FormControl>
-                                                <Combobox
-                                                    className="truncate"
-                                                    items={restaurants.map(
-                                                        (restaurant) => ({
-                                                            value: restaurant.id,
-                                                            label: restaurant.name,
-                                                        })
+                                            <Select
+                                                onValueChange={field.onChange}
+                                                value={field.value}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Pilih restoran..." />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="bg-red-500">
+                                                    {restaurants.map(
+                                                        (restaurant) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    restaurant.id
+                                                                }
+                                                                value={
+                                                                    restaurant.id
+                                                                }
+                                                            >
+                                                                {
+                                                                    restaurant.name
+                                                                }
+                                                            </SelectItem>
+                                                        )
                                                     )}
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                    placeholder="Pilih restoran..."
-                                                    searchPlaceholder="Cari restoran..."
-                                                    emptyText="Restoran tidak ditemukan."
-                                                />
-                                            </FormControl>
+                                                </SelectContent>
+                                            </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}

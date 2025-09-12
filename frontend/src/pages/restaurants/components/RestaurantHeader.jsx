@@ -26,7 +26,7 @@ export default function RestaurantHeader({ totalCount }) {
                 </div>
                 <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    <span>Seluruh Indonesia</span>
+                    <span>Kendari, Sulawesi Tenggara</span>
                 </div>
             </div>
         </motion.div>

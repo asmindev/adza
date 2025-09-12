@@ -5,14 +5,10 @@ async function onboardingMiddleware({ request }, next) {
     const pathname = url.pathname;
     console.log("Onboarding Middleware - Current Path:", pathname);
 
-    if (pathname === "/login" || pathname === "/register") {
-        console.log("Onboarding Middleware - Already Authenticated");
-        await next();
-    }
-
+    // Allow preferences page to load
     if (pathname === "/preferences") {
         console.log("Onboarding Middleware - On Preferences Page");
-        await next();
+        return await next();
     }
 
     console.log("Onboarding Middleware - Checking onboarding status");
@@ -20,11 +16,21 @@ async function onboardingMiddleware({ request }, next) {
 
     if (user) {
         const hasCompletedOnboarding = user.onboarding_completed;
+        console.log(
+            "Onboarding Middleware - User onboarding status:",
+            hasCompletedOnboarding
+        );
+
         if (!hasCompletedOnboarding) {
-            console.log("Onboarding Middleware - Redirecting to preferences");
+            console.log(
+                "Onboarding Middleware - Redirecting to preferences (onboarding not completed)"
+            );
             window.location.href = "/preferences";
         }
     }
+
+    // If onboarding is completed or no user, continue to next middleware/route
+    return await next();
 }
 
 export default onboardingMiddleware;
