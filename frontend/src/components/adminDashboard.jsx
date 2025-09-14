@@ -29,8 +29,19 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { UserContext } from "@/contexts/UserContextDefinition";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router";
 
 // Menu groups for better organization
 const menuGroups = [
@@ -100,6 +111,28 @@ const menuGroups = [
 
 export function AppSidebar() {
     const { user, logout } = useContext(UserContext);
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const navigate = useNavigate();
+
+    const handleLogoutClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDropdownOpen(false); // Close dropdown first
+        setIsLogoutDialogOpen(true); // Then open dialog
+    };
+
+    const handleLogout = () => {
+        console.log("User logged out");
+        setIsLogoutDialogOpen(false);
+        logout();
+        navigate("/");
+    };
+
+    const handleCancelLogout = () => {
+        setIsLogoutDialogOpen(false);
+    };
+
     return (
         <Sidebar className="border-r">
             <SidebarContent className="gap-0">
@@ -157,7 +190,10 @@ export function AppSidebar() {
 
                 {/* Footer */}
                 <div className="mt-auto border-t p-4">
-                    <DropdownMenu>
+                    <DropdownMenu
+                        open={isDropdownOpen}
+                        onOpenChange={setIsDropdownOpen}
+                    >
                         <DropdownMenuTrigger asChild>
                             <SidebarMenuButton>
                                 <User2 /> {user?.name || "Guest"}
@@ -166,18 +202,18 @@ export function AppSidebar() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56">
                             <DropdownMenuItem
-                                onClick={() => {
-                                    console.log("User logged out");
-                                    logout();
-                                }}
+                                onClick={handleLogoutClick}
                                 className="cursor-pointer"
+                                onSelect={(e) => e.preventDefault()}
                             >
                                 <div className="flex w-full justify-between items-center">
                                     <span>Logout</span>
                                     <LogOut className="ml-2 h-4 w-4" />
                                 </div>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                                onSelect={(e) => e.preventDefault()}
+                            >
                                 <div className="w-full flex justify-between items-center">
                                     <span>Theme</span>
                                     <ThemeSwitcher />
@@ -187,6 +223,30 @@ export function AppSidebar() {
                     </DropdownMenu>
                 </div>
             </SidebarContent>
+
+            {/* Logout Confirmation Dialog */}
+            <AlertDialog
+                open={isLogoutDialogOpen}
+                onOpenChange={setIsLogoutDialogOpen}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin logout? Anda akan diarahkan
+                            ke halaman home setelah logout.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={handleCancelLogout}>
+                            Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={handleLogout}>
+                            Logout
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </Sidebar>
     );
 }

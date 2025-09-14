@@ -1,6 +1,6 @@
 import { AppSidebar } from "@/components/adminDashboard";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Outlet } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 import {
     Breadcrumb,
     BreadcrumbItem,

@@ -13,6 +13,7 @@ import onboardingMiddleware from "@/middleware/onboarding_middleware";
 import OnboardingPage from "@/pages/onboarding/page";
 import Register from "@/pages/auth/Register";
 import auth, { profileLoader } from "@/middleware/authenticated_middleware";
+import NotFound from "@/pages/NotFound";
 
 const REGULAR_ROUTES = [
     {
@@ -67,6 +68,11 @@ const REGULAR_ROUTES = [
             { path: "popular", Component: Popular },
             { path: "preferences", Component: OnboardingPage },
         ],
+    },
+    // 404 Catch-all route
+    {
+        path: "*",
+        Component: NotFound,
     },
 ];
 

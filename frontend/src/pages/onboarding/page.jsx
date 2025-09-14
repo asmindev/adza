@@ -176,7 +176,7 @@ export default function OnboardingPage() {
                             <ChefHat className="h-10 w-10 text-primary" />
                         </motion.div>
                         <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-                            Selamat Datang di Adza!
+                            Selamat Datang di Foodie!
                         </h1>
                         <p className="text-muted-foreground text-base max-w-md mx-auto">
                             Pilih kategori makanan favoritmu untuk mendapatkan

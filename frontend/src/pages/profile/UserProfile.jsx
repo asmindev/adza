@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import { UserContext } from "@/contexts/UserContextDefinition";
 import { useProfile } from "./hooks/useProfile";
 import { ProfileHeader } from "./components/ProfileHeader";
 import { ProfileEditForm } from "./components/ProfileEditForm";
@@ -12,9 +15,51 @@ import { ReviewedFoods } from "./components/ReviewedFoods";
 import PreferencesSection from "./components/PreferencesSection";
 
 export default function UserProfile() {
+    const {
+        user: contextUser,
+        logout,
+        isAuthenticated,
+    } = useContext(UserContext);
+    const navigate = useNavigate();
     const { user, stats, isLoading, error, mutate } = useProfile();
-    console.log(user);
     const [activeTab, setActiveTab] = useState("overview");
+
+    // Validasi user dari context dan handle error/missing data
+    useEffect(() => {
+        if (!isAuthenticated()) {
+            // Jika user tidak terautentikasi, hapus token dan redirect ke login
+            toast.error("Sesi Anda telah berakhir. Silakan login kembali.");
+            logout();
+            navigate("/login", { replace: true });
+            return;
+        }
+
+        if (error) {
+            // Hapus token dan redirect ke login jika ada error
+            toast.error(
+                "Terjadi kesalahan dalam memuat profile. Silakan login kembali."
+            );
+            logout();
+            navigate("/login", { replace: true });
+            return;
+        }
+
+        if (!isLoading && (!user || !contextUser)) {
+            // Jika loading selesai tapi tidak ada data user
+            toast.error("Data profile tidak ditemukan. Silakan login kembali.");
+            logout();
+            navigate("/login", { replace: true });
+            return;
+        }
+    }, [
+        isAuthenticated,
+        logout,
+        navigate,
+        error,
+        isLoading,
+        user,
+        contextUser,
+    ]);
 
     // Loading state
     if (isLoading) {
@@ -30,7 +75,7 @@ export default function UserProfile() {
         );
     }
 
-    // Error state
+    // Error state - akan redirect via useEffect
     if (error) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
@@ -40,31 +85,32 @@ export default function UserProfile() {
                         Gagal Memuat Profile
                     </h2>
                     <p className="text-muted-foreground mb-6">
-                        Terjadi kesalahan saat memuat data profile. Silakan coba
-                        lagi.
+                        Terjadi kesalahan saat memuat data profile. Redirecting
+                        ke login...
                     </p>
-                    <Button onClick={() => mutate()} variant="outline">
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Coba Lagi
-                    </Button>
+                    <div className="flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // No user data
-    if (!user) {
+    // No user data - akan redirect via useEffect
+    if (!user || !contextUser) {
         return (
             <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="text-center">
                     <p className="text-muted-foreground">
-                        Data profile tidak ditemukan
+                        Data profile tidak ditemukan, redirecting ke login...
                     </p>
+                    <div className="flex items-center justify-center mt-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
                 </div>
             </div>
         );
     }
-
     const handleProfileUpdate = () => {
         mutate(); // Refresh data setelah update
         setActiveTab("overview"); // Kembali ke tab overview

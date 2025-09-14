@@ -1,8 +1,8 @@
-// src/components/layout/RootLayout.tsx
+// src/components/layout/RootLayout.jsx
 import React, { useContext, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChefHat, User } from "lucide-react";
+import { Menu, X, ChefHat, User, LayoutDashboard } from "lucide-react";
 import ThemeSwitcher from "@/components/ui/ThemeSwitcher";
 import { Footer } from "@/components/ui/footer";
 import { UserContext } from "@/contexts/UserContextDefinition";
@@ -18,7 +18,24 @@ export default function RootLayout() {
         { label: "Restoran", href: "/restaurants", icon: ChefHat },
         { label: "Rekomendasi", href: "/recommendation" },
         { label: "Populer", href: "/popular" },
-        ...(user ? [{ label: "Profile", href: "/profile", icon: User }] : []),
+        ...(!user
+            ? [
+                  { label: "Masuk", href: "/login" },
+                  { label: "Daftar", href: "/register" },
+              ]
+            : []),
+        // Admin dashboard link
+        ...(user && user.role === "admin"
+            ? [
+                  {
+                      label: "Dashboard",
+                      href: "/dashboard",
+                      icon: LayoutDashboard,
+                  },
+              ]
+            : []),
+        // User profile link
+        ...(user ? [{ label: user.name, href: "/profile", icon: User }] : []),
     ];
 
     const renderDesktopNav = () => (
