@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
 from surprise import Dataset, Reader, SVD
-from surprise.model_selection import cross_validate
+from surprise.model_selection import cross_validate, GridSearchCV
 import warnings
 
 from app.extensions import db
@@ -39,18 +39,26 @@ class Recommendations:
     - Compatibility methods for existing applications
     """
 
-    def __init__(self, alpha: float = 0.7, n_factors: int = 100, n_epochs: int = 20):
+    def __init__(
+        self,
+        alpha: float = 0.7,
+        n_factors: int = 100,
+        n_epochs: int = 20,
+        auto_tune: bool = True,
+    ):
         """
         Initialize the hybrid recommendation system
 
         Args:
             alpha: Weight for food ratings (0-1), restaurant weight = 1-alpha
-            n_factors: Number of factors for SVD
-            n_epochs: Number of training epochs
+            n_factors: Number of factors for SVD (will be tuned if auto_tune=True)
+            n_epochs: Number of training epochs (will be tuned if auto_tune=True)
+            auto_tune: Enable automatic hyperparameter tuning using GridSearchCV
         """
         self.alpha = alpha
         self.n_factors = n_factors
         self.n_epochs = n_epochs
+        self.auto_tune = auto_tune
 
         # SVD models
         self.food_svd_model = None
@@ -64,11 +72,13 @@ class Recommendations:
         self.food_trainset = None
         self.restaurant_trainset = None
 
-        # Scalers for normalization (if needed, but removed unnecessary usage)
-        # self.food_scaler = MinMaxScaler()
-        # self.restaurant_scaler = MinMaxScaler()
+        # Best hyperparameters from tuning
+        self.best_food_params = None
+        self.best_restaurant_params = None
 
-        logger.info(f"Initialized HybridRecommendationSystem with alpha={alpha}")
+        logger.info(
+            f"Initialized HybridRecommendationSystem with alpha={alpha}, auto_tune={auto_tune}"
+        )
 
     def _import_modules(self):
         """Step 1: Import and validate required modules"""
@@ -160,8 +170,94 @@ class Recommendations:
             logger.error(f"✗ Data preparation failed: {str(e)}")
             return False
 
+    def _tune_hyperparameters(
+        self, dataset, model_type: str = "food"
+    ) -> Dict[str, Any]:
+        """
+        Tune hyperparameters using GridSearchCV for optimal performance
+
+        Args:
+            dataset: Surprise dataset for tuning
+            model_type: Type of model ("food" or "restaurant")
+
+        Returns:
+            Dictionary containing best parameters and performance metrics
+        """
+        try:
+            logger.info(f"Starting hyperparameter tuning for {model_type} model...")
+
+            # Define parameter grid for tuning
+            # Optimized ranges based on collaborative filtering best practices
+            param_grid = {
+                "n_factors": [50, 100, 150],  # Number of latent factors
+                "n_epochs": [20, 30, 50],  # Training epochs
+                "lr_all": [0.005, 0.01, 0.02],  # Learning rate
+                "reg_all": [0.02, 0.05, 0.1],  # Regularization parameter
+            }
+
+            # Use smaller grid for small datasets to avoid overfitting
+            data_size = len(dataset.build_full_trainset().ur)
+            if data_size < 50:
+                param_grid = {
+                    "n_factors": [20, 50],
+                    "n_epochs": [10, 20],
+                    "lr_all": [0.01],
+                    "reg_all": [0.05],
+                }
+                logger.info(
+                    f"Using reduced parameter grid for small dataset (size: {data_size})"
+                )
+
+            # Perform grid search with cross-validation
+            # Use fewer CV folds for small datasets
+            cv_folds = min(3, max(2, data_size // 10))
+
+            grid_search = GridSearchCV(
+                SVD,
+                param_grid,
+                measures=["rmse", "mae"],
+                cv=cv_folds,
+                joblib_verbose=0,  # Reduce verbosity
+            )
+
+            grid_search.fit(dataset)
+
+            # Get best parameters and scores
+            best_params = grid_search.best_params["rmse"]
+            best_rmse = grid_search.best_score["rmse"]
+            best_mae = grid_search.best_score["mae"]
+
+            logger.info(f"✓ {model_type} model tuning completed:")
+            logger.info(f"  Best RMSE: {best_rmse:.4f}")
+            logger.info(f"  Best MAE: {best_mae:.4f}")
+            logger.info(f"  Best params: {best_params}")
+
+            return {
+                "best_params": best_params,
+                "best_rmse": best_rmse,
+                "best_mae": best_mae,
+                "tuning_completed": True,
+            }
+
+        except Exception as e:
+            logger.warning(f"Hyperparameter tuning failed for {model_type}: {str(e)}")
+            # Fallback to default parameters
+            default_params = {
+                "n_factors": self.n_factors,
+                "n_epochs": self.n_epochs,
+                "lr_all": 0.005,
+                "reg_all": 0.02,
+            }
+            return {
+                "best_params": default_params,
+                "best_rmse": None,
+                "best_mae": None,
+                "tuning_completed": False,
+                "error": str(e),
+            }
+
     def _train_and_test_models(self) -> bool:
-        """Step 3: Train SVD models and split data for testing"""
+        """Step 3: Train SVD models with optional hyperparameter tuning"""
         try:
             logger.info("Step 3: Training SVD models")
 
@@ -171,11 +267,20 @@ class Recommendations:
                 self.food_ratings_df[["user_id", "food_id", "rating"]], food_reader
             )
 
-            # Train food SVD model
-            logger.info("Training food rating SVD model...")
-            self.food_svd_model = SVD(
-                n_factors=self.n_factors, n_epochs=self.n_epochs, random_state=42
-            )
+            # Hyperparameter tuning for food model
+            if self.auto_tune:
+                logger.info("Performing hyperparameter tuning for food model...")
+                food_tuning_result = self._tune_hyperparameters(food_dataset, "food")
+                self.best_food_params = food_tuning_result["best_params"]
+
+                # Train food SVD model with best parameters
+                self.food_svd_model = SVD(**self.best_food_params, random_state=42)
+            else:
+                # Train food SVD model with default parameters
+                logger.info("Training food rating SVD model with default parameters...")
+                self.food_svd_model = SVD(
+                    n_factors=self.n_factors, n_epochs=self.n_epochs, random_state=42
+                )
 
             self.food_trainset = food_dataset.build_full_trainset()
             self.food_svd_model.fit(self.food_trainset)
@@ -189,10 +294,32 @@ class Recommendations:
                     restaurant_reader,
                 )
 
-                logger.info("Training restaurant rating SVD model...")
-                self.restaurant_svd_model = SVD(
-                    n_factors=self.n_factors, n_epochs=self.n_epochs, random_state=42
-                )
+                # Hyperparameter tuning for restaurant model
+                if self.auto_tune:
+                    logger.info(
+                        "Performing hyperparameter tuning for restaurant model..."
+                    )
+                    restaurant_tuning_result = self._tune_hyperparameters(
+                        restaurant_dataset, "restaurant"
+                    )
+                    self.best_restaurant_params = restaurant_tuning_result[
+                        "best_params"
+                    ]
+
+                    # Train restaurant SVD model with best parameters
+                    self.restaurant_svd_model = SVD(
+                        **self.best_restaurant_params, random_state=42
+                    )
+                else:
+                    # Train restaurant SVD model with default parameters
+                    logger.info(
+                        "Training restaurant rating SVD model with default parameters..."
+                    )
+                    self.restaurant_svd_model = SVD(
+                        n_factors=self.n_factors,
+                        n_epochs=self.n_epochs,
+                        random_state=42,
+                    )
 
                 self.restaurant_trainset = restaurant_dataset.build_full_trainset()
                 self.restaurant_svd_model.fit(self.restaurant_trainset)
@@ -200,8 +327,11 @@ class Recommendations:
                 logger.info("Skipping restaurant rating SVD model - no data available")
                 self.restaurant_svd_model = None
                 self.restaurant_trainset = None
+                self.best_restaurant_params = None
 
-            logger.info("✓ Both SVD models trained successfully")
+            logger.info("✓ SVD models trained successfully")
+            if self.auto_tune:
+                logger.info("✓ Hyperparameter tuning completed")
             if self.restaurant_svd_model is None:
                 logger.info("✓ Operating in food-only mode")
             return True
@@ -249,12 +379,19 @@ class Recommendations:
                     f"Using {food_cv_folds}-fold cross-validation for {food_data_size} food ratings"
                 )
 
+                # Use tuned parameters if available, otherwise use defaults
+                if self.best_food_params:
+                    svd_params = self.best_food_params.copy()
+                    logger.info(f"Using tuned parameters for validation: {svd_params}")
+                else:
+                    svd_params = {
+                        "n_factors": self.n_factors,
+                        "n_epochs": self.n_epochs,
+                        "random_state": 42,
+                    }
+
                 food_cv_results = cross_validate(
-                    SVD(
-                        n_factors=self.n_factors,
-                        n_epochs=self.n_epochs,
-                        random_state=42,
-                    ),
+                    SVD(**svd_params),
                     food_dataset,
                     measures=["RMSE", "MAE"],
                     cv=food_cv_folds,
@@ -266,6 +403,8 @@ class Recommendations:
                     "mae": float(np.mean(food_cv_results["test_mae"])),
                     "rmse_std": float(np.std(food_cv_results["test_rmse"])),
                     "mae_std": float(np.std(food_cv_results["test_mae"])),
+                    "tuned": self.best_food_params is not None,
+                    "parameters_used": svd_params,
                 }
 
             # Validate restaurant rating model only if we have data and model
@@ -306,12 +445,21 @@ class Recommendations:
                         f"Using {restaurant_cv_folds}-fold cross-validation for {restaurant_data_size} restaurant ratings"
                     )
 
+                    # Use tuned parameters if available, otherwise use defaults
+                    if self.best_restaurant_params:
+                        svd_params = self.best_restaurant_params.copy()
+                        logger.info(
+                            f"Using tuned restaurant parameters for validation: {svd_params}"
+                        )
+                    else:
+                        svd_params = {
+                            "n_factors": self.n_factors,
+                            "n_epochs": self.n_epochs,
+                            "random_state": 42,
+                        }
+
                     restaurant_cv_results = cross_validate(
-                        SVD(
-                            n_factors=self.n_factors,
-                            n_epochs=self.n_epochs,
-                            random_state=42,
-                        ),
+                        SVD(**svd_params),
                         restaurant_dataset,
                         measures=["RMSE", "MAE"],
                         cv=restaurant_cv_folds,
@@ -323,6 +471,8 @@ class Recommendations:
                         "mae": float(np.mean(restaurant_cv_results["test_mae"])),
                         "rmse_std": float(np.std(restaurant_cv_results["test_rmse"])),
                         "mae_std": float(np.std(restaurant_cv_results["test_mae"])),
+                        "tuned": self.best_restaurant_params is not None,
+                        "parameters_used": svd_params,
                     }
             else:
                 logger.info(
@@ -347,6 +497,10 @@ class Recommendations:
                 logger.info(
                     f"  Food Model - MAE: {results['food_model']['mae']:.4f} ± {results['food_model']['mae_std']:.4f}"
                 )
+                if results["food_model"].get("tuned", False):
+                    logger.info("  Food Model - ✓ Using tuned hyperparameters")
+                else:
+                    logger.info("  Food Model - Using default parameters")
 
             if results["restaurant_model"]["rmse"] is not None:
                 if "note" in results["restaurant_model"]:
@@ -360,6 +514,12 @@ class Recommendations:
                     logger.info(
                         f"  Restaurant Model - MAE: {results['restaurant_model']['mae']:.4f} ± {results['restaurant_model']['mae_std']:.4f}"
                     )
+                    if results["restaurant_model"].get("tuned", False):
+                        logger.info(
+                            "  Restaurant Model - ✓ Using tuned hyperparameters"
+                        )
+                    else:
+                        logger.info("  Restaurant Model - Using default parameters")
             else:
                 logger.info(
                     f"  Restaurant Model - {results['restaurant_model']['note']}"
@@ -514,6 +674,42 @@ class Recommendations:
             logger.error(f"✗ Prediction failed: {str(e)}")
             return []
 
+            return results
+
+        except Exception as e:
+            logger.error(f"✗ Model validation failed: {str(e)}")
+            return {}
+
+    def get_model_info(self) -> Dict[str, Any]:
+        """
+        Get information about the trained models including hyperparameters used
+
+        Returns:
+            Dictionary containing model information and performance metrics
+        """
+        return {
+            "auto_tune_enabled": self.auto_tune,
+            "alpha": self.alpha,
+            "food_model": {
+                "trained": self.food_svd_model is not None,
+                "parameters": (
+                    self.best_food_params
+                    if self.best_food_params
+                    else {"n_factors": self.n_factors, "n_epochs": self.n_epochs}
+                ),
+                "tuned": self.best_food_params is not None,
+            },
+            "restaurant_model": {
+                "trained": self.restaurant_svd_model is not None,
+                "parameters": (
+                    self.best_restaurant_params
+                    if self.best_restaurant_params
+                    else {"n_factors": self.n_factors, "n_epochs": self.n_epochs}
+                ),
+                "tuned": self.best_restaurant_params is not None,
+            },
+        }
+
     def train_full_system(self) -> Dict[str, Any]:
         """
         Execute all 4 steps of the recommendation system
@@ -571,15 +767,23 @@ class Recommendations:
     def get_recommendations(
         self,
         user_id: Any,
-        user_price_preferences: Optional[Dict] = None,
         price_filter: Optional[Dict] = None,
         n: int = 10,
         alpha: Optional[float] = None,
-        beta: float = 0.2,
-        gamma: float = 0.2,
+        gamma: float = 0.3,
     ) -> List[Dict[str, Any]]:
         """
         Get recommendations using the hybrid system with detailed food and restaurant information
+
+        Args:
+            user_id: User ID to get recommendations for
+            price_filter: Optional price filtering {min_price: float, max_price: float}
+            n: Number of recommendations to return
+            alpha: Weight for food vs restaurant ratings (if None, uses instance alpha)
+            gamma: Weight for popularity score in final scoring
+
+        Returns:
+            List of recommended foods with detailed information and scores
         """
         try:
             # Use instance alpha if not provided
@@ -625,12 +829,16 @@ class Recommendations:
                                 .first()
                             )
 
-                            restaurant_dict["average_rating"] = round(
-                                float(restaurant_rating_stats.average or 0), 2
-                            )
-                            restaurant_dict["rating_count"] = (
-                                restaurant_rating_stats.count or 0
-                            )
+                            if restaurant_rating_stats:
+                                restaurant_dict["average_rating"] = round(
+                                    float(restaurant_rating_stats[0] or 0), 2
+                                )
+                                restaurant_dict["rating_count"] = int(
+                                    restaurant_rating_stats[1] or 0
+                                )
+                            else:
+                                restaurant_dict["average_rating"] = 0.0
+                                restaurant_dict["rating_count"] = 0
 
                     # Add food rating statistics
                     from sqlalchemy import func
@@ -644,10 +852,14 @@ class Recommendations:
                         .first()
                     )
 
-                    food_dict["average_rating"] = round(
-                        float(food_rating_stats.average or 0), 2
-                    )
-                    food_dict["rating_count"] = food_rating_stats.count or 0
+                    if food_rating_stats:
+                        food_dict["average_rating"] = round(
+                            float(food_rating_stats[0] or 0), 2
+                        )
+                        food_dict["rating_count"] = int(food_rating_stats[1] or 0)
+                    else:
+                        food_dict["average_rating"] = 0.0
+                        food_dict["rating_count"] = 0
 
                     # Add restaurant to food dict
                     food_dict["restaurant"] = restaurant_dict
@@ -663,29 +875,14 @@ class Recommendations:
                         if max_price and food_price > max_price:
                             continue
 
-                    # Calculate price score if preferences provided
-                    price_score = 0.0
-                    if user_price_preferences and user_id in user_price_preferences:
-                        preferred_price = user_price_preferences[user_id]
-                        food_price = float(food_dict.get("price", 0))
-                        if preferred_price > 0:
-                            price_diff = (
-                                abs(food_price - preferred_price) / preferred_price
-                            )
-                            price_score = max(0, 1 - price_diff)  # 0-1 scale
-
                     # Calculate popularity score
                     popularity_score = min(
                         1.0, food_dict["rating_count"] / 10.0
                     )  # Normalize to 0-1
 
-                    # Calculate final score
+                    # Calculate final score (removed price preference component)
                     base_score = rec["final_predicted_rating"] / 5.0  # Normalize to 0-1
-                    final_score = (
-                        alpha * base_score
-                        + beta * price_score
-                        + gamma * popularity_score
-                    )
+                    final_score = alpha * base_score + gamma * popularity_score
 
                     formatted_rec = {
                         "food": food_dict,
@@ -695,7 +892,6 @@ class Recommendations:
                             "predicted_restaurant_rating"
                         ],
                         "hybrid_score": rec["hybrid_score"],
-                        "price_score": round(price_score, 3),
                         "popularity_score": round(popularity_score, 3),
                         "final_score": round(final_score, 3),
                         "alpha_weight": rec["alpha_weight"],
@@ -791,12 +987,16 @@ class Recommendations:
                                 .first()
                             )
 
-                            restaurant_dict["average_rating"] = round(
-                                float(restaurant_rating_query.average), 2
-                            )
-                            restaurant_dict["rating_count"] = int(
-                                restaurant_rating_query.count
-                            )
+                            if restaurant_rating_query:
+                                restaurant_dict["average_rating"] = round(
+                                    float(restaurant_rating_query[0] or 0), 2
+                                )
+                                restaurant_dict["rating_count"] = int(
+                                    restaurant_rating_query[1] or 0
+                                )
+                            else:
+                                restaurant_dict["average_rating"] = 0.0
+                                restaurant_dict["rating_count"] = 0
 
                             restaurant_info = restaurant_dict
 

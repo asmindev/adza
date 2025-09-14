@@ -7,8 +7,12 @@ import uuid
 class Review(db.Model):
     __tablename__ = "reviews"
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
-    food_id = db.Column(db.String(36), db.ForeignKey("foods.id"), nullable=False)
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    food_id = db.Column(
+        db.String(36), db.ForeignKey("foods.id", ondelete="CASCADE"), nullable=False
+    )
     content = db.Column(db.Text, nullable=False)  # Review content
 
     # Menggunakan UTC secara eksplisit

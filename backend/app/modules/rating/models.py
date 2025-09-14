@@ -8,8 +8,12 @@ class FoodRating(db.Model):
     __tablename__ = "food_ratings"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
-    food_id = db.Column(db.String(36), db.ForeignKey("foods.id"), nullable=False)
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    food_id = db.Column(
+        db.String(36), db.ForeignKey("foods.id", ondelete="CASCADE"), nullable=False
+    )
     rating = db.Column(db.Float, nullable=False)  # Rating from 1-5
 
     created_at = db.Column(
@@ -57,9 +61,13 @@ class RestaurantRating(db.Model):
     __tablename__ = "restaurant_ratings"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     restaurant_id = db.Column(
-        db.String(36), db.ForeignKey("restaurants.id"), nullable=False
+        db.String(36),
+        db.ForeignKey("restaurants.id", ondelete="CASCADE"),
+        nullable=False,
     )
     rating = db.Column(db.Float, nullable=False)  # Rating from 1-5
     comment = db.Column(db.Text, nullable=True)  # Optional comment about service

@@ -14,7 +14,9 @@ class Food(db.Model):
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float, nullable=True)
     restaurant_id = db.Column(
-        db.String(36), db.ForeignKey("restaurants.id"), nullable=True
+        db.String(36),
+        db.ForeignKey("restaurants.id", ondelete="CASCADE"),
+        nullable=True,
     )
 
     created_at = db.Column(
@@ -95,7 +97,9 @@ class FoodImage(db.Model):
     __tablename__ = "food_images"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    food_id = db.Column(db.String(36), db.ForeignKey("foods.id"), nullable=False)
+    food_id = db.Column(
+        db.String(36), db.ForeignKey("foods.id", ondelete="CASCADE"), nullable=False
+    )
     image_url = db.Column(db.String(255), nullable=True)
     is_main = db.Column(db.Boolean, default=False, nullable=False)
     filename = db.Column(db.String(255), nullable=True)

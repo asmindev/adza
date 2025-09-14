@@ -9,11 +9,14 @@ restaurant_categories = db.Table(
     db.Column(
         "restaurant_id",
         db.String(36),
-        db.ForeignKey("restaurants.id"),
+        db.ForeignKey("restaurants.id", ondelete="CASCADE"),
         primary_key=True,
     ),
     db.Column(
-        "category_id", db.String(36), db.ForeignKey("categories.id"), primary_key=True
+        "category_id",
+        db.String(36),
+        db.ForeignKey("categories.id", ondelete="CASCADE"),
+        primary_key=True,
     ),
     db.Column(
         "created_at",
@@ -91,9 +94,13 @@ class UserFavoriteCategory(db.Model):
     __tablename__ = "user_favorite_categories"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     category_id = db.Column(
-        db.String(36), db.ForeignKey("categories.id"), nullable=False
+        db.String(36),
+        db.ForeignKey("categories.id", ondelete="CASCADE"),
+        nullable=False,
     )
 
     created_at = db.Column(
