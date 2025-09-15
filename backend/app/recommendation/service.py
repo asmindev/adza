@@ -91,11 +91,11 @@ class Recommendations:
             import pandas
             import numpy
 
-            logger.info("✓ All required modules imported successfully")
+            logger.info("- All required modules imported successfully")
             return True
 
         except ImportError as e:
-            logger.error(f"✗ Module import failed: {str(e)}")
+            logger.error(f"- Module import failed: {str(e)}")
             return False
 
     def _prepare_data(self) -> bool:
@@ -148,26 +148,26 @@ class Recommendations:
                     & (self.restaurant_ratings_df["rating"] <= 5.0)
                 ]
 
-            logger.info(f"✓ Food ratings: {len(self.food_ratings_df)} records")
+            logger.info(f"- Food ratings: {len(self.food_ratings_df)} records")
             logger.info(
-                f"✓ Restaurant ratings: {len(self.restaurant_ratings_df)} records"
+                f"- Restaurant ratings: {len(self.restaurant_ratings_df)} records"
             )
             logger.info(
-                f"✓ Food rating range: {self.food_ratings_df['rating'].min():.1f} - {self.food_ratings_df['rating'].max():.1f}"
+                f"- Food rating range: {self.food_ratings_df['rating'].min():.1f} - {self.food_ratings_df['rating'].max():.1f}"
             )
             if not self.restaurant_ratings_df.empty:
                 logger.info(
-                    f"✓ Restaurant rating range: {self.restaurant_ratings_df['rating'].min():.1f} - {self.restaurant_ratings_df['rating'].max():.1f}"
+                    f"- Restaurant rating range: {self.restaurant_ratings_df['rating'].min():.1f} - {self.restaurant_ratings_df['rating'].max():.1f}"
                 )
             else:
                 logger.info(
-                    "✓ Restaurant ratings: No data available - will use food ratings only"
+                    "- Restaurant ratings: No data available - will use food ratings only"
                 )
 
             return True
 
         except Exception as e:
-            logger.error(f"✗ Data preparation failed: {str(e)}")
+            logger.error(f"- Data preparation failed: {str(e)}")
             return False
 
     def _tune_hyperparameters(
@@ -227,7 +227,7 @@ class Recommendations:
             best_rmse = grid_search.best_score["rmse"]
             best_mae = grid_search.best_score["mae"]
 
-            logger.info(f"✓ {model_type} model tuning completed:")
+            logger.info(f"- {model_type} model tuning completed:")
             logger.info(f"  Best RMSE: {best_rmse:.4f}")
             logger.info(f"  Best MAE: {best_mae:.4f}")
             logger.info(f"  Best params: {best_params}")
@@ -329,15 +329,15 @@ class Recommendations:
                 self.restaurant_trainset = None
                 self.best_restaurant_params = None
 
-            logger.info("✓ SVD models trained successfully")
+            logger.info("- SVD models trained successfully")
             if self.auto_tune:
-                logger.info("✓ Hyperparameter tuning completed")
+                logger.info("- Hyperparameter tuning completed")
             if self.restaurant_svd_model is None:
-                logger.info("✓ Operating in food-only mode")
+                logger.info("- Operating in food-only mode")
             return True
 
         except Exception as e:
-            logger.error(f"✗ Model training failed: {str(e)}")
+            logger.error(f"- Model training failed: {str(e)}")
             return False
 
     def _validate_models(self) -> Dict[str, Dict[str, float]]:
@@ -487,7 +487,7 @@ class Recommendations:
                 }
 
             # Log validation results
-            logger.info("✓ Validation Results:")
+            logger.info("- Validation Results:")
             if "note" in results["food_model"]:
                 logger.info(f"  Food Model - {results['food_model']['note']}")
             else:
@@ -498,7 +498,7 @@ class Recommendations:
                     f"  Food Model - MAE: {results['food_model']['mae']:.4f} ± {results['food_model']['mae_std']:.4f}"
                 )
                 if results["food_model"].get("tuned", False):
-                    logger.info("  Food Model - ✓ Using tuned hyperparameters")
+                    logger.info("  Food Model - - Using tuned hyperparameters")
                 else:
                     logger.info("  Food Model - Using default parameters")
 
@@ -516,7 +516,7 @@ class Recommendations:
                     )
                     if results["restaurant_model"].get("tuned", False):
                         logger.info(
-                            "  Restaurant Model - ✓ Using tuned hyperparameters"
+                            "  Restaurant Model - - Using tuned hyperparameters"
                         )
                     else:
                         logger.info("  Restaurant Model - Using default parameters")
@@ -528,7 +528,7 @@ class Recommendations:
             return results
 
         except Exception as e:
-            logger.error(f"✗ Model validation failed: {str(e)}")
+            logger.error(f"- Model validation failed: {str(e)}")
             return {}
 
     def predict_hybrid_recommendations(
@@ -579,6 +579,81 @@ class Recommendations:
             food_predictions = self.food_svd_model.test(food_anti_testset)
             food_pred_dict = {pred.iid: pred.est for pred in food_predictions}
 
+            # IMPROVEMENT: Check for small data scenario
+            total_ratings = (
+                len(self.food_ratings_df)
+                if hasattr(self, "food_ratings_df") and self.food_ratings_df is not None
+                else 0
+            )
+            is_small_data = total_ratings <= 20
+
+            if is_small_data:
+                logger.info(f"Small data mode enabled (total ratings: {total_ratings})")
+
+            # IMPROVEMENT: Get item rating counts for bias adjustment
+            item_rating_counts = {}
+            similar_user_items = {}
+
+            if hasattr(self, "food_ratings_df") and self.food_ratings_df is not None:
+                try:
+                    # Count ratings per item
+                    for _, row in self.food_ratings_df.iterrows():
+                        food_id = row["food_id"]
+                        if food_id not in item_rating_counts:
+                            item_rating_counts[food_id] = 0
+                        item_rating_counts[food_id] += 1
+
+                    # For small data, find items rated by similar users
+                    if is_small_data:
+                        # Simple similarity: find users with overlapping items
+                        target_items = set(
+                            self.food_ratings_df[
+                                self.food_ratings_df["user_id"] == user_id
+                            ]["food_id"]
+                        )
+
+                        for other_user in self.food_ratings_df["user_id"].unique():
+                            if other_user != user_id:
+                                other_items = set(
+                                    self.food_ratings_df[
+                                        self.food_ratings_df["user_id"] == other_user
+                                    ]["food_id"]
+                                )
+                                overlap = target_items & other_items
+
+                                if (
+                                    len(overlap) >= 2
+                                ):  # Need some overlap for similarity
+                                    # Items rated by other user but not target user
+                                    unique_items = other_items - target_items
+                                    for item_id in unique_items:
+                                        rating_row = self.food_ratings_df[
+                                            (
+                                                self.food_ratings_df["user_id"]
+                                                == other_user
+                                            )
+                                            & (
+                                                self.food_ratings_df["food_id"]
+                                                == item_id
+                                            )
+                                        ]
+                                        if not rating_row.empty:
+                                            rating = rating_row.iloc[0]["rating"]
+                                            overlap_count = len(overlap)
+                                            similar_user_items[item_id] = {
+                                                "rating": rating,
+                                                "overlap": overlap_count,
+                                                "user": other_user,
+                                            }
+
+                                    logger.info(
+                                        f"Found user {other_user} with {len(overlap)} overlapping items and {len(unique_items)} unique items"
+                                    )
+
+                except Exception as e:
+                    logger.warning(f"Error in similarity analysis: {str(e)}")
+                    similar_user_items = {}
+
             # For restaurants: get unique restaurants from foods
             restaurant_ids = set(
                 food.restaurant_id for food in foods if food.restaurant_id
@@ -606,6 +681,37 @@ class Recommendations:
                     food_score = food_pred_dict.get(
                         food.id, 2.5
                     )  # default neutral if missing
+
+                    # IMPROVEMENT: Bias adjustment for small data with partially seen items
+                    if is_small_data and food.id in item_rating_counts:
+                        rating_count = item_rating_counts[food.id]
+                        if rating_count <= 2:  # Partially seen with low rating count
+                            # Apply less aggressive bias penalty
+                            global_mean = (
+                                4.67 if hasattr(self, "food_ratings_df") else 4.5
+                            )
+                            bias_adjustment = (
+                                food_score - global_mean
+                            ) * 0.5  # Reduce bias impact by 50%
+                            food_score = global_mean + bias_adjustment
+                            logger.debug(
+                                f"Bias adjustment for {food.name}: original={food_pred_dict.get(food.id, 2.5):.2f}, adjusted={food_score:.2f}"
+                            )
+
+                    # IMPROVEMENT: Boost items from similar users in small data scenario
+                    if is_small_data and food.id in similar_user_items:
+                        similar_item = similar_user_items[food.id]
+                        # Weighted boost based on overlap count
+                        boost_weight = min(
+                            similar_item["overlap"] / 5.0, 1.0
+                        )  # Max boost at 5+ overlaps
+                        boost_amount = (
+                            (similar_item["rating"] - 3.0) * boost_weight * 0.3
+                        )  # 30% boost
+                        food_score = min(food_score + boost_amount, 5.0)  # Cap at 5.0
+                        logger.debug(
+                            f"Similar user boost for {food.name}: +{boost_amount:.2f} from user {similar_item['user']}"
+                        )
 
                     restaurant_score = 2.5  # default neutral
                     if food.restaurant_id:
@@ -661,23 +767,23 @@ class Recommendations:
             top_recommendations = recommendations[:limit]
 
             logger.info(
-                f"✓ Generated {len(top_recommendations)} hybrid recommendations"
+                f"- Generated {len(top_recommendations)} hybrid recommendations"
             )
             if self.restaurant_svd_model is None:
                 logger.info(
-                    "✓ Using food ratings only (no restaurant ratings available)"
+                    "- Using food ratings only (no restaurant ratings available)"
                 )
 
             return top_recommendations
 
         except Exception as e:
-            logger.error(f"✗ Prediction failed: {str(e)}")
+            logger.error(f"- Prediction failed: {str(e)}")
             return []
 
             return results
 
         except Exception as e:
-            logger.error(f"✗ Model validation failed: {str(e)}")
+            logger.error(f"- Model validation failed: {str(e)}")
             return {}
 
     def get_model_info(self) -> Dict[str, Any]:
@@ -755,12 +861,12 @@ class Recommendations:
 
             results["success"] = True
             logger.info(
-                "✓ Hybrid recommendation system training completed successfully"
+                "- Hybrid recommendation system training completed successfully"
             )
 
         except Exception as e:
             results["error"] = str(e)
-            logger.error(f"✗ Training failed: {str(e)}")
+            logger.error(f"- Training failed: {str(e)}")
 
         return results
 

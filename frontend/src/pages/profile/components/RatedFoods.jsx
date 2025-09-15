@@ -90,16 +90,9 @@ export const RatedFoods = ({ foodRatings = [], showAll = false }) => {
                                     <div className="flex items-center justify-between mt-3">
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`w-4 h-4 ${
-                                                            i < rating.rating
-                                                                ? "text-primary fill-current"
-                                                                : "text-muted-foreground"
-                                                        }`}
-                                                    />
-                                                ))}
+                                                <Star
+                                                    className={`w-4 h-4 text-yellow-600 fill-current`}
+                                                />
                                             </div>
                                             <span className="text-sm font-medium">
                                                 {formatRating(rating.rating)}

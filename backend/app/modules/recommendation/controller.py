@@ -127,12 +127,9 @@ def get_recommendations():
 
         recommendations = rec_system.get_recommendations(
             user_id=user_id,
-            price_filter=price_filter,
             n=limit,
             alpha=alpha,
-            gamma=gamma,
         )
-        logger.info(recommendations)
 
         if recommendations is None:
             logger.warning(f"User {user_id} tidak ditemukan")
@@ -143,7 +140,7 @@ def get_recommendations():
                 f"Tidak ada rekomendasi untuk user {user_id}, menggunakan makanan populer"
             )
             # Fallback to popular foods
-            rec_system_fallback = Recomendations()
+            rec_system_fallback = Recommendations()
             popular_foods = rec_system_fallback.get_popular_foods(n=limit)
             logger.info(popular_foods)
             if popular_foods:
