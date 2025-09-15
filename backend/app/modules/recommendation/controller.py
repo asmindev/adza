@@ -127,11 +127,9 @@ def get_recommendations():
 
         recommendations = rec_system.get_recommendations(
             user_id=user_id,
-            user_price_preferences=user_price_preferences,
             price_filter=price_filter,
             n=limit,
             alpha=alpha,
-            beta=beta,
             gamma=gamma,
         )
         logger.info(recommendations)
