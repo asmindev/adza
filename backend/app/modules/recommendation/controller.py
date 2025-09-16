@@ -1,5 +1,5 @@
 from flask import Blueprint, request, g
-from app.recommendation.service import Recommendations
+from app.recommendation.recommender import Recommendations
 from app.recommendation.config import RecommendationConfig
 from app.utils import api_logger as logger
 from app.utils.auth import token_required
@@ -11,7 +11,7 @@ recommendation_blueprint = Blueprint("recommendation", __name__)
 @recommendation_blueprint.route("/recommendation", methods=["GET"])
 @token_required
 def get_recommendations():
-    """Get personalized food recommendations using enhanced collaborative filtering"""
+    """Get personalized food recommendations using hybrid collaborative filtering"""
     # Get user_id from the request context from jwt token
     user_id = g.user_id
 
@@ -24,24 +24,13 @@ def get_recommendations():
         "limit", default=RecommendationConfig.DEFAULT_RECOMMENDATIONS, type=int
     )
     alpha = request.args.get(
-        "alpha", default=RecommendationConfig.DEFAULT_ALPHA, type=float
+        "alpha", default=RecommendationConfig.DEFAULT_FOOD_RESTAURANT_ALPHA, type=float
     )
-    beta = request.args.get(
-        "beta", default=RecommendationConfig.DEFAULT_BETA, type=float
-    )
-    gamma = request.args.get(
-        "gamma", default=RecommendationConfig.DEFAULT_GAMMA, type=float
+    enable_hybrid = (
+        request.args.get("hybrid", default="true", type=str).lower() == "true"
     )
 
-    # Get price preference parameters
-    min_price = request.args.get("min_price", type=float)
-    max_price = request.args.get("max_price", type=float)
-    preferred_price = request.args.get("preferred_price", type=float)
-
-    logger.debug(f"Parameter: limit={limit}, alpha={alpha}, beta={beta}, gamma={gamma}")
-    logger.debug(
-        f"Price preference: min_price={min_price}, max_price={max_price}, preferred_price={preferred_price}"
-    )
+    logger.debug(f"Parameter: limit={limit}, alpha={alpha}, hybrid={enable_hybrid}")
 
     # Validate limit using config values
     if (
@@ -52,116 +41,85 @@ def get_recommendations():
             f"Limit must be between {RecommendationConfig.MIN_RECOMMENDATIONS} and {RecommendationConfig.MAX_RECOMMENDATIONS}"
         )
 
-    # # Validate enhancement parameters using config method
-    # is_valid, error_msg = RecommendationConfig.validate_enhancement_params(
-    #     alpha, beta, gamma
-    # )
-    # if not is_valid:
-    #     return ResponseHelper.validation_error(error_msg)
-
-    try:
-        # Calculate user price preferences
-        user_price_preferences = {}
-        price_filter = {}
-
-        # Option 1: User provides specific preferred price
-        if preferred_price:
-            user_price_preferences[user_id] = preferred_price
-            logger.info(f"Using user specified preferred price: {preferred_price}")
-
-        # Option 2: User provides price range (min and max)
-        elif min_price and max_price:
-            if min_price > max_price:
-                return ResponseHelper.validation_error(
-                    "min_price cannot be greater than max_price"
-                )
-
-            # Calculate preferred price as the middle of the range
-            calculated_preferred_price = (min_price + max_price) / 2
-            user_price_preferences[user_id] = calculated_preferred_price
-            # Set price filter for recommendations
-            price_filter = {"min_price": min_price, "max_price": max_price}
-            logger.info(
-                f"Calculated preferred price from range {min_price}-{max_price}: {calculated_preferred_price}"
-            )
-            logger.info(f"Set price filter: {price_filter}")
-
-        # Option 3: Only min_price provided
-        elif min_price:
-            # Use min_price + 25% as preferred
-            calculated_preferred_price = min_price * 1.25
-            user_price_preferences[user_id] = calculated_preferred_price
-            price_filter = {"min_price": min_price}
-            logger.info(
-                f"Calculated preferred price from min_price {min_price}: {calculated_preferred_price}"
-            )
-            logger.info(f"Set price filter: {price_filter}")
-
-        # Option 4: Only max_price provided
-        elif max_price:
-            # Use max_price - 25% as preferred
-            calculated_preferred_price = max_price * 0.75
-            user_price_preferences[user_id] = calculated_preferred_price
-            price_filter = {"max_price": max_price}
-            logger.info(
-                f"Calculated preferred price from max_price {max_price}: {calculated_preferred_price}"
-            )
-            logger.info(f"Set price filter: {price_filter}")
-
-        else:
-            # No price preference provided, beta parameter will not be effective
-            logger.info("No price preference provided, using empty preferences")
-
-        # Call the unified get_recommendations method
-        rec_system = Recommendations(alpha=alpha)
-        # Train the system first
-        train_results = rec_system.train_full_system()
-
-        if not train_results["success"]:
-            logger.error(
-                f"Failed to train recommendation system: {train_results['error']}"
-            )
-            return ResponseHelper.internal_server_error(
-                "Recommendation system training failed"
-            )
-
-        recommendations = rec_system.get_recommendations(
-            user_id=user_id,
-            n=limit,
-            alpha=alpha,
+    # Validate alpha parameter (0.0 to 1.0)
+    if not (0.0 <= alpha <= 1.0):
+        return ResponseHelper.validation_error(
+            "Alpha parameter must be between 0.0 and 1.0"
         )
 
-        if recommendations is None:
-            logger.warning(f"User {user_id} tidak ditemukan")
-            return ResponseHelper.not_found("User")
+    try:
+        # Initialize recommendation system with hybrid scoring
+        rec_system = Recommendations(alpha=alpha)
 
-        if len(recommendations) == 0:
-            logger.info(
-                f"Tidak ada rekomendasi untuk user {user_id}, menggunakan makanan populer"
-            )
-            # Fallback to popular foods
-            rec_system_fallback = Recommendations()
-            popular_foods = rec_system_fallback.get_popular_foods(n=limit)
-            logger.info(popular_foods)
-            if popular_foods:
+        # Configure hybrid scoring
+        rec_system.enable_hybrid_scoring(enable_hybrid)
+
+        logger.info(
+            f"Hybrid scoring: {'enabled' if enable_hybrid else 'disabled'}, alpha={alpha}"
+        )
+
+        # Generate recommendations using the new API with scores
+        recommendations, predicted_scores = rec_system.recommend_with_scores(
+            user_id=user_id, top_n=limit
+        )
+
+        if recommendations is None or len(recommendations) == 0:
+            logger.warning(f"User {user_id} tidak ditemukan atau tidak ada rekomendasi")
+            # Fallback to popular foods using the data processor
+            popular_food_ids = rec_system.data_processor.get_popular_foods(top_n=limit)
+            logger.info(f"Generated {len(popular_food_ids)} popular foods as fallback")
+
+            if popular_food_ids:
+                # Import utility functions
+                from .utils import get_food_details_batch, format_foods_response
+
+                # Get complete food details for fallback
+                foods_data = get_food_details_batch(popular_food_ids)
+                fallback_scores = {food_id: 3.5 for food_id in popular_food_ids}
+                formatted_foods = format_foods_response(foods_data, fallback_scores)
+
                 return ResponseHelper.success(
                     data={
-                        "recommendations": popular_foods,
+                        "recommendations": formatted_foods,
                         "fallback": True,
+                        "hybrid_info": rec_system.get_hybrid_info(),
+                        "system_stats": rec_system.get_system_stats(),
                         "message": "Menggunakan makanan populer karena tidak ada rekomendasi personal",
                     }
                 )
             else:
                 return ResponseHelper.not_found("No recommendations available")
 
+        # Import utility functions
+        from .utils import get_food_details_batch, format_foods_response
+
+        # Get complete food details for recommendations
+        foods_data = get_food_details_batch(recommendations)
+        if not foods_data:
+            logger.warning("Failed to get food details for recommendations")
+            return ResponseHelper.not_found("No food details found")
+
+        # Format response with predicted ratings
+        formatted_foods = format_foods_response(foods_data, predicted_scores)
+
+        # Get additional information about the recommendation process
+        hybrid_info = rec_system.get_hybrid_info()
+        system_stats = rec_system.get_system_stats()
+
         logger.info(
             f"Mengembalikan {len(recommendations)} rekomendasi untuk user {user_id}"
+        )
+        logger.info(f"Hybrid info: {hybrid_info}")
+        logger.info(
+            f"Restaurant coverage: {system_stats.get('hybrid_coverage', 0)*100:.1f}%"
         )
 
         return ResponseHelper.success(
             data={
-                "recommendations": recommendations,
+                "recommendations": formatted_foods,
                 "fallback": False,
+                "hybrid_info": hybrid_info,
+                "system_stats": system_stats,
             }
         )
 
@@ -176,17 +134,76 @@ def get_popular():
     """Get popular foods based on user ratings"""
     logger.info("GET /popular - Mengambil makanan populer berdasarkan rating pengguna")
     try:
-        # Get top-rated foods using the service
+        # Import utility function
+        from .utils import get_food_details_batch, format_foods_response
+
+        # Get top-rated foods using the data processor
         rec_system_top = Recommendations()
-        top_rated_foods = rec_system_top.get_popular_foods(
-            n=RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
+        top_rated_food_ids = rec_system_top.data_processor.get_popular_foods(
+            top_n=RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
         )
-        if not top_rated_foods:
+        if not top_rated_food_ids:
             logger.info("Tidak ada makanan teratas ditemukan")
             return ResponseHelper.not_found("No top-rated foods found")
 
-        return ResponseHelper.success(data={"top_rated": top_rated_foods})
+        # Get complete food details
+        foods_data = get_food_details_batch(top_rated_food_ids)
+        if not foods_data:
+            logger.warning("Failed to get food details for popular foods")
+            return ResponseHelper.not_found("No food details found")
+
+        # Format response as required
+        formatted_foods = format_foods_response(foods_data)
+
+        return ResponseHelper.success(data=formatted_foods)
 
     except Exception as e:
         logger.error(f"Error getting top-rated foods: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to get top-rated foods")
+
+
+@recommendation_blueprint.route("/hybrid-info", methods=["GET"])
+def get_hybrid_info():
+    """Get information about the hybrid scoring system"""
+    logger.info("GET /hybrid-info - Mengambil informasi hybrid scoring system")
+    try:
+        # Get alpha parameter from query (optional)
+        alpha = request.args.get(
+            "alpha",
+            default=RecommendationConfig.DEFAULT_FOOD_RESTAURANT_ALPHA,
+            type=float,
+        )
+
+        # Validate alpha parameter
+        if not (0.0 <= alpha <= 1.0):
+            return ResponseHelper.validation_error(
+                "Alpha parameter must be between 0.0 and 1.0"
+            )
+
+        # Initialize recommendation system
+        rec_system = Recommendations(alpha=alpha)
+
+        # Get hybrid info and system stats
+        hybrid_info = rec_system.get_hybrid_info()
+        system_stats = rec_system.get_system_stats()
+
+        # Get rating statistics from data processor
+        rating_stats = rec_system.data_processor.get_rating_statistics()
+
+        return ResponseHelper.success(
+            data={
+                "hybrid_info": hybrid_info,
+                "system_stats": system_stats,
+                "rating_statistics": rating_stats,
+                "config": {
+                    "default_alpha": RecommendationConfig.DEFAULT_FOOD_RESTAURANT_ALPHA,
+                    "min_recommendations": RecommendationConfig.MIN_RECOMMENDATIONS,
+                    "max_recommendations": RecommendationConfig.MAX_RECOMMENDATIONS,
+                    "default_recommendations": RecommendationConfig.DEFAULT_RECOMMENDATIONS,
+                },
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting hybrid info: {str(e)}")
+        return ResponseHelper.internal_server_error("Failed to get hybrid info")

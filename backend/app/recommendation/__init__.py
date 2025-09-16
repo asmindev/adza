@@ -2,8 +2,11 @@
 Recommendation System Package
 """
 
-from .service import Recommendations
+from .recommender import Recommendations
+from .service import RecommendationService, recommendation_service
 
 __all__ = [
     "Recommendations",
+    "RecommendationService",
+    "recommendation_service",
 ]

@@ -19,8 +19,13 @@ class RecommendationConfig:
 
     # Enhanced recommendation parameters
     DEFAULT_ALPHA = 0.3  # Weight for place quality adjustment
-    DEFAULT_BETA = 0.2  # Weight for price preference adjustment
-    DEFAULT_GAMMA = 0.2  # Weight for food quality adjustment
+
+    # Hybrid scoring parameters
+    DEFAULT_FOOD_RESTAURANT_ALPHA = 0.7  # Weight for food rating vs restaurant rating
+    # score = (alpha * food_rating) + ((1 - alpha) * restaurant_rating)
+    # alpha = 0.7 means 70% food, 30% restaurant
+    # alpha = 0.0 means 100% restaurant
+    # alpha = 1.0 means 100% food
 
     # API limits
     MIN_RECOMMENDATIONS = 1

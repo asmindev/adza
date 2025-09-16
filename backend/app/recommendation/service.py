@@ -1,1139 +1,342 @@
 """
-Hybrid Recommendation System with Collaborative Filtering + SVD
-Combines food ratings and restaurant ratings with alpha parameter weighting
+Recommendation Service
+Public API for the recommendation system
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Tuple, Optional, Any
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-from sklearn.preprocessing import MinMaxScaler
-from surprise import Dataset, Reader, SVD
-from surprise.model_selection import cross_validate, GridSearchCV
-import warnings
-
-from app.extensions import db
-from app.modules.rating.models import FoodRating, RestaurantRating
+from typing import List, Dict, Optional, Any
+from app.utils.logger import get_logger
+from app.utils.response import success_response, error_response
 from app.modules.food.models import Food
-from app.modules.restaurant.models import Restaurant
 from app.modules.user.models import User
-from app.utils import training_logger as logger
+from app.extensions import db
 
-warnings.filterwarnings("ignore")
+from .recommender import Recommendations
+from .config import RecommendationConfig
+
+# Setup logger
+logger = get_logger(__name__)
 
 
-class Recommendations:
+class RecommendationService:
     """
-    Hybrid Recommendation System that combines:
-    1. Food ratings (collaborative filtering with SVD)
-    2. Restaurant ratings (collaborative filtering with SVD)
-    Combined with alpha parameter weighting
-
-    This is the main and only class for the recommendation system.
-    It includes all functionality:
-    - Data preparation and cleaning
-    - SVD model training for both food and restaurant ratings
-    - Model validation with RMSE/MAE metrics
-    - Hybrid prediction combining both rating types
-    - Compatibility methods for existing applications
+    Service layer for recommendation system
+    Provides clean API interface for the application
     """
 
-    def __init__(
-        self,
-        alpha: float = 0.7,
-        n_factors: int = 100,
-        n_epochs: int = 20,
-        auto_tune: bool = True,
-    ):
-        """
-        Initialize the hybrid recommendation system
-
-        Args:
-            alpha: Weight for food ratings (0-1), restaurant weight = 1-alpha
-            n_factors: Number of factors for SVD (will be tuned if auto_tune=True)
-            n_epochs: Number of training epochs (will be tuned if auto_tune=True)
-            auto_tune: Enable automatic hyperparameter tuning using GridSearchCV
-        """
-        self.alpha = alpha
-        self.n_factors = n_factors
-        self.n_epochs = n_epochs
-        self.auto_tune = auto_tune
-
-        # SVD models
-        self.food_svd_model = None
-        self.restaurant_svd_model = None
-
-        # Data containers
-        self.food_ratings_df = None
-        self.restaurant_ratings_df = None
-
-        # User and item mappings from Surprise
-        self.food_trainset = None
-        self.restaurant_trainset = None
-
-        # Best hyperparameters from tuning
-        self.best_food_params = None
-        self.best_restaurant_params = None
-
-        logger.info(
-            f"Initialized HybridRecommendationSystem with alpha={alpha}, auto_tune={auto_tune}"
-        )
-
-    def _import_modules(self):
-        """Step 1: Import and validate required modules"""
-        try:
-            logger.info("Step 1: Importing modules and validating dependencies")
-
-            # Test imports
-            import surprise
-            import sklearn
-            import pandas
-            import numpy
-
-            logger.info("- All required modules imported successfully")
-            return True
-
-        except ImportError as e:
-            logger.error(f"- Module import failed: {str(e)}")
-            return False
-
-    def _prepare_data(self) -> bool:
-        """Step 2: Prepare and clean rating data"""
-        try:
-            logger.info("Step 2: Preparing rating data")
-
-            # Get food ratings
-            food_ratings = FoodRating.query.all()
-            if not food_ratings:
-                logger.warning("No food ratings found")
-                return False
-
-            # Convert food ratings to DataFrame
-            food_data = [(r.user_id, r.food_id, float(r.rating)) for r in food_ratings]
-            self.food_ratings_df = pd.DataFrame(
-                food_data, columns=["user_id", "food_id", "rating"]
-            )
-
-            # Get restaurant ratings
-            restaurant_ratings = RestaurantRating.query.all()
-            if not restaurant_ratings:
-                logger.warning("No restaurant ratings found - using food ratings only")
-                self.restaurant_ratings_df = pd.DataFrame(
-                    columns=["user_id", "restaurant_id", "rating"]
-                )
-            else:
-                # Convert restaurant ratings to DataFrame
-                restaurant_data = [
-                    (r.user_id, r.restaurant_id, float(r.rating))
-                    for r in restaurant_ratings
-                ]
-                self.restaurant_ratings_df = pd.DataFrame(
-                    restaurant_data, columns=["user_id", "restaurant_id", "rating"]
-                )
-
-            # Clean data
-            self.food_ratings_df = self.food_ratings_df.dropna()
-            if not self.restaurant_ratings_df.empty:
-                self.restaurant_ratings_df = self.restaurant_ratings_df.dropna()
-
-            # Validate rating ranges
-            self.food_ratings_df = self.food_ratings_df[
-                (self.food_ratings_df["rating"] >= 1.0)
-                & (self.food_ratings_df["rating"] <= 5.0)
-            ]
-            if not self.restaurant_ratings_df.empty:
-                self.restaurant_ratings_df = self.restaurant_ratings_df[
-                    (self.restaurant_ratings_df["rating"] >= 1.0)
-                    & (self.restaurant_ratings_df["rating"] <= 5.0)
-                ]
-
-            logger.info(f"- Food ratings: {len(self.food_ratings_df)} records")
-            logger.info(
-                f"- Restaurant ratings: {len(self.restaurant_ratings_df)} records"
-            )
-            logger.info(
-                f"- Food rating range: {self.food_ratings_df['rating'].min():.1f} - {self.food_ratings_df['rating'].max():.1f}"
-            )
-            if not self.restaurant_ratings_df.empty:
-                logger.info(
-                    f"- Restaurant rating range: {self.restaurant_ratings_df['rating'].min():.1f} - {self.restaurant_ratings_df['rating'].max():.1f}"
-                )
-            else:
-                logger.info(
-                    "- Restaurant ratings: No data available - will use food ratings only"
-                )
-
-            return True
-
-        except Exception as e:
-            logger.error(f"- Data preparation failed: {str(e)}")
-            return False
-
-    def _tune_hyperparameters(
-        self, dataset, model_type: str = "food"
-    ) -> Dict[str, Any]:
-        """
-        Tune hyperparameters using GridSearchCV for optimal performance
-
-        Args:
-            dataset: Surprise dataset for tuning
-            model_type: Type of model ("food" or "restaurant")
-
-        Returns:
-            Dictionary containing best parameters and performance metrics
-        """
-        try:
-            logger.info(f"Starting hyperparameter tuning for {model_type} model...")
-
-            # Define parameter grid for tuning
-            # Optimized ranges based on collaborative filtering best practices
-            param_grid = {
-                "n_factors": [50, 100, 150],  # Number of latent factors
-                "n_epochs": [20, 30, 50],  # Training epochs
-                "lr_all": [0.005, 0.01, 0.02],  # Learning rate
-                "reg_all": [0.02, 0.05, 0.1],  # Regularization parameter
-            }
-
-            # Use smaller grid for small datasets to avoid overfitting
-            data_size = len(dataset.build_full_trainset().ur)
-            if data_size < 50:
-                param_grid = {
-                    "n_factors": [20, 50],
-                    "n_epochs": [10, 20],
-                    "lr_all": [0.01],
-                    "reg_all": [0.05],
-                }
-                logger.info(
-                    f"Using reduced parameter grid for small dataset (size: {data_size})"
-                )
-
-            # Perform grid search with cross-validation
-            # Use fewer CV folds for small datasets
-            cv_folds = min(3, max(2, data_size // 10))
-
-            grid_search = GridSearchCV(
-                SVD,
-                param_grid,
-                measures=["rmse", "mae"],
-                cv=cv_folds,
-                joblib_verbose=0,  # Reduce verbosity
-            )
-
-            grid_search.fit(dataset)
-
-            # Get best parameters and scores
-            best_params = grid_search.best_params["rmse"]
-            best_rmse = grid_search.best_score["rmse"]
-            best_mae = grid_search.best_score["mae"]
-
-            logger.info(f"- {model_type} model tuning completed:")
-            logger.info(f"  Best RMSE: {best_rmse:.4f}")
-            logger.info(f"  Best MAE: {best_mae:.4f}")
-            logger.info(f"  Best params: {best_params}")
-
-            return {
-                "best_params": best_params,
-                "best_rmse": best_rmse,
-                "best_mae": best_mae,
-                "tuning_completed": True,
-            }
-
-        except Exception as e:
-            logger.warning(f"Hyperparameter tuning failed for {model_type}: {str(e)}")
-            # Fallback to default parameters
-            default_params = {
-                "n_factors": self.n_factors,
-                "n_epochs": self.n_epochs,
-                "lr_all": 0.005,
-                "reg_all": 0.02,
-            }
-            return {
-                "best_params": default_params,
-                "best_rmse": None,
-                "best_mae": None,
-                "tuning_completed": False,
-                "error": str(e),
-            }
-
-    def _train_and_test_models(self) -> bool:
-        """Step 3: Train SVD models with optional hyperparameter tuning"""
-        try:
-            logger.info("Step 3: Training SVD models")
-
-            # Prepare food ratings for Surprise
-            food_reader = Reader(rating_scale=(1, 5))
-            food_dataset = Dataset.load_from_df(
-                self.food_ratings_df[["user_id", "food_id", "rating"]], food_reader
-            )
-
-            # Hyperparameter tuning for food model
-            if self.auto_tune:
-                logger.info("Performing hyperparameter tuning for food model...")
-                food_tuning_result = self._tune_hyperparameters(food_dataset, "food")
-                self.best_food_params = food_tuning_result["best_params"]
-
-                # Train food SVD model with best parameters
-                self.food_svd_model = SVD(**self.best_food_params, random_state=42)
-            else:
-                # Train food SVD model with default parameters
-                logger.info("Training food rating SVD model with default parameters...")
-                self.food_svd_model = SVD(
-                    n_factors=self.n_factors, n_epochs=self.n_epochs, random_state=42
-                )
-
-            self.food_trainset = food_dataset.build_full_trainset()
-            self.food_svd_model.fit(self.food_trainset)
-
-            # Train restaurant SVD model only if we have restaurant ratings
-            if not self.restaurant_ratings_df.empty:
-                # Prepare restaurant ratings for Surprise
-                restaurant_reader = Reader(rating_scale=(1, 5))
-                restaurant_dataset = Dataset.load_from_df(
-                    self.restaurant_ratings_df[["user_id", "restaurant_id", "rating"]],
-                    restaurant_reader,
-                )
-
-                # Hyperparameter tuning for restaurant model
-                if self.auto_tune:
-                    logger.info(
-                        "Performing hyperparameter tuning for restaurant model..."
-                    )
-                    restaurant_tuning_result = self._tune_hyperparameters(
-                        restaurant_dataset, "restaurant"
-                    )
-                    self.best_restaurant_params = restaurant_tuning_result[
-                        "best_params"
-                    ]
-
-                    # Train restaurant SVD model with best parameters
-                    self.restaurant_svd_model = SVD(
-                        **self.best_restaurant_params, random_state=42
-                    )
-                else:
-                    # Train restaurant SVD model with default parameters
-                    logger.info(
-                        "Training restaurant rating SVD model with default parameters..."
-                    )
-                    self.restaurant_svd_model = SVD(
-                        n_factors=self.n_factors,
-                        n_epochs=self.n_epochs,
-                        random_state=42,
-                    )
-
-                self.restaurant_trainset = restaurant_dataset.build_full_trainset()
-                self.restaurant_svd_model.fit(self.restaurant_trainset)
-            else:
-                logger.info("Skipping restaurant rating SVD model - no data available")
-                self.restaurant_svd_model = None
-                self.restaurant_trainset = None
-                self.best_restaurant_params = None
-
-            logger.info("- SVD models trained successfully")
-            if self.auto_tune:
-                logger.info("- Hyperparameter tuning completed")
-            if self.restaurant_svd_model is None:
-                logger.info("- Operating in food-only mode")
-            return True
-
-        except Exception as e:
-            logger.error(f"- Model training failed: {str(e)}")
-            return False
-
-    def _validate_models(self) -> Dict[str, Dict[str, float]]:
-        """Step 4: Validate models using RMSE and MAE"""
-        try:
-            logger.info("Step 4: Validating models with RMSE and MAE")
-
-            results = {}
-
-            # Validate food rating model
-            logger.info("Validating food rating model...")
-            food_reader = Reader(rating_scale=(1, 5))
-            food_dataset = Dataset.load_from_df(
-                self.food_ratings_df[["user_id", "food_id", "rating"]], food_reader
-            )
-
-            # Calculate appropriate cv folds based on data size
-            food_data_size = len(self.food_ratings_df)
-            max_possible_folds = food_data_size
-            food_cv_folds = max(2, min(5, max_possible_folds - 1))
-
-            if food_data_size < 3:
-                logger.warning(
-                    f"Too few food ratings ({food_data_size}) for cross-validation. Using simple validation."
-                )
-                results["food_model"] = {
-                    "rmse": 0.0,
-                    "mae": 0.0,
-                    "rmse_std": 0.0,
-                    "mae_std": 0.0,
-                    "note": f"Insufficient data for cross-validation ({food_data_size} ratings)",
-                }
-            else:
-                food_cv_folds = min(food_cv_folds, food_data_size - 1)
-                if food_cv_folds < 2:
-                    food_cv_folds = 2
-
-                logger.info(
-                    f"Using {food_cv_folds}-fold cross-validation for {food_data_size} food ratings"
-                )
-
-                # Use tuned parameters if available, otherwise use defaults
-                if self.best_food_params:
-                    svd_params = self.best_food_params.copy()
-                    logger.info(f"Using tuned parameters for validation: {svd_params}")
-                else:
-                    svd_params = {
-                        "n_factors": self.n_factors,
-                        "n_epochs": self.n_epochs,
-                        "random_state": 42,
-                    }
-
-                food_cv_results = cross_validate(
-                    SVD(**svd_params),
-                    food_dataset,
-                    measures=["RMSE", "MAE"],
-                    cv=food_cv_folds,
-                    verbose=False,
-                )
-
-                results["food_model"] = {
-                    "rmse": float(np.mean(food_cv_results["test_rmse"])),
-                    "mae": float(np.mean(food_cv_results["test_mae"])),
-                    "rmse_std": float(np.std(food_cv_results["test_rmse"])),
-                    "mae_std": float(np.std(food_cv_results["test_mae"])),
-                    "tuned": self.best_food_params is not None,
-                    "parameters_used": svd_params,
-                }
-
-            # Validate restaurant rating model only if we have data and model
-            if (
-                not self.restaurant_ratings_df.empty
-                and self.restaurant_svd_model is not None
-            ):
-                logger.info("Validating restaurant rating model...")
-                restaurant_reader = Reader(rating_scale=(1, 5))
-                restaurant_dataset = Dataset.load_from_df(
-                    self.restaurant_ratings_df[["user_id", "restaurant_id", "rating"]],
-                    restaurant_reader,
-                )
-
-                restaurant_data_size = len(self.restaurant_ratings_df)
-                max_possible_folds = restaurant_data_size
-                restaurant_cv_folds = max(2, min(5, max_possible_folds - 1))
-
-                if restaurant_data_size < 3:
-                    logger.warning(
-                        f"Too few restaurant ratings ({restaurant_data_size}) for cross-validation. Using simple validation."
-                    )
-                    results["restaurant_model"] = {
-                        "rmse": 0.0,
-                        "mae": 0.0,
-                        "rmse_std": 0.0,
-                        "mae_std": 0.0,
-                        "note": f"Insufficient data for cross-validation ({restaurant_data_size} ratings)",
-                    }
-                else:
-                    restaurant_cv_folds = min(
-                        restaurant_cv_folds, restaurant_data_size - 1
-                    )
-                    if restaurant_cv_folds < 2:
-                        restaurant_cv_folds = 2
-
-                    logger.info(
-                        f"Using {restaurant_cv_folds}-fold cross-validation for {restaurant_data_size} restaurant ratings"
-                    )
-
-                    # Use tuned parameters if available, otherwise use defaults
-                    if self.best_restaurant_params:
-                        svd_params = self.best_restaurant_params.copy()
-                        logger.info(
-                            f"Using tuned restaurant parameters for validation: {svd_params}"
-                        )
-                    else:
-                        svd_params = {
-                            "n_factors": self.n_factors,
-                            "n_epochs": self.n_epochs,
-                            "random_state": 42,
-                        }
-
-                    restaurant_cv_results = cross_validate(
-                        SVD(**svd_params),
-                        restaurant_dataset,
-                        measures=["RMSE", "MAE"],
-                        cv=restaurant_cv_folds,
-                        verbose=False,
-                    )
-
-                    results["restaurant_model"] = {
-                        "rmse": float(np.mean(restaurant_cv_results["test_rmse"])),
-                        "mae": float(np.mean(restaurant_cv_results["test_mae"])),
-                        "rmse_std": float(np.std(restaurant_cv_results["test_rmse"])),
-                        "mae_std": float(np.std(restaurant_cv_results["test_mae"])),
-                        "tuned": self.best_restaurant_params is not None,
-                        "parameters_used": svd_params,
-                    }
-            else:
-                logger.info(
-                    "Skipping restaurant rating model validation - no data/model available"
-                )
-                results["restaurant_model"] = {
-                    "rmse": None,
-                    "mae": None,
-                    "rmse_std": None,
-                    "mae_std": None,
-                    "note": "No restaurant ratings available",
-                }
-
-            # Log validation results
-            logger.info("- Validation Results:")
-            if "note" in results["food_model"]:
-                logger.info(f"  Food Model - {results['food_model']['note']}")
-            else:
-                logger.info(
-                    f"  Food Model - RMSE: {results['food_model']['rmse']:.4f} ± {results['food_model']['rmse_std']:.4f}"
-                )
-                logger.info(
-                    f"  Food Model - MAE: {results['food_model']['mae']:.4f} ± {results['food_model']['mae_std']:.4f}"
-                )
-                if results["food_model"].get("tuned", False):
-                    logger.info("  Food Model - - Using tuned hyperparameters")
-                else:
-                    logger.info("  Food Model - Using default parameters")
-
-            if results["restaurant_model"]["rmse"] is not None:
-                if "note" in results["restaurant_model"]:
-                    logger.info(
-                        f"  Restaurant Model - {results['restaurant_model']['note']}"
-                    )
-                else:
-                    logger.info(
-                        f"  Restaurant Model - RMSE: {results['restaurant_model']['rmse']:.4f} ± {results['restaurant_model']['rmse_std']:.4f}"
-                    )
-                    logger.info(
-                        f"  Restaurant Model - MAE: {results['restaurant_model']['mae']:.4f} ± {results['restaurant_model']['mae_std']:.4f}"
-                    )
-                    if results["restaurant_model"].get("tuned", False):
-                        logger.info(
-                            "  Restaurant Model - - Using tuned hyperparameters"
-                        )
-                    else:
-                        logger.info("  Restaurant Model - Using default parameters")
-            else:
-                logger.info(
-                    f"  Restaurant Model - {results['restaurant_model']['note']}"
-                )
-
-            return results
-
-        except Exception as e:
-            logger.error(f"- Model validation failed: {str(e)}")
-            return {}
-
-    def predict_hybrid_recommendations(
-        self, user_id: Any, limit: int = 10
-    ) -> List[Dict[str, Any]]:
-        """
-        Step 5: Generate hybrid predictions combining food and restaurant ratings
-        Optimized by using anti_testset for batch predictions instead of individual loops.
-
-        Args:
-            user_id: User ID to generate recommendations for
-            limit: Number of recommendations to return
-
-        Returns:
-            List of recommended foods with hybrid scores
-        """
-        try:
-            logger.info(f"Generating hybrid recommendations for user {user_id}")
-
-            # Ensure user_id matches the type in data (assuming it's consistent, e.g., int or str)
-            # If needed, convert: user_id = int(user_id) if isinstance(user_id, str) else user_id
-
-            # Get all foods
-            foods = Food.query.all()
-            if not foods:
-                logger.warning("No foods found")
-                return []
-
-            # Get user's existing food ratings to exclude
-            user_food_ratings = set(
-                self.food_ratings_df[self.food_ratings_df["user_id"] == user_id][
-                    "food_id"
-                ].values
-            )
-
-            # Build anti-testset for food: only unseen foods
-            food_anti_testset = [
-                (user_id, food.id, 0)  # dummy rating 0
-                for food in foods
-                if food.id not in user_food_ratings
-            ]
-
-            if not food_anti_testset:
-                logger.warning("No unseen foods for user")
-                return []
-
-            # Predict batch for foods
-            food_predictions = self.food_svd_model.test(food_anti_testset)
-            food_pred_dict = {pred.iid: pred.est for pred in food_predictions}
-
-            # IMPROVEMENT: Check for small data scenario
-            total_ratings = (
-                len(self.food_ratings_df)
-                if hasattr(self, "food_ratings_df") and self.food_ratings_df is not None
-                else 0
-            )
-            is_small_data = total_ratings <= 20
-
-            if is_small_data:
-                logger.info(f"Small data mode enabled (total ratings: {total_ratings})")
-
-            # IMPROVEMENT: Get item rating counts for bias adjustment
-            item_rating_counts = {}
-            similar_user_items = {}
-
-            if hasattr(self, "food_ratings_df") and self.food_ratings_df is not None:
-                try:
-                    # Count ratings per item
-                    for _, row in self.food_ratings_df.iterrows():
-                        food_id = row["food_id"]
-                        if food_id not in item_rating_counts:
-                            item_rating_counts[food_id] = 0
-                        item_rating_counts[food_id] += 1
-
-                    # For small data, find items rated by similar users
-                    if is_small_data:
-                        # Simple similarity: find users with overlapping items
-                        target_items = set(
-                            self.food_ratings_df[
-                                self.food_ratings_df["user_id"] == user_id
-                            ]["food_id"]
-                        )
-
-                        for other_user in self.food_ratings_df["user_id"].unique():
-                            if other_user != user_id:
-                                other_items = set(
-                                    self.food_ratings_df[
-                                        self.food_ratings_df["user_id"] == other_user
-                                    ]["food_id"]
-                                )
-                                overlap = target_items & other_items
-
-                                if (
-                                    len(overlap) >= 2
-                                ):  # Need some overlap for similarity
-                                    # Items rated by other user but not target user
-                                    unique_items = other_items - target_items
-                                    for item_id in unique_items:
-                                        rating_row = self.food_ratings_df[
-                                            (
-                                                self.food_ratings_df["user_id"]
-                                                == other_user
-                                            )
-                                            & (
-                                                self.food_ratings_df["food_id"]
-                                                == item_id
-                                            )
-                                        ]
-                                        if not rating_row.empty:
-                                            rating = rating_row.iloc[0]["rating"]
-                                            overlap_count = len(overlap)
-                                            similar_user_items[item_id] = {
-                                                "rating": rating,
-                                                "overlap": overlap_count,
-                                                "user": other_user,
-                                            }
-
-                                    logger.info(
-                                        f"Found user {other_user} with {len(overlap)} overlapping items and {len(unique_items)} unique items"
-                                    )
-
-                except Exception as e:
-                    logger.warning(f"Error in similarity analysis: {str(e)}")
-                    similar_user_items = {}
-
-            # For restaurants: get unique restaurants from foods
-            restaurant_ids = set(
-                food.restaurant_id for food in foods if food.restaurant_id
-            )
-            if self.restaurant_svd_model is not None:
-                # Build anti-testset for restaurants (all, since we may not have user restaurant ratings)
-                restaurant_anti_testset = [(user_id, rid, 0) for rid in restaurant_ids]
-                restaurant_predictions = self.restaurant_svd_model.test(
-                    restaurant_anti_testset
-                )
-                restaurant_pred_dict = {
-                    pred.iid: pred.est for pred in restaurant_predictions
-                }
-            else:
-                restaurant_pred_dict = {}
-
-            recommendations = []
-
-            # Now, process each unseen food
-            for food in foods:
-                if food.id in user_food_ratings:
-                    continue
-
-                try:
-                    food_score = food_pred_dict.get(
-                        food.id, 2.5
-                    )  # default neutral if missing
-
-                    # IMPROVEMENT: Bias adjustment for small data with partially seen items
-                    if is_small_data and food.id in item_rating_counts:
-                        rating_count = item_rating_counts[food.id]
-                        if rating_count <= 2:  # Partially seen with low rating count
-                            # Apply less aggressive bias penalty
-                            global_mean = (
-                                4.67 if hasattr(self, "food_ratings_df") else 4.5
-                            )
-                            bias_adjustment = (
-                                food_score - global_mean
-                            ) * 0.5  # Reduce bias impact by 50%
-                            food_score = global_mean + bias_adjustment
-                            logger.debug(
-                                f"Bias adjustment for {food.name}: original={food_pred_dict.get(food.id, 2.5):.2f}, adjusted={food_score:.2f}"
-                            )
-
-                    # IMPROVEMENT: Boost items from similar users in small data scenario
-                    if is_small_data and food.id in similar_user_items:
-                        similar_item = similar_user_items[food.id]
-                        # Weighted boost based on overlap count
-                        boost_weight = min(
-                            similar_item["overlap"] / 5.0, 1.0
-                        )  # Max boost at 5+ overlaps
-                        boost_amount = (
-                            (similar_item["rating"] - 3.0) * boost_weight * 0.3
-                        )  # 30% boost
-                        food_score = min(food_score + boost_amount, 5.0)  # Cap at 5.0
-                        logger.debug(
-                            f"Similar user boost for {food.name}: +{boost_amount:.2f} from user {similar_item['user']}"
-                        )
-
-                    restaurant_score = 2.5  # default neutral
-                    if food.restaurant_id:
-                        if self.restaurant_svd_model is not None:
-                            restaurant_score = restaurant_pred_dict.get(
-                                food.restaurant_id, 2.5
-                            )
-                        else:
-                            restaurant_score = food_score  # Fallback to food score
-
-                    # Normalize scores to 0-1 range
-                    food_normalized = (food_score - 1.0) / 4.0
-                    restaurant_normalized = (restaurant_score - 1.0) / 4.0
-
-                    # Calculate hybrid score
-                    effective_alpha = (
-                        1.0 if self.restaurant_svd_model is None else self.alpha
-                    )
-                    hybrid_score = (effective_alpha * food_normalized) + (
-                        (1 - effective_alpha) * restaurant_normalized
-                    )
-
-                    # Convert back to 1-5 scale
-                    final_rating = 1.0 + (hybrid_score * 4.0)
-
-                    recommendation = {
-                        "food_id": food.id,
-                        "food_name": food.name,
-                        "food_description": food.description,
-                        "food_price": food.price,
-                        "restaurant_id": food.restaurant_id,
-                        "restaurant_name": (
-                            food.restaurant.name if food.restaurant_id else None
-                        ),
-                        "predicted_food_rating": round(food_score, 2),
-                        "predicted_restaurant_rating": round(restaurant_score, 2),
-                        "food_score_normalized": round(food_normalized, 3),
-                        "restaurant_score_normalized": round(restaurant_normalized, 3),
-                        "hybrid_score": round(hybrid_score, 3),
-                        "final_predicted_rating": round(final_rating, 2),
-                        "alpha_weight": effective_alpha,
-                        "using_food_only": self.restaurant_svd_model is None,
-                    }
-
-                    recommendations.append(recommendation)
-
-                except Exception as e:
-                    logger.warning(f"Error predicting for food {food.id}: {str(e)}")
-                    continue
-
-            # Sort by hybrid score descending and limit
-            recommendations.sort(key=lambda x: x["hybrid_score"], reverse=True)
-            top_recommendations = recommendations[:limit]
-
-            logger.info(
-                f"- Generated {len(top_recommendations)} hybrid recommendations"
-            )
-            if self.restaurant_svd_model is None:
-                logger.info(
-                    "- Using food ratings only (no restaurant ratings available)"
-                )
-
-            return top_recommendations
-
-        except Exception as e:
-            logger.error(f"- Prediction failed: {str(e)}")
-            return []
-
-            return results
-
-        except Exception as e:
-            logger.error(f"- Model validation failed: {str(e)}")
-            return {}
-
-    def get_model_info(self) -> Dict[str, Any]:
-        """
-        Get information about the trained models including hyperparameters used
-
-        Returns:
-            Dictionary containing model information and performance metrics
-        """
-        return {
-            "auto_tune_enabled": self.auto_tune,
-            "alpha": self.alpha,
-            "food_model": {
-                "trained": self.food_svd_model is not None,
-                "parameters": (
-                    self.best_food_params
-                    if self.best_food_params
-                    else {"n_factors": self.n_factors, "n_epochs": self.n_epochs}
-                ),
-                "tuned": self.best_food_params is not None,
-            },
-            "restaurant_model": {
-                "trained": self.restaurant_svd_model is not None,
-                "parameters": (
-                    self.best_restaurant_params
-                    if self.best_restaurant_params
-                    else {"n_factors": self.n_factors, "n_epochs": self.n_epochs}
-                ),
-                "tuned": self.best_restaurant_params is not None,
-            },
-        }
-
-    def train_full_system(self) -> Dict[str, Any]:
-        """
-        Execute all 4 steps of the recommendation system
-
-        Returns:
-            Dictionary containing training results and validation metrics
-        """
-        logger.info("Starting full hybrid recommendation system training")
-
-        results = {
-            "success": False,
-            "steps_completed": [],
-            "validation_metrics": {},
-            "error": None,
-        }
-
-        try:
-            # Step 1: Import modules
-            if not self._import_modules():
-                results["error"] = "Module import failed"
-                return results
-            results["steps_completed"].append("import_modules")
-
-            # Step 2: Prepare data
-            if not self._prepare_data():
-                results["error"] = "Data preparation failed"
-                return results
-            results["steps_completed"].append("prepare_data")
-
-            # Step 3: Train models
-            if not self._train_and_test_models():
-                results["error"] = "Model training failed"
-                return results
-            results["steps_completed"].append("train_models")
-
-            # Step 4: Validate models
-            validation_results = self._validate_models()
-            if not validation_results:
-                results["error"] = "Model validation failed"
-                return results
-            results["steps_completed"].append("validate_models")
-            results["validation_metrics"] = validation_results
-
-            results["success"] = True
-            logger.info(
-                "- Hybrid recommendation system training completed successfully"
-            )
-
-        except Exception as e:
-            results["error"] = str(e)
-            logger.error(f"- Training failed: {str(e)}")
-
-        return results
+    def __init__(self):
+        """Initialize recommendation service"""
+        self.recommender = Recommendations()
+        RecommendationConfig.initialize()
 
     def get_recommendations(
         self,
-        user_id: Any,
-        price_filter: Optional[Dict] = None,
-        n: int = 10,
-        alpha: Optional[float] = None,
-        gamma: float = 0.3,
-    ) -> List[Dict[str, Any]]:
+        user_id: str,
+        top_n: int = RecommendationConfig.DEFAULT_RECOMMENDATIONS,
+        include_details: bool = True,
+    ) -> Any:
         """
-        Get recommendations using the hybrid system with detailed food and restaurant information
+        Get food recommendations for a user
 
         Args:
             user_id: User ID to get recommendations for
-            price_filter: Optional price filtering {min_price: float, max_price: float}
-            n: Number of recommendations to return
-            alpha: Weight for food vs restaurant ratings (if None, uses instance alpha)
-            gamma: Weight for popularity score in final scoring
+            top_n: Number of recommendations to return
+            include_details: Whether to include food details in response
 
         Returns:
-            List of recommended foods with detailed information and scores
+            Dict[str, any]: Response with recommendations
         """
         try:
-            # Use instance alpha if not provided
-            if alpha is None:
-                alpha = self.alpha
+            # Validate input
+            if not user_id:
+                return error_response("User ID is required", 400)
 
-            # Use hybrid system for recommendations
-            recommendations = self.predict_hybrid_recommendations(
-                user_id, n * 2
-            )  # Get more for filtering
+            # Validate user exists
+            user = db.session.query(User).filter(User.id == user_id).first()
+            if not user:
+                return error_response("User not found", 404)
 
-            if not recommendations:
-                return []
+            # Validate top_n parameter
+            if top_n < RecommendationConfig.MIN_RECOMMENDATIONS:
+                top_n = RecommendationConfig.MIN_RECOMMENDATIONS
+            elif top_n > RecommendationConfig.MAX_RECOMMENDATIONS:
+                top_n = RecommendationConfig.MAX_RECOMMENDATIONS
 
-            # Get detailed information for each food
-            detailed_recommendations = []
+            logger.info(f"Getting {top_n} recommendations for user {user_id}")
 
-            for rec in recommendations:
-                try:
-                    # Get food details
-                    food = Food.query.get(rec["food_id"])
-                    if not food:
-                        continue
+            # Get recommendations
+            recommended_food_ids = self.recommender.recommend(user_id, top_n)
 
-                    food_dict = food.to_dict()
-
-                    # Add restaurant details if available
-                    restaurant_dict = None
-                    if food.restaurant_id:
-                        restaurant = Restaurant.query.get(food.restaurant_id)
-                        if restaurant:
-                            restaurant_dict = restaurant.to_dict()
-
-                            # Add restaurant ratings statistics
-                            from sqlalchemy import func
-
-                            restaurant_rating_stats = (
-                                db.session.query(
-                                    func.avg(RestaurantRating.rating).label("average"),
-                                    func.count(RestaurantRating.rating).label("count"),
-                                )
-                                .filter(RestaurantRating.restaurant_id == restaurant.id)
-                                .first()
-                            )
-
-                            if restaurant_rating_stats:
-                                restaurant_dict["average_rating"] = round(
-                                    float(restaurant_rating_stats[0] or 0), 2
-                                )
-                                restaurant_dict["rating_count"] = int(
-                                    restaurant_rating_stats[1] or 0
-                                )
-                            else:
-                                restaurant_dict["average_rating"] = 0.0
-                                restaurant_dict["rating_count"] = 0
-
-                    # Add food rating statistics
-                    from sqlalchemy import func
-
-                    food_rating_stats = (
-                        db.session.query(
-                            func.avg(FoodRating.rating).label("average"),
-                            func.count(FoodRating.rating).label("count"),
-                        )
-                        .filter(FoodRating.food_id == food.id)
-                        .first()
-                    )
-
-                    if food_rating_stats:
-                        food_dict["average_rating"] = round(
-                            float(food_rating_stats[0] or 0), 2
-                        )
-                        food_dict["rating_count"] = int(food_rating_stats[1] or 0)
-                    else:
-                        food_dict["average_rating"] = 0.0
-                        food_dict["rating_count"] = 0
-
-                    # Add restaurant to food dict
-                    food_dict["restaurant"] = restaurant_dict
-
-                    # Apply price filter if specified
-                    if price_filter:
-                        food_price = float(food_dict.get("price", 0))
-                        min_price = price_filter.get("min_price")
-                        max_price = price_filter.get("max_price")
-
-                        if min_price and food_price < min_price:
-                            continue
-                        if max_price and food_price > max_price:
-                            continue
-
-                    # Calculate popularity score
-                    popularity_score = min(
-                        1.0, food_dict["rating_count"] / 10.0
-                    )  # Normalize to 0-1
-
-                    # Calculate final score (removed price preference component)
-                    base_score = rec["final_predicted_rating"] / 5.0  # Normalize to 0-1
-                    final_score = alpha * base_score + gamma * popularity_score
-
-                    formatted_rec = {
-                        "food": food_dict,
-                        "predicted_rating": rec["final_predicted_rating"],
-                        "predicted_food_rating": rec["predicted_food_rating"],
-                        "predicted_restaurant_rating": rec[
-                            "predicted_restaurant_rating"
-                        ],
-                        "hybrid_score": rec["hybrid_score"],
-                        "popularity_score": round(popularity_score, 3),
-                        "final_score": round(final_score, 3),
-                        "alpha_weight": rec["alpha_weight"],
-                        "using_food_only": rec["using_food_only"],
+            if not recommended_food_ids:
+                return success_response(
+                    {
+                        "recommendations": [],
+                        "count": 0,
+                        "message": "No recommendations available at this time",
                     }
+                )
 
-                    detailed_recommendations.append(formatted_rec)
+            # Validate recommendations
+            if not self.recommender.validate_recommendations(
+                user_id, recommended_food_ids
+            ):
+                logger.warning(f"Recommendation validation failed for user {user_id}")
+                # Try to get fallback recommendations
+                recommended_food_ids = self.recommender._get_fallback_recommendations(
+                    user_id,
+                    top_n,
+                    self.recommender._get_user_context(user_id)["rated_foods"],
+                )
 
-                except Exception as food_error:
-                    logger.warning(
-                        f"Error processing food {rec.get('food_id')}: {str(food_error)}"
-                    )
-                    continue
+            # Prepare response
+            response_data = {
+                "recommendations": recommended_food_ids,
+                "count": len(recommended_food_ids),
+                "user_id": user_id,
+            }
 
-            # Sort by final score and limit results
-            detailed_recommendations.sort(key=lambda x: x["final_score"], reverse=True)
-            final_recommendations = detailed_recommendations[:n]
+            # Include food details if requested
+            if include_details and recommended_food_ids:
+                food_details = self._get_food_details(recommended_food_ids)
+                response_data["food_details"] = food_details
+
+            # Include explanation if available
+            explanation = self.recommender.get_recommendation_explanation(
+                user_id, recommended_food_ids
+            )
+            if explanation and "error" not in explanation:
+                response_data["explanation"] = explanation
 
             logger.info(
-                f"Returning {len(final_recommendations)} detailed recommendations"
+                f"Successfully generated {len(recommended_food_ids)} recommendations for user {user_id}"
             )
-            return final_recommendations
+
+            return success_response(response_data)
 
         except Exception as e:
-            logger.error(f"Error in Recommendations.get_recommendations: {str(e)}")
-            return []
+            logger.error(f"Error getting recommendations for user {user_id}: {e}")
+            return error_response(f"Failed to get recommendations: {str(e)}", 500)
 
-    def get_popular_foods(self, n: int = 10) -> List[Dict[str, Any]]:
+    def _get_food_details(self, food_ids: List[str]) -> List[Dict[str, Any]]:
         """
-        Get popular foods with detailed information including ratings and restaurant data
-        Optimized by using SQL query to aggregate and sort directly in the database.
+        Get detailed information about foods
+
+        Args:
+            food_ids: List of food IDs
+
+        Returns:
+            List[Dict[str, any]]: List of food details
         """
         try:
-            from sqlalchemy import func, desc
+            foods = db.session.query(Food).filter(Food.id.in_(food_ids)).all()
 
-            # Query popular foods with aggregate ratings, sorted by (avg_rating * 0.7 + normalized_count * 0.3) desc
-            popular_query = (
-                db.session.query(
-                    Food,
-                    func.coalesce(func.avg(FoodRating.rating), 0.0).label("avg_rating"),
-                    func.coalesce(func.count(FoodRating.rating), 0).label(
-                        "rating_count"
-                    ),
+            # Maintain order based on input list
+            food_dict = {food.id: food for food in foods}
+            ordered_foods = [
+                food_dict[food_id] for food_id in food_ids if food_id in food_dict
+            ]
+
+            food_details = []
+            for food in ordered_foods:
+                food_data = (
+                    food.to_dict()
+                    if hasattr(food, "to_dict")
+                    else {
+                        "id": food.id,
+                        "name": food.name if hasattr(food, "name") else "Unknown",
+                        "description": (
+                            food.description if hasattr(food, "description") else ""
+                        ),
+                        "price": food.price if hasattr(food, "price") else 0,
+                    }
                 )
-                .outerjoin(FoodRating, Food.id == FoodRating.food_id)
-                .group_by(Food.id)
-                .order_by(
-                    desc(
-                        (func.coalesce(func.avg(FoodRating.rating), 0.0) * 0.7)
-                        + (
-                            func.least(
-                                func.coalesce(func.count(FoodRating.rating), 0) / 10.0,
-                                1.0,
-                            )
-                            * 0.3
-                        )
-                    )
-                )
-                .limit(n)
-            )
+                food_details.append(food_data)
 
-            popular_foods = popular_query.all()
-
-            result = []
-
-            for food, avg_rating, count_rating in popular_foods:
-                try:
-                    # Get food dictionary
-                    food_dict = food.to_dict()
-
-                    # Format ratings
-                    food_dict["average_rating"] = round(float(avg_rating), 2)
-                    food_dict["rating_count"] = int(count_rating)
-
-                    # Get restaurant information with ratings
-                    restaurant_info = None
-                    if food.restaurant_id:
-                        restaurant = Restaurant.query.get(food.restaurant_id)
-                        if restaurant:
-                            restaurant_dict = restaurant.to_dict()
-
-                            # Get restaurant ratings
-                            restaurant_rating_query = (
-                                db.session.query(
-                                    func.coalesce(
-                                        func.avg(RestaurantRating.rating), 0.0
-                                    ).label("average"),
-                                    func.coalesce(
-                                        func.count(RestaurantRating.rating), 0
-                                    ).label("count"),
-                                )
-                                .filter(RestaurantRating.restaurant_id == restaurant.id)
-                                .first()
-                            )
-
-                            if restaurant_rating_query:
-                                restaurant_dict["average_rating"] = round(
-                                    float(restaurant_rating_query[0] or 0), 2
-                                )
-                                restaurant_dict["rating_count"] = int(
-                                    restaurant_rating_query[1] or 0
-                                )
-                            else:
-                                restaurant_dict["average_rating"] = 0.0
-                                restaurant_dict["rating_count"] = 0
-
-                            restaurant_info = restaurant_dict
-
-                    # Add restaurant to food dict
-                    food_dict["restaurant"] = restaurant_info
-
-                    # Ensure price is a float
-                    food_dict["price"] = float(food_dict.get("price", 0.0))
-
-                    # Calculate popularity score for consistency
-                    normalized_count = min(count_rating / 10.0, 1.0)
-                    popularity_score = avg_rating * 0.7 + normalized_count * 0.3
-
-                    # Add to result
-                    result.append(
-                        {
-                            "food": food_dict,
-                            "popularity_score": round(popularity_score, 3),
-                            "predicted_rating": avg_rating if avg_rating > 0 else 3.0,
-                        }
-                    )
-
-                except Exception as food_error:
-                    logger.warning(
-                        f"Error processing popular food {food.id}: {str(food_error)}"
-                    )
-                    continue
-
-            logger.info(f"Returning {len(result)} popular foods")
-            return result
+            return food_details
 
         except Exception as e:
-            logger.error(f"Error getting popular foods: {str(e)}")
+            logger.error(f"Error getting food details: {e}")
             return []
+
+    def get_popular_foods(
+        self, top_n: int = RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
+    ) -> Any:
+        """
+        Get most popular foods (most rated)
+
+        Args:
+            top_n: Number of popular foods to return
+
+        Returns:
+            Dict[str, any]: Response with popular foods
+        """
+        try:
+            # Validate top_n parameter
+            if top_n < 1:
+                top_n = RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
+            elif top_n > RecommendationConfig.MAX_RECOMMENDATIONS:
+                top_n = RecommendationConfig.MAX_RECOMMENDATIONS
+
+            logger.info(f"Getting {top_n} popular foods")
+
+            # Load data if needed
+            if not self.recommender._load_and_validate_data():
+                return error_response("Unable to load recommendation data", 500)
+
+            # Get popular foods
+            popular_food_ids = self.recommender.data_processor.get_popular_foods(top_n)
+
+            if not popular_food_ids:
+                return success_response(
+                    {
+                        "popular_foods": [],
+                        "count": 0,
+                        "message": "No popular foods available",
+                    }
+                )
+
+            # Get food details
+            food_details = self._get_food_details(popular_food_ids)
+
+            response_data = {
+                "popular_foods": popular_food_ids,
+                "food_details": food_details,
+                "count": len(popular_food_ids),
+            }
+
+            logger.info(f"Successfully retrieved {len(popular_food_ids)} popular foods")
+
+            return success_response(response_data)
+
+        except Exception as e:
+            logger.error(f"Error getting popular foods: {e}")
+            return error_response(f"Failed to get popular foods: {str(e)}", 500)
+
+    def get_user_profile(self, user_id: str) -> Any:
+        """
+        Get user's rating profile and preferences
+
+        Args:
+            user_id: User ID
+
+        Returns:
+            Dict[str, any]: User profile information
+        """
+        try:
+            # Validate user exists
+            user = db.session.query(User).filter(User.id == user_id).first()
+            if not user:
+                return error_response("User not found", 404)
+
+            logger.info(f"Getting profile for user {user_id}")
+
+            # Load data if needed
+            if not self.recommender._load_and_validate_data():
+                return error_response("Unable to load recommendation data", 500)
+
+            # Get user context
+            user_context = self.recommender._get_user_context(user_id)
+
+            # Get rated foods details
+            rated_food_details = []
+            if user_context["rated_foods"]:
+                rated_food_details = self._get_food_details(user_context["rated_foods"])
+
+            profile_data = {
+                "user_id": user_id,
+                "rating_stats": {
+                    "total_ratings": user_context["rating_count"],
+                    "average_rating": round(user_context["avg_rating"], 2),
+                    "is_new_user": user_context["is_new_user"],
+                },
+                "rated_foods": user_context["rated_foods"],
+                "rated_food_details": rated_food_details,
+            }
+
+            logger.info(f"Successfully retrieved profile for user {user_id}")
+
+            return success_response(profile_data)
+
+        except Exception as e:
+            logger.error(f"Error getting user profile for {user_id}: {e}")
+            return error_response(f"Failed to get user profile: {str(e)}", 500)
+
+    def get_system_status(self) -> Any:
+        """
+        Get recommendation system status and statistics
+
+        Returns:
+            Dict[str, any]: System status information
+        """
+        try:
+            logger.info("Getting recommendation system status")
+
+            # Get system statistics
+            stats = self.recommender.get_system_stats()
+
+            # Add configuration information
+            status_data = {
+                "system_stats": stats,
+                "configuration": {
+                    "min_recommendations": RecommendationConfig.MIN_RECOMMENDATIONS,
+                    "max_recommendations": RecommendationConfig.MAX_RECOMMENDATIONS,
+                    "default_recommendations": RecommendationConfig.DEFAULT_RECOMMENDATIONS,
+                    "svd_n_factors": RecommendationConfig.SVD_N_FACTORS,
+                    "svd_n_epochs": RecommendationConfig.SVD_N_EPOCHS,
+                },
+                "health": {
+                    "status": (
+                        "healthy"
+                        if stats.get("is_initialized", False)
+                        else "initializing"
+                    ),
+                    "data_available": stats.get("data_stats", {}).get(
+                        "total_ratings", 0
+                    )
+                    > 0,
+                },
+            }
+
+            return success_response(status_data)
+
+        except Exception as e:
+            logger.error(f"Error getting system status: {e}")
+            return error_response(f"Failed to get system status: {str(e)}", 500)
+
+    def refresh_recommendations(self) -> Any:
+        """
+        Force refresh of recommendation data and models
+
+        Returns:
+            Dict[str, any]: Refresh status
+        """
+        try:
+            logger.info("Refreshing recommendation system")
+
+            # Reset data processor and model
+            self.recommender.data_processor = type(self.recommender.data_processor)()
+            self.recommender.svd_model = type(self.recommender.svd_model)()
+            self.recommender.is_initialized = False
+            self.recommender.last_data_load = 0
+
+            # Load fresh data
+            success = self.recommender._load_and_validate_data()
+
+            if success:
+                logger.info("Recommendation system refreshed successfully")
+                return success_response(
+                    {
+                        "message": "Recommendation system refreshed successfully",
+                        "timestamp": self.recommender.last_data_load,
+                    }
+                )
+            else:
+                logger.error("Failed to refresh recommendation system")
+                return error_response("Failed to refresh recommendation system", 500)
+
+        except Exception as e:
+            logger.error(f"Error refreshing recommendations: {e}")
+            return error_response(f"Failed to refresh recommendations: {str(e)}", 500)
+
+
+# Create singleton instance
+recommendation_service = RecommendationService()
