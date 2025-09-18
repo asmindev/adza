@@ -54,7 +54,7 @@ export default function Popular() {
         );
     }
 
-    const foodItems = data?.data?.data.top_rated || data?.data || [];
+    const foodItems = data?.data?.data || data?.data || [];
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -67,7 +67,7 @@ export default function Popular() {
             {foodItems.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {foodItems.map((food) => (
-                        <FoodCard food={food.food} key={food.id} />
+                        <FoodCard food={food} key={food.id} />
                     ))}
                 </div>
             ) : (

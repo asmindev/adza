@@ -21,14 +21,30 @@ export default function DashboardPage() {
               totalFoods: 0,
               totalUsers: 0,
               totalReviews: 0,
+              totalRestaurants: 0,
               averageRating: 0,
+              popularFoods: [],
+              topRatedFoods: [],
               error: true,
           }
-        : statsData?.data || {
+        : statsData?.data
+        ? {
+              totalFoods: statsData.data.overview?.total_foods || 0,
+              totalUsers: statsData.data.overview?.total_users || 0,
+              totalReviews: statsData.data.overview?.total_ratings || 0,
+              totalRestaurants: statsData.data.overview?.total_restaurants || 0,
+              averageRating: statsData.data.overview?.average_rating || 0,
+              popularFoods: statsData.data.popular_foods || [],
+              topRatedFoods: statsData.data.top_rated_foods || [],
+          }
+        : {
               totalFoods: 0,
               totalUsers: 0,
               totalReviews: 0,
+              totalRestaurants: 0,
               averageRating: 0,
+              popularFoods: [],
+              topRatedFoods: [],
           };
 
     return (

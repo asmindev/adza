@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/card";
 import TopRatedFoodsChart from "../components/charts/TopRatedFoodsChart";
 import { TrendingUp } from "lucide-react";
-import { motion } from "framer-motion";
 
 export default function ChartsSection({ isLoading, stats }) {
     return (
@@ -17,63 +16,58 @@ export default function ChartsSection({ isLoading, stats }) {
                 <CardHeader>
                     <CardTitle>Makanan Terpopuler</CardTitle>
                     <CardDescription>
-                        Makanan dengan rating tertinggi di koleksi Anda
+                        Makanan dengan jumlah rating terbanyak
                     </CardDescription>
                 </CardHeader>
                 <CardContent className={"h-full"}>
-                    <TopRatedFoodsChart />
+                    <TopRatedFoodsChart data={stats.popularFoods} />
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Aktivitas Terbaru</CardTitle>
+                    <CardTitle>Rating Tertinggi</CardTitle>
                     <CardDescription>
-                        Aktivitas terbaru di platform
+                        Makanan dengan rating tertinggi (min. 5 rating)
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[200px]">
                             <p className="text-muted-foreground">
-                                Memuat aktivitas...
+                                Memuat data...
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {stats.recentActivities?.length > 0 ? (
-                                stats.recentActivities.map(
-                                    (activity, index) => (
-                                        <motion.div
-                                            key={index}
-                                            initial={{
-                                                opacity: 0,
-                                                y: 10,
-                                            }}
-                                            animate={{
-                                                opacity: 1,
-                                                y: 0,
-                                            }}
-                                            transition={{
-                                                delay: index * 0.1,
-                                            }}
-                                            className="flex items-center space-x-2 border-b pb-2"
-                                        >
-                                            <TrendingUp className="h-4 w-4 text-green-500" />
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-medium">
-                                                    {activity.title}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {activity.time}
-                                                </p>
-                                            </div>
-                                        </motion.div>
-                                    )
-                                )
+                        <div className="space-y-3">
+                            {stats.topRatedFoods?.length > 0 ? (
+                                stats.topRatedFoods.slice(0, 6).map((food) => (
+                                    <div
+                                        key={food.id}
+                                        className="flex items-center justify-between border-b pb-2 last:border-b-0"
+                                    >
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium truncate">
+                                                {food.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {food.rating_count} rating • Rp{" "}
+                                                {food.price?.toLocaleString(
+                                                    "id-ID"
+                                                ) || "N/A"}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                            <TrendingUp className="h-3 w-3 text-yellow-500" />
+                                            <span className="text-sm font-medium">
+                                                {food.avg_rating.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
                             ) : (
                                 <p className="text-center text-muted-foreground">
-                                    Tidak ada aktivitas terbaru
+                                    Tidak ada data makanan dengan rating tinggi
                                 </p>
                             )}
                         </div>

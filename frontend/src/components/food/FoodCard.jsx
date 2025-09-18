@@ -21,7 +21,7 @@ export default function FoodCard({ food, onToggleFavorite }) {
         style: "currency",
         currency: "IDR",
         minimumFractionDigits: 0,
-    }).format(food.price || 0);
+    }).format(food.price?.parsedValue || food.price || 0);
 
     // Card animations
     const cardVariants = {

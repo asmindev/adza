@@ -119,7 +119,7 @@ export default function Recommendation() {
             {foodItems.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {foodItems.map((food) => (
-                        <FoodCard food={food.food} key={food.id} />
+                        <FoodCard food={food} key={food.id} />
                     ))}
                 </div>
             ) : (
