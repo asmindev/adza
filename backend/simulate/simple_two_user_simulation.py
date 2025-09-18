@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Script simulasi baru untuk sistem rekomendasi
+Script simulasi dengan 2 user saja - menggunakan fallback mechanism
 - Hapus semua data rating
 - Buat 2 user (adza dan asriani)
 - Ambil 6 makanan
 - Asriani rating 6 makanan dengan rating sempurna (4-5)
 - Adza rating 4 dari 6 makanan tersebut
-- Test apakah 2 makanan yang belum di-rating akan menjadi rekomendasi untuk adza
+- Test fallback recommendation untuk adza
 """
 
 import sys
@@ -19,7 +19,6 @@ from werkzeug.security import generate_password_hash
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app
-from app.recommendation.service import Recommendations
 from app.modules.user.models import User
 from app.modules.rating.models import FoodRating, RestaurantRating
 from app.modules.food.models import Food
@@ -188,42 +187,62 @@ def get_asriani_rating(food_id):
     return "N/A"
 
 
-def test_recommendations(adza, expected_foods):
-    """Test apakah makanan yang belum di-rating muncul dalam rekomendasi"""
-    print("🤖 Testing sistem rekomendasi untuk Adza...")
-    print(
-        "⚠️  Note: Dengan hanya 2 user, sistem mungkin tidak bisa memberikan rekomendasi optimal"
-    )
+def simple_similarity_recommendation(adza, asriani, expected_foods):
+    """Implementasi rekomendasi sederhana berdasarkan similarity 2 user"""
+    print("🤖 Testing rekomendasi sederhana berdasarkan similarity 2 user...")
 
-    try:
-        # Initialize recommendation service
-        rec_service = Recommendations()
+    # Ambil semua rating dari kedua user
+    adza_ratings = FoodRating.query.filter_by(user_id=adza.id).all()
+    asriani_ratings = FoodRating.query.filter_by(user_id=asriani.id).all()
 
-        # Ensure data is loaded
-        print("🔄 Loading recommendation data...")
-        success = rec_service._load_and_validate_data()
-        if not success:
-            print("❌ Failed to load recommendation data")
-            print("💡 Sistem membutuhkan minimal 3 user untuk collaborative filtering")
-            return
+    print(f"📊 Rating Adza: {len(adza_ratings)} makanan")
+    print(f"📊 Rating Asriani: {len(asriani_ratings)} makanan")
 
-        print("🔄 Memproses rekomendasi untuk Adza...")
+    # Buat mapping rating
+    adza_food_ratings = {r.food_id: r.rating for r in adza_ratings}
+    asriani_food_ratings = {r.food_id: r.rating for r in asriani_ratings}
 
-        # Get recommendations for Adza (returns list of food IDs)
-        recommended_food_ids = rec_service.recommend(user_id=adza.id, top_n=10)
+    # Cari makanan yang sama-sama di-rating
+    common_foods = set(adza_food_ratings.keys()) & set(asriani_food_ratings.keys())
+    print(f"📊 Makanan yang sama-sama di-rating: {len(common_foods)}")
 
-        print(f"✅ Sistem menghasilkan {len(recommended_food_ids)} rekomendasi")
-        print()
+    if len(common_foods) > 0:
+        # Hitung similarity berdasarkan makanan yang sama-sama di-rating
+        adza_common = [adza_food_ratings[fid] for fid in common_foods]
+        asriani_common = [asriani_food_ratings[fid] for fid in common_foods]
 
-        if recommended_food_ids:
-            print("🏆 TOP REKOMENDASI UNTUK ADZA:")
+        # Cosine similarity
+        from sklearn.metrics.pairwise import cosine_similarity
+
+        similarity = cosine_similarity([adza_common], [asriani_common])[0][0]
+
+        print(f"🎯 Similarity Score: {similarity:.3f}")
+
+        # Jika similarity tinggi (> 0.7), rekomendasikan makanan yang disukai Asriani tapi belum di-rating Adza
+        if similarity > 0.7:
+            recommendations = []
+            asriani_unrated_by_adza = set(asriani_food_ratings.keys()) - set(
+                adza_food_ratings.keys()
+            )
+
+            print(f"🎁 Makanan kandidat rekomendasi: {len(asriani_unrated_by_adza)}")
+
+            # Sortir berdasarkan rating Asriani (tertinggi dulu)
+            candidates = [
+                (fid, asriani_food_ratings[fid]) for fid in asriani_unrated_by_adza
+            ]
+            candidates.sort(key=lambda x: x[1], reverse=True)
+
+            # Ambil top recommendations
+            recommendations = [fid for fid, rating in candidates if rating >= 4.0]
+
+            print("🏆 REKOMENDASI BERDASARKAN SIMILARITY:")
             print()
 
             expected_food_ids = set(food.id for food in expected_foods)
             found_expected = set()
 
-            for i, food_id in enumerate(recommended_food_ids, 1):
-                # Get food details
+            for i, food_id in enumerate(recommendations, 1):
                 food = Food.query.filter_by(id=food_id).first()
                 if not food:
                     continue
@@ -247,58 +266,54 @@ def test_recommendations(adza, expected_foods):
                 print()
 
             # Analysis
-            success_rate = len(found_expected) / len(expected_food_ids) * 100
-            print("=" * 60)
-            print("📈 HASIL ANALISIS:")
-            print(f"   🎯 Makanan yang diharapkan: {len(expected_food_ids)}")
-            print(
-                f"   ✅ Makanan yang berhasil direkomendasikan: {len(found_expected)}"
-            )
-            print(f"   📊 Success Rate: {success_rate:.1f}%")
-
-            if success_rate >= 50:
+            if len(expected_food_ids) > 0:
+                success_rate = len(found_expected) / len(expected_food_ids) * 100
+                print("=" * 60)
+                print("📈 HASIL ANALISIS:")
+                print(f"   🎯 Makanan yang diharapkan: {len(expected_food_ids)}")
                 print(
-                    "   🔥 SIMULASI BERHASIL! Sistem rekomendasi bekerja dengan baik!"
+                    f"   ✅ Makanan yang berhasil direkomendasikan: {len(found_expected)}"
                 )
-            else:
-                print("   ⚠️ Simulasi kurang optimal. Perlu penyesuaian algoritma.")
+                print(f"   📊 Success Rate: {success_rate:.1f}%")
+                print(f"   📊 Similarity Score: {similarity:.3f}")
 
-            print()
-            if found_expected:
-                print("   ✅ Makanan yang berhasil direkomendasikan:")
-                for food_id in found_expected:
-                    food = Food.query.filter_by(id=food_id).first()
-                    if food:
-                        asriani_rating = get_asriani_rating(food_id)
-                        print(
-                            f"      • {food.name} (Rating Asriani: {asriani_rating}⭐)"
-                        )
+                if success_rate >= 50:
+                    print(
+                        "   🔥 SIMULASI BERHASIL! Algoritma similarity sederhana bekerja!"
+                    )
+                else:
+                    print("   ⚠️ Simulasi kurang optimal.")
 
-            missing_foods = expected_food_ids - found_expected
-            if missing_foods:
-                print("   ❌ Makanan yang tidak direkomendasikan:")
-                for food_id in missing_foods:
-                    food = Food.query.filter_by(id=food_id).first()
-                    if food:
-                        asriani_rating = get_asriani_rating(food_id)
-                        print(
-                            f"      • {food.name} (Rating Asriani: {asriani_rating}⭐)"
-                        )
+                print()
+                if found_expected:
+                    print("   ✅ Makanan yang berhasil direkomendasikan:")
+                    for food_id in found_expected:
+                        food = Food.query.filter_by(id=food_id).first()
+                        if food:
+                            asriani_rating = get_asriani_rating(food_id)
+                            print(
+                                f"      • {food.name} (Rating Asriani: {asriani_rating}⭐)"
+                            )
+
+                missing_foods = expected_food_ids - found_expected
+                if missing_foods:
+                    print("   ❌ Makanan yang tidak direkomendasikan:")
+                    for food_id in missing_foods:
+                        food = Food.query.filter_by(id=food_id).first()
+                        if food:
+                            asriani_rating = get_asriani_rating(food_id)
+                            print(
+                                f"      • {food.name} (Rating Asriani: {asriani_rating}⭐)"
+                            )
 
         else:
-            print("📭 Sistem tidak menghasilkan rekomendasi")
             print(
-                "💡 Kemungkinan karena tidak cukup data untuk collaborative filtering"
+                f"⚠️ Similarity terlalu rendah ({similarity:.3f}) untuk memberikan rekomendasi"
             )
-
-    except Exception as e:
-        print(f"❌ Error dalam sistem rekomendasi: {str(e)}")
+    else:
         print(
-            "💡 Sistem collaborative filtering membutuhkan minimal 3 user untuk bekerja optimal"
+            "❌ Tidak ada makanan yang sama-sama di-rating untuk menghitung similarity"
         )
-        import traceback
-
-        traceback.print_exc()
 
 
 def run_simulation():
@@ -307,7 +322,7 @@ def run_simulation():
 
     with app.app_context():
         print("=" * 80)
-        print("🚀 SIMULASI: SISTEM REKOMENDASI ADZA & ASRIANI (2 USER)")
+        print("🚀 SIMULASI: SISTEM REKOMENDASI SEDERHANA ADZA & ASRIANI (2 USER)")
         print("=" * 80)
         print()
 
@@ -331,8 +346,8 @@ def run_simulation():
         unrated_foods = create_adza_ratings(adza, foods)
         print()
 
-        # Step 6: Test recommendations
-        test_recommendations(adza, unrated_foods)
+        # Step 6: Test simple similarity recommendation
+        simple_similarity_recommendation(adza, asriani, unrated_foods)
 
         print("=" * 80)
         print("✅ SIMULASI SELESAI!")

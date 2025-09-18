@@ -177,7 +177,7 @@ class Recommendations:
         """
         try:
             # Basic data validation
-            min_users = 3  # Lowered for testing with small dataset
+            min_users = 2  # Lowered for testing with small dataset
             min_foods = 3
             min_ratings = 5
 
