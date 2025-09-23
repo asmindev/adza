@@ -33,10 +33,10 @@ export default function FormReviews({ foodId, onReviewSubmitted }) {
     const isMobile = useIsMobile();
     const { user } = useContext(UserContext);
 
-    const handleFormSubmit = (rating, content) => {
+    const handleFormSubmit = (rating, content, ratingDetails) => {
         setOpen(false);
         if (onReviewSubmitted) {
-            onReviewSubmitted({ rating, content });
+            onReviewSubmitted({ rating, content, ratingDetails });
         }
     };
 
@@ -105,8 +105,19 @@ export default function FormReviews({ foodId, onReviewSubmitted }) {
 }
 
 function ProfileForm({ className = "", foodId, user, onSubmit }) {
-    const [rating, setRating] = useState(0);
-    const [hoveredRating, setHoveredRating] = useState(0);
+    // Change from single rating to detailed rating criteria
+    const [ratingDetails, setRatingDetails] = useState({
+        flavor: 0, // Rasa
+        serving: 0, // Porsi
+        price: 0, // Harga
+        place: 0, // Tempat
+    });
+    const [hoveredRating, setHoveredRating] = useState({
+        flavor: 0,
+        serving: 0,
+        price: 0,
+        place: 0,
+    });
     const [content, setContent] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -123,10 +134,14 @@ function ProfileForm({ className = "", foodId, user, onSubmit }) {
             return;
         }
 
-        // Require both rating and content for review submission
-        if (rating === 0) {
+        // Require all rating criteria and content for review submission
+        const allRatingsGiven = Object.values(ratingDetails).every(
+            (rating) => rating > 0
+        );
+        if (!allRatingsGiven) {
             toast.error("Rating diperlukan", {
-                description: "Silakan berikan rating untuk makanan ini",
+                description:
+                    "Silakan berikan rating untuk semua kriteria (Rasa, Porsi, Harga, Tempat)",
             });
             return;
         }
@@ -144,13 +159,13 @@ function ProfileForm({ className = "", foodId, user, onSubmit }) {
             console.log("Submitting review:", {
                 food_id: foodId,
                 content: content.trim(),
-                rating: rating,
+                rating_details: ratingDetails,
             });
-            // Submit review with rating in single request
+            // Submit review with detailed rating in single request
             await submitReview({
                 food_id: foodId,
                 content: content.trim(),
-                rating: rating,
+                rating_details: ratingDetails,
             });
 
             toast.success("Berhasil!", {
@@ -160,15 +175,30 @@ function ProfileForm({ className = "", foodId, user, onSubmit }) {
             // Revalidate the food data to show updated reviews
             mutate(`/api/v1/foods/${foodId}`);
 
-            // Call the onSubmit callback
+            // Call the onSubmit callback with rating details
             if (onSubmit) {
-                onSubmit(rating, content);
+                const averageRating =
+                    Object.values(ratingDetails).reduce(
+                        (sum, rating) => sum + rating,
+                        0
+                    ) / 4;
+                onSubmit(averageRating, content, ratingDetails);
             }
 
             // Reset form
-            setRating(0);
+            setRatingDetails({
+                flavor: 0,
+                serving: 0,
+                price: 0,
+                place: 0,
+            });
             setContent("");
-            setHoveredRating(0);
+            setHoveredRating({
+                flavor: 0,
+                serving: 0,
+                price: 0,
+                place: 0,
+            });
         } catch (error) {
             console.error("Error submitting review:", error);
             toast.error("Gagal mengirim", {
@@ -179,16 +209,25 @@ function ProfileForm({ className = "", foodId, user, onSubmit }) {
         }
     };
 
-    const handleStarClick = (starRating) => {
-        setRating(starRating);
+    const handleStarClick = (criteria, starRating) => {
+        setRatingDetails((prev) => ({
+            ...prev,
+            [criteria]: starRating,
+        }));
     };
 
-    const handleStarHover = (starRating) => {
-        setHoveredRating(starRating);
+    const handleStarHover = (criteria, starRating) => {
+        setHoveredRating((prev) => ({
+            ...prev,
+            [criteria]: starRating,
+        }));
     };
 
-    const handleStarLeave = () => {
-        setHoveredRating(0);
+    const handleStarLeave = (criteria) => {
+        setHoveredRating((prev) => ({
+            ...prev,
+            [criteria]: 0,
+        }));
     };
 
     return (
@@ -196,35 +235,69 @@ function ProfileForm({ className = "", foodId, user, onSubmit }) {
             className={`grid items-start gap-6 ${className}`}
             onSubmit={handleSubmit}
         >
-            {/* Rating */}
-            <div className="space-y-2">
+            {/* Detailed Rating Criteria */}
+            <div className="space-y-4">
                 <Label>
-                    Rating <span className="text-red-500">*</span>
+                    Rating Kriteria <span className="text-red-500">*</span>
                 </Label>
-                <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                        const isFilled = star <= (hoveredRating || rating);
-                        return (
-                            <button
-                                key={star}
-                                type="button"
-                                className="p-1 rounded hover:bg-accent transition-colors"
-                                onClick={() => handleStarClick(star)}
-                                onMouseEnter={() => handleStarHover(star)}
-                                onMouseLeave={handleStarLeave}
-                                disabled={isSubmitting}
-                            >
-                                <Star
-                                    className={`w-5 h-5 transition-colors ${
-                                        isFilled
-                                            ? "text-yellow-400 fill-yellow-400"
-                                            : "text-muted-foreground"
-                                    }`}
-                                />
-                            </button>
-                        );
-                    })}
-                </div>
+                <p className="text-sm text-muted-foreground">
+                    Berikan penilaian untuk setiap aspek makanan ini
+                </p>
+
+                {/* Rating criteria */}
+                {[
+                    { key: "flavor", label: "Rasa", icon: "🍽️" },
+                    { key: "serving", label: "Porsi", icon: "🥄" },
+                    { key: "price", label: "Harga", icon: "💰" },
+                    { key: "place", label: "Tempat", icon: "🏪" },
+                ].map((criteria) => (
+                    <div key={criteria.key} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm">{criteria.icon}</span>
+                            <Label className="text-sm font-medium">
+                                {criteria.label}
+                            </Label>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => {
+                                const isFilled =
+                                    star <=
+                                    (hoveredRating[criteria.key] ||
+                                        ratingDetails[criteria.key]);
+                                return (
+                                    <button
+                                        key={star}
+                                        type="button"
+                                        className="p-1 rounded hover:bg-accent transition-colors"
+                                        onClick={() =>
+                                            handleStarClick(criteria.key, star)
+                                        }
+                                        onMouseEnter={() =>
+                                            handleStarHover(criteria.key, star)
+                                        }
+                                        onMouseLeave={() =>
+                                            handleStarLeave(criteria.key)
+                                        }
+                                        disabled={isSubmitting}
+                                    >
+                                        <Star
+                                            className={`w-4 h-4 transition-colors ${
+                                                isFilled
+                                                    ? "text-yellow-400 fill-yellow-400"
+                                                    : "text-muted-foreground"
+                                            }`}
+                                        />
+                                    </button>
+                                );
+                            })}
+                            <span className="ml-2 text-xs text-muted-foreground">
+                                {ratingDetails[criteria.key] > 0
+                                    ? `${ratingDetails[criteria.key]}/5`
+                                    : "Belum dinilai"}
+                            </span>
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="grid gap-3">
@@ -243,7 +316,13 @@ function ProfileForm({ className = "", foodId, user, onSubmit }) {
 
             <Button
                 type="submit"
-                disabled={isSubmitting || rating === 0 || !content.trim()}
+                disabled={
+                    isSubmitting ||
+                    !Object.values(ratingDetails).every(
+                        (rating) => rating > 0
+                    ) ||
+                    !content.trim()
+                }
             >
                 {isSubmitting ? "Mengirim..." : "Simpan Review & Rating"}
             </Button>
