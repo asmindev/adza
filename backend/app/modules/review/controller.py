@@ -75,7 +75,28 @@ def get_user_reviews(user_id):
 @review_blueprint.route("/reviews", methods=["POST", "PUT"])
 @token_required
 def review_food():
-    """Create or update a review for a food with mandatory rating"""
+    """
+    Create or update a review for a food with mandatory rating
+
+    Expected JSON payload (Detailed rating format):
+    {
+        "food_id": "string",
+        "content": "string",
+        "rating_details": {
+            "flavor": float (1-5),
+            "serving": float (1-5),
+            "price": float (1-5),
+            "place": float (1-5)
+        }
+    }
+
+    Legacy format (still supported):
+    {
+        "food_id": "string",
+        "content": "string",
+        "rating": float (1-5)
+    }
+    """
     logger.info(f"{request.method} /reviews - Processing review request")
 
     # Parse request data
@@ -85,12 +106,18 @@ def review_food():
 
     user_id = g.user_id
     food_id = data.get("food_id")
-    rating = data.get("rating")
+    rating = data.get("rating")  # Legacy format
+    rating_details = data.get("rating_details")  # New detailed format
     content = data.get("content")
 
     try:
-        # Create or update rating first
-        rating_result = RatingService.create_or_update_rating(user_id, food_id, rating)
+        # Create or update rating first (support both formats)
+        rating_result = RatingService.create_or_update_rating(
+            user_id=user_id,
+            food_id=food_id,
+            rating_details=rating_details,
+            rating_value=rating,
+        )
         if not rating_result:
             return ResponseHelper.internal_server_error("Failed to save rating")
 

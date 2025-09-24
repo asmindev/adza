@@ -103,14 +103,22 @@ def rate_food():
     """
     Create or update a rating (standalone rating without review).
 
-    Expected JSON payload:
+    Expected JSON payload (New detailed rating format):
+    {
+        "food_id": "string",
+        "rating_details": {
+            "flavor": float (1-5),
+            "serving": float (1-5),
+            "price": float (1-5),
+            "place": float (1-5)
+        }
+    }
+
+    Legacy format (still supported):
     {
         "food_id": "string",
         "rating": float (1-5)
     }
-
-    Note: It's recommended to use the /reviews endpoint which handles
-    both rating and review together for better user experience.
 
     Returns:
         JSON response with rating data
@@ -118,7 +126,7 @@ def rate_food():
     user_id = g.user_id
     method = request.method
     logger.info(
-        f"{method} /ratings - {'Creating' if method == 'POST' else 'Updating'} standalone rating"
+        f"{method} /ratings - {'Creating' if method == 'POST' else 'Updating'} food rating"
     )
 
     try:
@@ -128,13 +136,15 @@ def rate_food():
             return ResponseHelper.validation_error("No data provided")
 
         food_id = data.get("food_id")
-        rating_value = data.get("rating")
+        rating_details = data.get("rating_details")  # New detailed rating format
+        rating_value = data.get("rating")  # Legacy format
 
         # Use service layer - it will handle all validation
         rating = FoodRatingService.create_or_update_rating(
-            user_id,
-            food_id,
-            rating_value,
+            user_id=user_id,
+            food_id=food_id,
+            rating_details=rating_details,
+            rating_value=rating_value,
         )
 
         logger.info(

@@ -106,6 +106,57 @@ class RatingValidator:
         return {"valid": True, "errors": [], "entity_id": entity_id}
 
     @staticmethod
+    def validate_rating_details(rating_details: Any) -> Dict[str, Any]:
+        """
+        Validate detailed rating criteria
+
+        Args:
+            rating_details: Rating details object to validate
+
+        Returns:
+            dict: Validation result with 'valid' boolean and 'errors' list
+        """
+        errors = []
+
+        if rating_details is None:
+            errors.append("Rating details are required")
+            return {"valid": False, "errors": errors}
+
+        if not isinstance(rating_details, dict):
+            errors.append("Rating details must be an object")
+            return {"valid": False, "errors": errors}
+
+        # Required criteria
+        required_criteria = ["flavor", "serving", "price", "place"]
+
+        # Check if all required criteria are present
+        for criteria in required_criteria:
+            if criteria not in rating_details:
+                errors.append(f"Missing required criteria: {criteria}")
+
+        if errors:
+            return {"valid": False, "errors": errors}
+
+        # Validate each criteria value
+        validated_details = {}
+        for criteria in required_criteria:
+            value = rating_details.get(criteria)
+
+            # Validate individual rating value
+            rating_validation = RatingValidator.validate_rating_value(value)
+            if not rating_validation["valid"]:
+                errors.extend(
+                    [f"{criteria}: {error}" for error in rating_validation["errors"]]
+                )
+            else:
+                validated_details[criteria] = rating_validation["rating"]
+
+        if errors:
+            return {"valid": False, "errors": errors}
+
+        return {"valid": True, "errors": [], "rating_details": validated_details}
+
+    @staticmethod
     def validate_food_rating_data(data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate complete food rating data
@@ -119,12 +170,35 @@ class RatingValidator:
         errors = []
         validated_data = {}
 
-        # Validate rating value
-        rating_validation = RatingValidator.validate_rating_value(data.get("rating"))
-        if not rating_validation["valid"]:
-            errors.extend(rating_validation["errors"])
+        # Validate rating_details (new detailed rating system)
+        if "rating_details" in data:
+            rating_details_validation = RatingValidator.validate_rating_details(
+                data.get("rating_details")
+            )
+            if not rating_details_validation["valid"]:
+                errors.extend(rating_details_validation["errors"])
+            else:
+                validated_data["rating_details"] = rating_details_validation[
+                    "rating_details"
+                ]
+        # Legacy support: validate old rating value if no rating_details
+        elif "rating" in data:
+            rating_validation = RatingValidator.validate_rating_value(
+                data.get("rating")
+            )
+            if not rating_validation["valid"]:
+                errors.extend(rating_validation["errors"])
+            else:
+                # Convert single rating to rating_details format for consistency
+                rating_value = rating_validation["rating"]
+                validated_data["rating_details"] = {
+                    "flavor": rating_value,
+                    "serving": rating_value,
+                    "price": rating_value,
+                    "place": rating_value,
+                }
         else:
-            validated_data["rating"] = rating_validation["rating"]
+            errors.append("Either 'rating_details' or 'rating' is required")
 
         # Validate food_id
         food_id_validation = RatingValidator.validate_entity_id(

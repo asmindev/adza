@@ -90,6 +90,21 @@ class FoodRatingRepository:
             raise
 
     @staticmethod
+    def create_instance(rating_instance):
+        """Create new rating from existing instance"""
+        try:
+            db.session.add(rating_instance)
+            db.session.commit()
+            logger.info(
+                f"Rating instance berhasil dibuat dengan ID: {rating_instance.id}"
+            )
+            return rating_instance
+        except Exception as e:
+            logger.error(f"Gagal membuat rating instance: {str(e)}")
+            db.session.rollback()
+            raise
+
+    @staticmethod
     def update(rating, update_data):
         """Update existing rating"""
         try:

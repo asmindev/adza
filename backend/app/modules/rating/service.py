@@ -55,13 +55,29 @@ class FoodRatingService:
 
     @staticmethod
     def create_or_update_rating(
-        user_id: str, food_id: str, rating_value: float
+        user_id: str,
+        food_id: str,
+        rating_details: Dict[str, float] = None,
+        rating_value: float = None,
     ) -> Dict[str, Any]:
-        """Create or update rating with proper validation"""
+        """Create or update rating with proper validation - supports both detailed and simple rating"""
         logger.info(f"Creating/updating food rating {food_id} from user {user_id}")
 
-        # Validate input data
-        rating_data = {"user_id": user_id, "food_id": food_id, "rating": rating_value}
+        # Prepare rating data - prioritize rating_details over rating_value
+        if rating_details:
+            rating_data = {
+                "user_id": user_id,
+                "food_id": food_id,
+                "rating_details": rating_details,
+            }
+        elif rating_value is not None:
+            rating_data = {
+                "user_id": user_id,
+                "food_id": food_id,
+                "rating": rating_value,
+            }
+        else:
+            raise ValueError("Either rating_details or rating_value must be provided")
 
         validation_result = RatingValidator.validate_food_rating_data(rating_data)
         if not validation_result["valid"]:
@@ -69,25 +85,27 @@ class FoodRatingService:
 
         validated_data = validation_result["data"]
 
-        # Check if entities exist (this would be done via proper dependency injection in production)
-        # For now, we'll let the repository/database handle foreign key constraints
-
         # Check if rating already exists
         existing_rating = FoodRatingRepository.get_user_rating(
             validated_data["user_id"], validated_data["food_id"]
         )
 
         if existing_rating:
-            # Update existing rating
-            update_data = {"rating": validated_data["rating"]}
-            updated_rating = FoodRatingRepository.update(existing_rating, update_data)
+            # Update existing rating using model method
+            existing_rating.update_rating_details(validated_data["rating_details"])
+            updated_rating = FoodRatingRepository.update(existing_rating, {})
             logger.info(f"Rating updated for food {food_id} by user {user_id}")
             return updated_rating.to_dict()
         else:
             # Create new rating
-            new_rating = FoodRatingRepository.create(validated_data)
+            new_rating = FoodRating(
+                user_id=validated_data["user_id"],
+                food_id=validated_data["food_id"],
+                rating_details=validated_data["rating_details"],
+            )
+            created_rating = FoodRatingRepository.create_instance(new_rating)
             logger.info(f"New rating created for food {food_id} by user {user_id}")
-            return new_rating.to_dict()
+            return created_rating.to_dict()
 
     @staticmethod
     def delete_rating(user_id: str, food_id: str) -> bool:
