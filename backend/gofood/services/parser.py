@@ -151,6 +151,7 @@ class DataParser:
 
     def _extract_food_item(self, item_data: Dict[str, Any]) -> Optional[FoodItem]:
         """Extract food item."""
+        print("\n\nExtracting food item:", item_data)
         display_name = item_data.get("displayName")
         price_data = item_data.get("price", {})
 
@@ -162,6 +163,7 @@ class DataParser:
         )
 
         return FoodItem(
+            id=item_data.get("uid"),
             displayName=display_name,
             price=price,
             description=item_data.get("description"),

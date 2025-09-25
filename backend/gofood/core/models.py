@@ -62,6 +62,7 @@ class Outlet:
 class FoodItem:
     """Food item from catalog."""
 
+    id: str
     displayName: str
     price: Price
     description: Optional[str] = None

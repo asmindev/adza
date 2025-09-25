@@ -233,6 +233,7 @@ class GoFoodDBImporter:
                 price = 0.0
 
         return {
+            "id": safe_get(row.get("UID")),
             "name": safe_get(row.get("Food Name"), "Unknown Food"),
             "description": safe_get(row.get("Description")),
             "price": price,

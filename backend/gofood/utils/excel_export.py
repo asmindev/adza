@@ -100,6 +100,7 @@ class ExcelExporter:
             for item in detail.catalog.sections:
                 food_data.append(
                     {
+                        "UID": item.id,
                         "Restaurant UID": detail.core.uid,
                         "Restaurant Name": detail.core.displayName,
                         "Food Name": item.displayName,
