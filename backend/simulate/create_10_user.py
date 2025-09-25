@@ -333,9 +333,9 @@ USERS = [
                         "serving": 3,
                         "price": 4,
                         "place": 5,
-                    }
+                    },
+                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
                 },
-                "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
             },
             {
                 "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
@@ -432,9 +432,9 @@ USERS = [
                         "serving": 3,
                         "price": 4,
                         "place": 5,
-                    }
+                    },
+                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
                 },
-                "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
             },
             {
                 "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
@@ -531,32 +531,6 @@ USERS = [
         "name": "Aci",
         "foods": [
             {
-                "id": "41dbf87c-6f4d-48a1-a477-f3865d1efcba",
-                "name": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk",
-                "review": {
-                    "rating_details": {
-                        "flavor": 3.0,
-                        "serving": 3,
-                        "price": 3,
-                        "place": 2,
-                    },
-                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
-                },
-            },
-            {
-                "id": "1e0c4cd5-7018-4b22-b59e-1eebc8f3184a",
-                "name": "Belgian Waffle",
-                "review": {
-                    "rating_details": {
-                        "flavor": 2.0,
-                        "serving": 3,
-                        "price": 2,
-                        "place": 2,
-                    },
-                    "content": "Mie ayam pangsit yang enak.",
-                },
-            },
-            {
                 "id": "b7b7e596-44d0-4095-9b1e-e0cfbd627cf5",
                 "name": "Ayam Kampung Geprek Sambal Matah",
                 "review": {
@@ -567,6 +541,33 @@ USERS = [
                         "place": 5,
                     },
                     "content": "Ayam Kampung Geprek Sambal Matah yang lezat.",
+                },
+            },
+            {
+                "id": "10745431-94cb-4dd3-9968-95529b3bde37",
+                "name": "Mie Kering",
+                "review": {
+                    "rating_details": {
+                        "flavor": 5.0,
+                        "serving": 4,
+                        "price": 5,
+                        "place": 5,
+                    },
+                    "content": "Mie Kering yang lezat.",
+                },
+            },
+            #
+            {
+                "id": "a5213612-c1cb-481b-8d6a-1aa668e0ee2c",
+                "name": "Nasi Goreng Spesial",
+                "review": {
+                    "rating_details": {
+                        "flavor": 5.0,
+                        "serving": 4,
+                        "price": 5,
+                        "place": 5,
+                    },
+                    "content": "Nasi Goreng Spesial yang lezat.",
                 },
             },
         ],
@@ -590,7 +591,7 @@ for user in USERS:
 
     # login to get token
     response = login_user(user["username"], user["password"])
-    print(f"Logging in {user['username']}: {response.status_code}")
+    print(f"\nLogging in {user['username']}: {response.status_code}")
     token = response.json()["data"]["token"]
 
     # create reviews for foods
@@ -599,6 +600,8 @@ for user in USERS:
         rating = food_review["review"]["rating_details"]
         comment = food_review["review"].get("content", "")
         response = create_review(token, food_id, rating, comment)
+        if response.status_code != 201:
+            print(response.json())
         print(
             f"Creating review for {user['username']} on {food_review['name']}: {response.status_code}"
         )
