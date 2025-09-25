@@ -660,20 +660,6 @@ class Recommendations:
                 if len(recommended_food_ids) >= top_n:
                     break
 
-            # If we don't have enough recommendations, supplement with popular foods
-            if len(recommended_food_ids) < top_n:
-                additional_needed = top_n - len(recommended_food_ids)
-                exclude_all = exclude_foods + recommended_food_ids
-
-                additional_foods = self.data_processor.get_popular_foods(
-                    top_n=additional_needed, exclude_foods=exclude_all
-                )
-
-                # Add scores for additional foods (use global mean)
-                for food_id in additional_foods:
-                    recommended_food_ids.append(food_id)
-                    predicted_scores[food_id] = float(self.svd_model.global_mean)
-
             # Final trim to requested number
             final_recommendations = recommended_food_ids[:top_n]
             final_scores = {

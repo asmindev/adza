@@ -76,9 +76,9 @@ class LocalDataProcessor:
 
             df = pd.DataFrame(ratings_data)
 
-            if len(df) == 0:
-                logger.warning("No ratings found in database")
-                return pd.DataFrame(columns=["user_id", "food_id", "rating"])
+            if len(df) > 0:
+                logger.info(f"Raw ratings data sample:\n{df.head()}")
+                df = df.groupby(["user_id", "food_id"])["rating"].mean().reset_index()
 
             logger.info(f"Loaded {len(df)} ratings from database")
             self.ratings_df = df
@@ -262,7 +262,7 @@ class LocalDataProcessor:
         target_user_id: str,
         top_k_users: int = 50,
         similarity_method: str = "cosine",  # PERBAIKAN: Default ke cosine
-        similarity_threshold: float = 0.2,
+        similarity_threshold: float = 0.3,  # PERBAIKAN: Threshold default lebih ketat
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Create local sub-dataset for SVD training

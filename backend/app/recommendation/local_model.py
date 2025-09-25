@@ -296,7 +296,7 @@ class LocalSVDModel:
         user_idx: int,
         top_n: int = 10,
         exclude_items: List[int] = None,
-        min_rating: float = 3.0,
+        min_rating: float = 4.0,
     ) -> List[Tuple[int, float]]:
         """
         Get top-N recommendations for user
@@ -320,14 +320,16 @@ class LocalSVDModel:
                 for item_idx, rating in predictions
                 if rating >= min_rating
             ]
-
-            # Return top N
-            top_recommendations = filtered_predictions[:top_n]
-
             logger.info(
-                f"Generated {len(top_recommendations)} recommendations for user {user_idx}"
+                f"\n\nFiltered predictions======================================================: {filtered_predictions}\n\n"
             )
-            return top_recommendations
+            user_avg = self.user_means[user_idx]
+            filtered_predictions = [
+                (i, max(1.0, r - (user_avg - r) * 0.2)) for i, r in filtered_predictions
+            ]  # Dampen low preds
+            return sorted(filtered_predictions, key=lambda x: x[1], reverse=True)[
+                :top_n
+            ]
 
         except Exception as e:
             logger.error(f"Error getting top recommendations: {e}")

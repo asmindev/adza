@@ -114,7 +114,8 @@ USERS = [
                         "serving": 4,
                         "price": 5,
                         "place": 5,
-                    }
+                    },
+                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
                 },
             },
             {
@@ -186,7 +187,8 @@ USERS = [
                         "serving": 3,
                         "price": 4,
                         "place": 5,
-                    }
+                    },
+                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
                 },
             },
             {
@@ -258,7 +260,8 @@ USERS = [
                         "serving": 4,
                         "price": 4,
                         "place": 5,
-                    }
+                    },
+                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
                 },
             },
             {
@@ -332,6 +335,7 @@ USERS = [
                         "place": 5,
                     }
                 },
+                "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
             },
             {
                 "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
@@ -430,6 +434,7 @@ USERS = [
                         "place": 5,
                     }
                 },
+                "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
             },
             {
                 "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
@@ -534,7 +539,8 @@ USERS = [
                         "serving": 3,
                         "price": 3,
                         "place": 2,
-                    }
+                    },
+                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
                 },
             },
             {
