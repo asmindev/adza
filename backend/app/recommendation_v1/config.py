@@ -17,7 +17,10 @@ class RecommendationConfig:
     # Training interval (24 hours in seconds)
     TRAINING_INTERVAL = 24 * 60 * 60
 
-    # PERBAIKAN: Hapus DEFAULT_ALPHA duplikat, gunakan ini saja
+    # Enhanced recommendation parameters
+    DEFAULT_ALPHA = 0.3  # Weight for place quality adjustment
+
+    # Hybrid scoring parameters
     DEFAULT_FOOD_RESTAURANT_ALPHA = 0.7  # Weight for food rating vs restaurant rating
     # score = (alpha * food_rating) + ((1 - alpha) * restaurant_rating)
     # alpha = 0.7 means 70% food, 30% restaurant

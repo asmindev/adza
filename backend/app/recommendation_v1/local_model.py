@@ -133,12 +133,8 @@ class LocalSVDModel:
             # Prepare matrix
             centered_matrix, original_matrix = self._prepare_matrix(pivot_matrix)
 
-            # PERBAIKAN: Auto-adjust n_components berdasarkan sparsity untuk akurasi lebih baik
+            # Determine optimal number of components
             max_components = min(self.n_components, min(self.n_users, self.n_items) - 1)
-            if self.sparsity > 0.95:
-                max_components = min(
-                    50, max_components
-                )  # Kurangi factors jika very sparse
             if max_components <= 0:
                 logger.error("Invalid number of components for SVD")
                 return False
@@ -178,16 +174,9 @@ class LocalSVDModel:
                 self.item_factors = item_factors
                 self.is_fitted = True
 
-                # PERBAIKAN: Early stopping jika explained variance rendah
-                explained_var = self.svd_model.explained_variance_ratio_.sum()
-                if explained_var < 0.5:
-                    logger.warning(
-                        f"Low explained variance: {explained_var:.3f}, model may be inaccurate"
-                    )
-
             logger.info(
                 f"SVD training completed: {max_components} factors, "
-                f"explained variance ratio: {explained_var:.3f}"
+                f"explained variance ratio: {self.svd_model.explained_variance_ratio_.sum():.3f}"
             )
 
             return True
@@ -197,16 +186,13 @@ class LocalSVDModel:
             self.is_fitted = False
             return False
 
-    def predict_user_item(
-        self, user_idx: int, item_idx: int, common_items: int = 0
-    ) -> float:
+    def predict_user_item(self, user_idx: int, item_idx: int) -> float:
         """
-        Predict rating for specific user-item pair - PERBAIKAN: Tambah confidence berdasarkan common_items
+        Predict rating for specific user-item pair
 
         Args:
             user_idx: User index
             item_idx: Item index
-            common_items: Number of common items for confidence weighting
 
         Returns:
             float: Predicted rating
@@ -232,15 +218,6 @@ class LocalSVDModel:
             user_bias = self.user_means[user_idx] - self.global_mean
             item_bias = self.item_means[item_idx] - self.global_mean
             prediction += self.global_mean + user_bias + item_bias
-
-            # PERBAIKAN: Weight by confidence jika common_items diketahui (untuk pola rating akurat)
-            if common_items > 0:
-                confidence_weight = min(
-                    1.0, np.sqrt(common_items / 5.0)
-                )  # Normalize ke max 5 common
-                prediction = self.global_mean + confidence_weight * (
-                    prediction - self.global_mean
-                )
 
             # Clip to valid rating range (1-5)
             prediction = np.clip(prediction, 1.0, 5.0)
@@ -276,10 +253,7 @@ class LocalSVDModel:
                 if item_idx in exclude_items:
                     continue
 
-                # PERBAIKAN: Asumsi common_items=0 jika tidak diketahui; bisa pass dari external jika ada
-                predicted_rating = self.predict_user_item(
-                    user_idx, item_idx, common_items=0
-                )
+                predicted_rating = self.predict_user_item(user_idx, item_idx)
                 predictions.append((item_idx, predicted_rating))
 
             # Sort by predicted rating (descending)
@@ -335,7 +309,7 @@ class LocalSVDModel:
 
     def evaluate_model(self, test_matrix: pd.DataFrame) -> Dict[str, float]:
         """
-        Evaluate model performance on test data - PERBAIKAN: Fix bug exclude_items undefined
+        Evaluate model performance on test data
 
         Args:
             test_matrix: Test user-item matrix
@@ -372,9 +346,10 @@ class LocalSVDModel:
             mse = np.mean((predictions - actuals) ** 2)
             rmse = np.sqrt(mse)
 
-            # PERBAIKAN: Coverage berdasarkan actual recommended items / total
-            n_recommendable = len([p for p in predictions if p >= 3.0])
-            coverage = n_recommendable / self.n_items if self.n_items > 0 else 0.0
+            # Calculate coverage (percentage of items that can be recommended)
+            coverage = (
+                self.n_items - len(exclude_items if "exclude_items" in locals() else [])
+            ) / self.n_items
 
             metrics = {
                 "mae": float(mae),

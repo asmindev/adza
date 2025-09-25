@@ -34,19 +34,15 @@ def jaccard_similarity(set1: set, set2: set) -> float:
 
 
 def cosine_similarity_sparse(
-    user_matrix: csr_matrix,
-    target_user_idx: int,
-    other_user_idx: int,
-    common_items_mask: np.ndarray = None,
+    user_matrix: csr_matrix, target_user_idx: int, other_user_idx: int
 ) -> float:
     """
-    Calculate cosine similarity between two users in sparse matrix - PERBAIKAN: Subset ke common items
+    Calculate cosine similarity between two users in sparse matrix
 
     Args:
         user_matrix: Sparse user-item matrix
         target_user_idx: Index of target user
         other_user_idx: Index of other user
-        common_items_mask: Mask untuk common items (optional, untuk subset)
 
     Returns:
         float: Cosine similarity score (0-1)
@@ -54,14 +50,6 @@ def cosine_similarity_sparse(
     try:
         user1_vector = user_matrix[target_user_idx].toarray().flatten()
         user2_vector = user_matrix[other_user_idx].toarray().flatten()
-
-        # PERBAIKAN: Subset ke common items jika mask diberikan (fokus pola rating pada overlap)
-        if common_items_mask is not None:
-            user1_vector = user1_vector[common_items_mask]
-            user2_vector = user2_vector[common_items_mask]
-            logger.debug(
-                f"Cosine calculated on {np.sum(common_items_mask)} common items"
-            )
 
         # Handle zero vectors
         if np.all(user1_vector == 0) or np.all(user2_vector == 0):
@@ -81,11 +69,11 @@ def cosine_similarity_sparse(
 def calculate_user_similarities(
     ratings_df: pd.DataFrame,
     target_user_id: str,
-    method: str = "cosine",  # PERBAIKAN: Default ke cosine
+    method: str = "jaccard",
     min_common_items: int = 2,
 ) -> Dict[str, float]:
     """
-    Calculate similarities between target user and all other users - PERBAIKAN: Enhance cosine dengan common mask
+    Calculate similarities between target user and all other users
 
     Args:
         ratings_df: DataFrame with columns [user_id, food_id, rating]
@@ -154,16 +142,12 @@ def calculate_user_similarities(
                 # Check if users have enough common ratings
                 target_ratings = user_item_matrix.iloc[target_idx]
                 user_ratings = user_item_matrix.iloc[idx]
-                common_mask = ((target_ratings > 0) & (user_ratings > 0)).values
-                common_items = np.sum(common_mask)
+                common_items = ((target_ratings > 0) & (user_ratings > 0)).sum()
 
                 if common_items < min_common_items:
                     continue
 
-                # PERBAIKAN: Pass common_mask ke cosine untuk subset calculation
-                similarity = cosine_similarity_sparse(
-                    sparse_matrix, target_idx, idx, common_mask
-                )
+                similarity = cosine_similarity_sparse(sparse_matrix, target_idx, idx)
                 if similarity > 0:
                     similarities[user_id] = similarity
 
@@ -185,7 +169,7 @@ def get_similar_users(
     target_user_id: str,
     top_k: int = 50,
     similarity_threshold: float = 0.1,
-    method: str = "cosine",  # PERBAIKAN: Default ke cosine
+    method: str = "jaccard",
     min_common_items: int = 2,
 ) -> List[Tuple[str, float]]:
     """
@@ -221,7 +205,7 @@ def get_similar_users(
         ]
 
         logger.info(
-            f"Found {len(similar_users)} similar users for {target_user_id} (threshold: {similarity_threshold}, method: {method})"
+            f"Found {len(similar_users)} similar users for {target_user_id} (threshold: {similarity_threshold})"
         )
         return similar_users
 
@@ -234,7 +218,7 @@ def validate_similarity_calculation(
     ratings_df: pd.DataFrame, sample_size: int = 5
 ) -> bool:
     """
-    Validate similarity calculation with a small sample - PERBAIKAN: Tambah test cosine + SVD
+    Validate similarity calculation with a small sample
 
     Args:
         ratings_df: DataFrame with columns [user_id, food_id, rating]
@@ -252,42 +236,19 @@ def validate_similarity_calculation(
         sample_users = ratings_df["user_id"].unique()[:sample_size]
 
         for user_id in sample_users:
-            # Test Cosine similarity (fokus utama)
-            cosine_similarities = get_similar_users(
-                ratings_df, user_id, top_k=5, method="cosine"
-            )
-
-            # Test Jaccard sebagai backup
+            # Test Jaccard similarity
             jaccard_similarities = get_similar_users(
                 ratings_df, user_id, top_k=5, method="jaccard"
             )
 
-            logger.info(
-                f"User {user_id}: {len(cosine_similarities)} Cosine, {len(jaccard_similarities)} Jaccard similarities"
+            # Test Cosine similarity
+            cosine_similarities = get_similar_users(
+                ratings_df, user_id, top_k=5, method="cosine"
             )
 
-            # PERBAIKAN: Simple SVD test pada sample sub-dataset
-            if len(cosine_similarities) > 0:
-                sub_df = ratings_df[
-                    ratings_df["user_id"].isin(
-                        [user_id] + [u[0] for u in cosine_similarities[:3]]
-                    )
-                ]
-                if len(sub_df) > 5:
-                    from .local_model import LocalSVDModel
-
-                    svd = LocalSVDModel()
-                    pivot = pd.pivot_table(
-                        sub_df,
-                        index="user_id",
-                        columns="food_id",
-                        values="rating",
-                        fill_value=0,
-                    )
-                    svd.fit(pivot)
-                    logger.debug(
-                        f"SVD test on sample for {user_id}: fitted={svd.is_fitted}"
-                    )
+            logger.info(
+                f"User {user_id}: {len(jaccard_similarities)} Jaccard, {len(cosine_similarities)} Cosine similarities"
+            )
 
         logger.info("Similarity calculation validation completed successfully")
         return True

@@ -348,14 +348,14 @@ class Recommendations:
                 )
                 return self._get_fallback_recommendations(user_id, top_n, exclude_foods)
 
-            # Create local dataset with similar users - PERBAIKAN: Default ke cosine untuk fokus pola rating
+            # Create local dataset with similar users
             try:
                 sub_ratings_df, sub_pivot_matrix = (
                     self.data_processor.create_local_dataset(
                         target_user_id=user_id,
                         top_k_users=50,
-                        similarity_method="cosine",  # PERBAIKAN: Ganti dari jaccard ke cosine
-                        similarity_threshold=0.2,  # PERBAIKAN: Threshold lebih ketat untuk cosine
+                        similarity_method="jaccard",
+                        similarity_threshold=0.1,
                     )
                 )
 
@@ -519,21 +519,18 @@ class Recommendations:
                 fallback_foods = self._get_fallback_recommendations(
                     user_id, top_n, exclude_foods
                 )
-                # PERBAIKAN: Fallback scores dynamic pakai global_mean
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
+                # For fallback, assign average score
+                fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                 return fallback_foods, fallback_scores
 
-            # Create local dataset with similar users - PERBAIKAN: Sama seperti recommend, default cosine
+            # Create local dataset with similar users
             try:
                 sub_ratings_df, sub_pivot_matrix = (
                     self.data_processor.create_local_dataset(
                         target_user_id=user_id,
                         top_k_users=50,
-                        similarity_method="cosine",
-                        similarity_threshold=0.2,
+                        similarity_method="jaccard",
+                        similarity_threshold=0.1,
                     )
                 )
 
@@ -542,10 +539,7 @@ class Recommendations:
                     fallback_foods = self._get_fallback_recommendations(
                         user_id, top_n, exclude_foods
                     )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
+                    fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                     return fallback_foods, fallback_scores
 
             except Exception as e:
@@ -553,10 +547,7 @@ class Recommendations:
                 fallback_foods = self._get_fallback_recommendations(
                     user_id, top_n, exclude_foods
                 )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
+                fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                 return fallback_foods, fallback_scores
 
             # Train SVD model on local dataset
@@ -568,10 +559,7 @@ class Recommendations:
                     fallback_foods = self._get_fallback_recommendations(
                         user_id, top_n, exclude_foods
                     )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
+                    fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                     return fallback_foods, fallback_scores
 
             except Exception as e:
@@ -579,10 +567,7 @@ class Recommendations:
                 fallback_foods = self._get_fallback_recommendations(
                     user_id, top_n, exclude_foods
                 )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
+                fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                 return fallback_foods, fallback_scores
 
             # Get user index in the local dataset
@@ -593,10 +578,7 @@ class Recommendations:
                     fallback_foods = self._get_fallback_recommendations(
                         user_id, top_n, exclude_foods
                     )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
+                    fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                     return fallback_foods, fallback_scores
 
             except Exception as e:
@@ -604,10 +586,7 @@ class Recommendations:
                 fallback_foods = self._get_fallback_recommendations(
                     user_id, top_n, exclude_foods
                 )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
+                fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                 return fallback_foods, fallback_scores
 
             # Get item indices to exclude
@@ -631,10 +610,7 @@ class Recommendations:
                     fallback_foods = self._get_fallback_recommendations(
                         user_id, top_n, exclude_foods
                     )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
+                    fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                     return fallback_foods, fallback_scores
 
             except Exception as e:
@@ -642,10 +618,7 @@ class Recommendations:
                 fallback_foods = self._get_fallback_recommendations(
                     user_id, top_n, exclude_foods
                 )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
+                fallback_scores = {food_id: 3.5 for food_id in fallback_foods}
                 return fallback_foods, fallback_scores
 
             # Convert item indices back to food IDs with scores
@@ -669,10 +642,10 @@ class Recommendations:
                     top_n=additional_needed, exclude_foods=exclude_all
                 )
 
-                # Add scores for additional foods (use global mean)
+                # Add scores for additional foods (use average score for popular foods)
                 for food_id in additional_foods:
                     recommended_food_ids.append(food_id)
-                    predicted_scores[food_id] = float(self.svd_model.global_mean)
+                    predicted_scores[food_id] = 3.5  # Average score for popular foods
 
             # Final trim to requested number
             final_recommendations = recommended_food_ids[:top_n]

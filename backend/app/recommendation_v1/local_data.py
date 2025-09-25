@@ -212,8 +212,8 @@ class LocalDataProcessor:
         self,
         target_user_id: str,
         top_k: int = 50,
-        similarity_method: str = "cosine",  # PERBAIKAN: Default ke cosine
-        similarity_threshold: float = 0.2,  # PERBAIKAN: Threshold default lebih ketat
+        similarity_method: str = "jaccard",
+        similarity_threshold: float = 0.1,
     ) -> List[str]:
         """
         Get subset of similar users for the target user
@@ -249,7 +249,7 @@ class LocalDataProcessor:
                 similar_user_ids.append(target_user_id)
 
             logger.info(
-                f"Selected {len(similar_user_ids)} similar users for {target_user_id} using {similarity_method}"
+                f"Selected {len(similar_user_ids)} similar users for {target_user_id}"
             )
             return similar_user_ids
 
@@ -261,8 +261,8 @@ class LocalDataProcessor:
         self,
         target_user_id: str,
         top_k_users: int = 50,
-        similarity_method: str = "cosine",  # PERBAIKAN: Default ke cosine
-        similarity_threshold: float = 0.2,
+        similarity_method: str = "jaccard",
+        similarity_threshold: float = 0.1,
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Create local sub-dataset for SVD training
@@ -331,8 +331,7 @@ class LocalDataProcessor:
 
             logger.info(
                 f"Created local dataset: {len(sub_ratings_df)} ratings, "
-                f"{sub_pivot_matrix.shape[0]} users, {sub_pivot_matrix.shape[1]} foods "
-                f"(method: {similarity_method})"
+                f"{sub_pivot_matrix.shape[0]} users, {sub_pivot_matrix.shape[1]} foods"
             )
 
             return sub_ratings_df, sub_pivot_matrix
