@@ -67,8 +67,8 @@ USERS = [
         "name": "Adza",
         "foods": [
             {
-                "id": "6e2b46ad-0617-46a8-af12-cf6f7de94d26",
-                "name": "Matcha Latte",
+                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
+                "name": "Nasi Goreng Udang",
                 "review": {
                     "rating_details": {
                         "flavor": 4.5,
@@ -76,12 +76,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Matcha latte yang lezat dan menyegarkan.",
+                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "81986805-f023-4027-a095-04f704900995",
-                "name": "Gembul Choco",
+                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
+                "name": "Bubur Ayam Kuah Kuning",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -89,12 +89,12 @@ USERS = [
                         "price": 3.5,
                         "place": 4.0,
                     },
-                    "content": "Gembul Choco yang manis dan memuaskan.",
+                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
+                "name": "Nasi Ikan Baronang Bakar + Sup",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -102,12 +102,12 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Mie ayam pangsit yang enak.",
+                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
                 },
             },
             {
-                "id": "41dbf87c-6f4d-48a1-a477-f3865d1efcba",
-                "name": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk",
+                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
+                "name": "Sandwich Telur Dadar+Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -115,12 +115,12 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
+                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
                 },
             },
             {
-                "id": "1e0c4cd5-7018-4b22-b59e-1eebc8f3184a",
-                "name": "Belgian Waffle",
+                "id": "108663d2-f89c-42a5-8d14-43817d8db1d9",
+                "name": "Pisang Bantal Strobery + Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -128,7 +128,7 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Mie ayam pangsit yang enak.",
+                    "content": "Pisang Bantal Strobery + Es Teh yang enak.",
                 },
             },
         ],
@@ -140,8 +140,8 @@ USERS = [
         "name": "Osin",
         "foods": [
             {
-                "id": "6e2b46ad-0617-46a8-af12-cf6f7de94d26",
-                "name": "Matcha Latte",
+                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
+                "name": "Nasi Goreng Udang",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -149,12 +149,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Matcha latte yang lezat dan menyegarkan.",
+                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "81986805-f023-4027-a095-04f704900995",
-                "name": "Gembul Choco",
+                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
+                "name": "Bubur Ayam Kuah Kuning",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -162,12 +162,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Gembul Choco yang manis dan memuaskan.",
+                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
+                "name": "Nasi Ikan Baronang Bakar + Sup",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -175,12 +175,12 @@ USERS = [
                         "price": 4,
                         "place": 3,
                     },
-                    "content": "Mie ayam pangsit yang enak.",
+                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
                 },
             },
             {
-                "id": "41dbf87c-6f4d-48a1-a477-f3865d1efcba",
-                "name": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk",
+                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
+                "name": "Sandwich Telur Dadar+Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -188,12 +188,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
+                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "0b77a99e-b53d-4e4d-83c8-2ee729de1ed9",
+                "name": "NASI GORENG SEAFOOD",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -201,7 +201,7 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Mie ayam pangsit yang enak",
+                    "content": "NASI GORENG SEAFOOD yang enak",
                 },
             },
         ],
@@ -213,8 +213,8 @@ USERS = [
         "name": "Nisa",
         "foods": [
             {
-                "id": "6e2b46ad-0617-46a8-af12-cf6f7de94d26",
-                "name": "Matcha Latte",
+                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
+                "name": "Nasi Goreng Udang",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -222,12 +222,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Matcha latte yang lezat dan menyegarkan.",
+                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "81986805-f023-4027-a095-04f704900995",
-                "name": "Gembul Choco",
+                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
+                "name": "Bubur Ayam Kuah Kuning",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -235,12 +235,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Gembul Choco yang manis dan memuaskan.",
+                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
+                "name": "Nasi Ikan Baronang Bakar + Sup",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -248,12 +248,12 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Mie ayam pangsit yang enak.",
+                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
                 },
             },
             {
-                "id": "41dbf87c-6f4d-48a1-a477-f3865d1efcba",
-                "name": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk",
+                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
+                "name": "Sandwich Telur Dadar+Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -261,12 +261,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
+                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "0b77a99e-b53d-4e4d-83c8-2ee729de1ed9",
+                "name": "NASI GORENG SEAFOOD",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -274,7 +274,7 @@ USERS = [
                         "price": 3,
                         "place": 5,
                     },
-                    "content": "Mie ayam pangsit yang enak",
+                    "content": "NASI GORENG SEAFOOD yang enak",
                 },
             },
         ],
@@ -286,8 +286,8 @@ USERS = [
         "name": "Anggi",
         "foods": [
             {
-                "id": "6e2b46ad-0617-46a8-af12-cf6f7de94d26",
-                "name": "Matcha Latte",
+                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
+                "name": "Nasi Goreng Udang",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -295,12 +295,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Matcha latte yang lezat dan menyegarkan.",
+                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "81986805-f023-4027-a095-04f704900995",
-                "name": "Gembul Choco",
+                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
+                "name": "Bubur Ayam Kuah Kuning",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -308,12 +308,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Gembul Choco yang manis dan memuaskan.",
+                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
+                "name": "Nasi Ikan Baronang Bakar + Sup",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -321,12 +321,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Mie ayam pangsit yang enak.",
+                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
                 },
             },
             {
-                "id": "41dbf87c-6f4d-48a1-a477-f3865d1efcba",
-                "name": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk",
+                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
+                "name": "Sandwich Telur Dadar+Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -334,12 +334,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
+                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "0b77a99e-b53d-4e4d-83c8-2ee729de1ed9",
+                "name": "NASI GORENG SEAFOOD",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -347,12 +347,12 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Mie ayam pangsit yang enak",
+                    "content": "NASI GORENG SEAFOOD yang enak",
                 },
             },
             {
-                "id": "25863a81-bf21-4748-a72c-7850d6e44287",
-                "name": "Gado Gado Biasa",
+                "id": "2cf60ca5-5766-4af6-963e-3d5fd04bf511",
+                "name": "Mie Ayam Pangsit Kecil",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -360,12 +360,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Gado gado yang lezat.",
+                    "content": "Mie Ayam Pangsit Kecil",
                 },
             },
             {
-                "id": "43f8b528-f4d3-4e6b-9f1b-8ee1dc1f5447",
-                "name": "Nasi Goreng Sunda Khas Cianjur",
+                "id": "1bd5c38d-36ce-4a1b-97ee-fe4c48df72f4",
+                "name": "DOUBLE BEEF + Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -373,7 +373,7 @@ USERS = [
                         "price": 4,
                         "place": 3,
                     },
-                    "content": "Nasi goreng yang enak dan khas.",
+                    "content": "DOUBLE BEEF + Es Teh yang enak.",
                 },
             },
         ],
@@ -385,8 +385,8 @@ USERS = [
         "name": "Ella",
         "foods": [
             {
-                "id": "6e2b46ad-0617-46a8-af12-cf6f7de94d26",
-                "name": "Matcha Latte",
+                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
+                "name": "Nasi Goreng Udang",
                 "review": {
                     "rating_details": {
                         "flavor": 5,
@@ -394,12 +394,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Matcha latte yang lezat dan menyegarkan.",
+                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "81986805-f023-4027-a095-04f704900995",
-                "name": "Gembul Choco",
+                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
+                "name": "Bubur Ayam Kuah Kuning",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -407,12 +407,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Gembul Choco yang manis dan memuaskan.",
+                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
+                "name": "Nasi Ikan Baronang Bakar + Sup",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -420,12 +420,12 @@ USERS = [
                         "price": 4,
                         "place": 3,
                     },
-                    "content": "Mie ayam pangsit yang enak.",
+                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
                 },
             },
             {
-                "id": "41dbf87c-6f4d-48a1-a477-f3865d1efcba",
-                "name": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk",
+                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
+                "name": "Sandwich Telur Dadar+Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -433,12 +433,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Paket Nasi Ayam Geprek+Teh Kotak/Teh Pucuk yang enak.",
+                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
                 },
             },
             {
-                "id": "52ed6c57-1dab-4fad-88fe-1222862f6828",
-                "name": "Mie Ayam Pangsit Bakso",
+                "id": "0b77a99e-b53d-4e4d-83c8-2ee729de1ed9",
+                "name": "NASI GORENG SEAFOOD",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -446,12 +446,12 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Mie ayam pangsit yang enak",
+                    "content": "NASI GORENG SEAFOOD",
                 },
             },
             {
-                "id": "e35f8d83-a40b-4eeb-bc65-faa8e417aab9",
-                "name": "Nasi Ikan Goreng Free Tempe + Sup Anget",
+                "id": "1b96cd25-0497-44a5-b49e-94f39152b2eb",
+                "name": "Krabby Patty Daging Crispy Telur +Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5,
@@ -459,12 +459,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Nasi ikan goreng yang lezat.",  # Add content here
+                    "content": "Krabby Patty Daging Crispy Telur +Es Teh yang lezat.",  # Add content here
                 },
             },
             {
-                "id": "044229fd-571e-4a07-a20b-50e53c3194bf",
-                "name": "MIE SUIT",
+                "id": "1bccc096-e344-41ee-8af8-5c61891fcd48",
+                "name": "Ikan Palumara",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -472,7 +472,7 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Mie suit yang enak dan kenyal.",  # Add content here
+                    "content": "Ikan Palumara",  # Add content here
                 },
             },
         ],
@@ -484,8 +484,8 @@ USERS = [
         "name": "Sarah",
         "foods": [
             {
-                "id": "4d2988f8-f982-455f-8abb-a955272d384d",
-                "name": "Celebes Dessert (Pisang Ijo Khas Sunday)",
+                "id": "031d3011-b79a-40b1-a7b6-bbb0d7455ab8",
+                "name": "Nasi Lalapan Ayam Crispy",
                 "review": {
                     "rating_details": {
                         "flavor": 5,
@@ -493,12 +493,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Pisang ijo-nya enakk dan segar",
+                    "content": "Nasi Lalapan Ayam Crispy",
                 },
             },
             {
-                "id": "778f5e1a-3bbb-4087-a34a-7c2db056f825",
-                "name": "Nasi Goreng Sunday",
+                "id": "38d2f7a1-3cfa-49e9-888a-5ed04d19c77e",
+                "name": "Pisang Goreng Keju + Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -506,12 +506,12 @@ USERS = [
                         "price": 5,
                         "place": 4,
                     },
-                    "content": "Nasi gorengnya banyak toppignya dan besar porsinya",
+                    "content": "Pisang Goreng Keju + Es Teh dan besar porsinya",
                 },
             },
             {
-                "id": "99a8447e-78a9-4a29-a5c2-071f51197ed2",
-                "name": "Spaghetti Bolognese",
+                "id": "08169f56-ec70-43b7-9968-8ded814082ce",
+                "name": "Nasi Ikan Lele Tepung",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -519,7 +519,7 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Spaghetti Bolognese yang lezat.",
+                    "content": "Nasi Ikan Lele Tepung yang lezat.",
                 },
             },
         ],
@@ -531,8 +531,8 @@ USERS = [
         "name": "Aci",
         "foods": [
             {
-                "id": "b7b7e596-44d0-4095-9b1e-e0cfbd627cf5",
-                "name": "Ayam Kampung Geprek Sambal Matah",
+                "id": "01790273-110f-4f9b-9467-2a8bc5df11d6",
+                "name": "Gado gado",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -540,12 +540,12 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Ayam Kampung Geprek Sambal Matah yang lezat.",
+                    "content": "Gado gado yang lezat.",
                 },
             },
             {
-                "id": "10745431-94cb-4dd3-9968-95529b3bde37",
-                "name": "Mie Kering",
+                "id": "6ca7186c-1a2e-43f6-babc-19ffb21c5cfd",
+                "name": "Pisang Goreng Topping Greentea Keju + Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -553,13 +553,13 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Mie Kering yang lezat.",
+                    "content": "Pisang Goreng Topping Greentea Keju + Es Teh",
                 },
             },
             #
             {
-                "id": "a5213612-c1cb-481b-8d6a-1aa668e0ee2c",
-                "name": "Nasi Goreng Spesial",
+                "id": "03dfb969-f5ee-450e-bbb4-03c28cc257ca",
+                "name": "Iced Coffee Float",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -567,7 +567,7 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Nasi Goreng Spesial yang lezat.",
+                    "content": "Iced Coffee Float yang lezat.",
                 },
             },
         ],
