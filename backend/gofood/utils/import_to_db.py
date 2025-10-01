@@ -109,7 +109,9 @@ class GoFoodDBImporter:
                 categories_created += 1
                 print(f"Created new category: {tag_name}")
 
-        print(f"Categories created: {categories_created}")
+        print(
+            f"✅ Categories processed: {categories_created} new, {len(all_tags) - categories_created} existing"
+        )
         return category_map
 
     def get_primary_category_id(
@@ -188,6 +190,7 @@ class GoFoodDBImporter:
             category_ids = self.get_category_ids_from_tags(str(tags), category_map)
 
         restaurant_data = {
+            "id": safe_get(row.get("UID")),  # Use Excel UID as database ID
             "name": safe_get(
                 row.get("Name", row.get("Restaurant Name")), "Unknown Restaurant"
             ),
@@ -233,7 +236,9 @@ class GoFoodDBImporter:
                 price = 0.0
 
         return {
-            "id": safe_get(row.get("UID")),
+            "id": safe_get(
+                row.get("UID")
+            ),  # Use Excel UID as database ID for consistency
             "name": safe_get(row.get("Food Name"), "Unknown Food"),
             "description": safe_get(row.get("Description")),
             "price": price,
@@ -242,28 +247,42 @@ class GoFoodDBImporter:
 
     def get_or_create_restaurant(self, restaurant_data: Dict[str, Any]) -> Restaurant:
         """Get existing restaurant or create new one."""
-        # Try to find existing restaurant by name and location
-        existing = Restaurant.query.filter(
-            Restaurant.name == restaurant_data["name"],
-            Restaurant.latitude == restaurant_data["latitude"],
-            Restaurant.longitude == restaurant_data["longitude"],
-        ).first()
+        # Try to find by Excel UID (now used as ID)
+        restaurant_id = restaurant_data.get("id")
+        if restaurant_id:
+            existing = Restaurant.query.filter(Restaurant.id == restaurant_id).first()
+            if existing:
+                print(f"Found existing restaurant: {existing.name}")
+                # Update existing restaurant data
+                for key, value in restaurant_data.items():
+                    if hasattr(existing, key) and value is not None:
+                        setattr(existing, key, value)
+                return existing
 
-        if existing:
-            print(f"Found existing restaurant: {existing.name}")
-            return existing
-
-        # Create new restaurant
+        # Create new restaurant with Excel UID as ID
         restaurant = Restaurant(**restaurant_data)
         db.session.add(restaurant)
         db.session.flush()  # Get ID without committing
         print(f"Created new restaurant: {restaurant.name}")
         return restaurant
 
-    def create_food(
+    def get_or_create_food(
         self, food_data: Dict[str, Any], image_url: Optional[str] = None
     ) -> Food:
-        """Create new food item."""
+        """Get existing food or create new one."""
+        # Try to find by Excel UID (now used as ID)
+        food_id = food_data.get("id")
+        if food_id:
+            existing = Food.query.filter(Food.id == food_id).first()
+            if existing:
+                print(f"Found existing food: {existing.name}")
+                # Update existing food data
+                for key, value in food_data.items():
+                    if hasattr(existing, key) and value is not None:
+                        setattr(existing, key, value)
+                return existing
+
+        # Create new food with Excel UID as ID
         food = Food(**food_data)
         db.session.add(food)
         db.session.flush()  # Get ID without committing
@@ -275,7 +294,7 @@ class GoFoodDBImporter:
             )
             db.session.add(food_image)
 
-        print(f"Created food: {food.name} - {food.price}")
+        print(f"Created food: {food.name}")
         return food
 
     def import_data(self, file_path: Optional[str] = None) -> bool:
@@ -293,9 +312,11 @@ class GoFoodDBImporter:
             return False
 
         try:
-            categories_created = 0
-            restaurants_created = 0
-            foods_created = 0
+            categories_new = 0
+            restaurants_new = 0
+            restaurants_updated = 0
+            foods_new = 0
+            foods_updated = 0
 
             # Get outlets and foods sheets
             outlets_df = excel_data.get("Outlets", pd.DataFrame())
@@ -308,6 +329,11 @@ class GoFoodDBImporter:
             # Step 1: Extract and create categories from Tags
             print(f"\n🏷️  Step 1: Processing categories...")
             category_map = self.extract_and_create_categories(outlets_df)
+            print(
+                f"✅ Categories processed successfully. Total categories in map: {len(category_map)}"
+            )
+
+            # Category count is handled in extract_and_create_categories method
 
             # Step 2: Create restaurants from outlets sheet
             print(f"\n🏪 Step 2: Processing {len(outlets_df)} restaurants...")
@@ -317,6 +343,12 @@ class GoFoodDBImporter:
                 restaurant_data, category_ids = self.clean_restaurant_data(
                     outlet_row, category_map
                 )
+
+                # Check if restaurant exists before creating
+                existing_restaurant = Restaurant.query.filter(
+                    Restaurant.id == restaurant_data["id"]
+                ).first()
+
                 restaurant = self.get_or_create_restaurant(restaurant_data)
 
                 # Add categories to restaurant (many-to-many)
@@ -327,14 +359,11 @@ class GoFoodDBImporter:
                 if outlet_uid:
                     restaurant_uid_map[outlet_uid] = restaurant.id
 
-                # Check if this is a new restaurant
-                if restaurant.id not in [
-                    r.id for r in db.session.new if hasattr(r, "id")
-                ]:
-                    # Restaurant existed
-                    pass
+                # Count new vs updated restaurants
+                if not existing_restaurant:
+                    restaurants_new += 1
                 else:
-                    restaurants_created += 1
+                    restaurants_updated += 1
 
             # Step 3: Create foods from foods sheet
             if not foods_df.empty:
@@ -350,26 +379,33 @@ class GoFoodDBImporter:
                     restaurant_id = restaurant_uid_map[restaurant_uid]
                     food_data = self.clean_food_data(food_row, restaurant_id)
 
-                    # Check if food already exists for this restaurant
+                    # Check if food exists before creating
                     existing_food = Food.query.filter(
-                        Food.name == food_data["name"],
-                        Food.restaurant_id == restaurant_id,
+                        Food.id == food_data["id"]
                     ).first()
 
+                    # Use get_or_create_food which handles both new and existing foods by ID
+                    image_url = food_row.get("Image URL")
+                    food = self.get_or_create_food(food_data, image_url)
+
+                    # Count new vs updated foods
                     if not existing_food:
-                        image_url = food_row.get("Image URL")
-                        self.create_food(food_data, image_url)
-                        foods_created += 1
+                        foods_new += 1
                     else:
-                        print(f"Food already exists: {existing_food.name}")
+                        foods_updated += 1
 
             # Commit all changes
             db.session.commit()
 
             print(f"\n✅ Import completed successfully!")
-            print(f"🏷️  Categories created: {len(category_map)}")
-            print(f"📍 Restaurants created: {restaurants_created}")
-            print(f"🍽️  Foods created: {foods_created}")
+            print(f"🏷️  Categories: processed {len(category_map)} unique categories")
+            print(
+                f"🏪 Restaurants: {restaurants_new} new, {restaurants_updated} updated"
+            )
+            print(f"🍽️  Foods: {foods_new} new, {foods_updated} updated")
+            print(
+                f"📊 Total processed: {restaurants_new + restaurants_updated} restaurants, {foods_new + foods_updated} foods"
+            )
 
             return True
 
