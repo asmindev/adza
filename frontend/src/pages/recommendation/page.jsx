@@ -1,15 +1,19 @@
+// src/pages/Recommendation.jsx
 import React, { useEffect, useState } from "react";
 import useSWR from "swr";
-import { apiService } from "../../lib/api";
+import { apiService } from "../detail/components/lib/api";
 import FoodCard from "@/components/food/FoodCard";
 import { useNavigate } from "react-router";
+import LoadingState from "./LoadingState";
+import ErrorState from "./ErrorState";
+import EmptyState from "./EmptyState";
 
 export default function Recommendation() {
     const navigate = useNavigate();
     const [countdown, setCountdown] = useState(60);
     const [redirecting, setRedirecting] = useState(false);
 
-    // Menggunakan SWR untuk mengambil data rekomendasi dengan autentikasi token dari api.js
+    // Menggunakan SWR untuk mengambil data rekomendasi
     const {
         data,
         error,
@@ -28,25 +32,6 @@ export default function Recommendation() {
 
     const foodItems = data?.data?.data?.recommendations || data?.data || [];
 
-    // Timer redirect ke popular foods jika tidak ada rekomendasi atau ada error
-    useEffect(() => {
-        if (!isLoading && (error || foodItems.length === 0)) {
-            setRedirecting(true);
-            const timer = setInterval(() => {
-                setCountdown((prev) => {
-                    if (prev <= 1) {
-                        clearInterval(timer);
-                        navigate("/popular");
-                        return 0;
-                    }
-                    return prev - 1;
-                });
-            }, 1000);
-
-            return () => clearInterval(timer);
-        }
-    }, [isLoading, error, foodItems.length, navigate]);
-
     const handleRefresh = () => {
         setRedirecting(false);
         setCountdown(5);
@@ -54,66 +39,24 @@ export default function Recommendation() {
     };
 
     if (isLoading) {
-        return (
-            <div className="flex justify-center items-center min-h-[400px]">
-                <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-                    <div className="text-lg text-gray-600">
-                        Loading recommendations...
-                    </div>
-                </div>
-            </div>
-        );
+        return <LoadingState />;
     }
 
     if (error) {
-        console.error("Error fetching recommendations:", error);
         return (
-            <div className="flex flex-col justify-center items-center min-h-[400px]">
-                <div className="text-center max-w-md">
-                    <div className="text-red-500 text-lg mb-4">
-                        Rekomendasi belum tersedia
-                    </div>
-                    <div className="text-gray-600 text-sm mb-6">
-                        {error.message ||
-                            "Something went wrong while fetching recommendations"}
-                    </div>
-                    {redirecting ? (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <p className="text-blue-700 text-sm mb-2">
-                                Redirecting to popular foods in {countdown}{" "}
-                                seconds...
-                            </p>
-                            <div className="w-full bg-blue-200 rounded-full h-2">
-                                <div
-                                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
-                                    style={{
-                                        width: `${
-                                            ((5 - countdown) / 5) * 100
-                                        }%`,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ) : null}
-                    <button
-                        onClick={handleRefresh}
-                        className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                        disabled={redirecting}
-                    >
-                        {redirecting ? "Redirecting..." : "Try Again"}
-                    </button>
-                </div>
-            </div>
+            <ErrorState
+                error={error}
+                countdown={countdown}
+                redirecting={redirecting}
+                handleRefresh={handleRefresh}
+            />
         );
     }
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold">Rekomendasi</h1>
-                </div>
+                <h1 className="text-3xl font-bold">Rekomendasi</h1>
             </div>
 
             {foodItems.length > 0 ? (
@@ -123,55 +66,11 @@ export default function Recommendation() {
                     ))}
                 </div>
             ) : (
-                <div className="text-center py-16">
-                    <div className="max-w-md mx-auto">
-                        <svg
-                            className="w-24 h-24 text-gray-300 mx-auto mb-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1}
-                                d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-                            />
-                        </svg>
-                        <h3 className="text-xl font-medium text-gray-600 mb-2">
-                            No recommendations available
-                        </h3>
-                        <p className="text-gray-500 text-sm mb-6">
-                            Start rating some foods to get personalized
-                            recommendations tailored to your taste!
-                        </p>
-                        {redirecting ? (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                <p className="text-blue-700 text-sm mb-2">
-                                    Redirecting to popular foods in {countdown}{" "}
-                                    seconds...
-                                </p>
-                                <div className="w-full bg-blue-200 rounded-full h-2">
-                                    <div
-                                        className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
-                                        style={{
-                                            width: `${
-                                                ((5 - countdown) / 5) * 100
-                                            }%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        ) : null}
-                        <button
-                            onClick={handleRefresh}
-                            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                            disabled={redirecting}
-                        >
-                            {redirecting ? "Redirecting..." : "Check Again"}
-                        </button>
-                    </div>
-                </div>
+                <EmptyState
+                    countdown={countdown}
+                    redirecting={redirecting}
+                    handleRefresh={handleRefresh}
+                />
             )}
         </div>
     );

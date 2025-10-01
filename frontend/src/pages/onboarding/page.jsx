@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { AnimatePresence, motion } from "framer-motion";
-import { apiService } from "@/lib/api";
+import { apiService } from "@/pages/detail/components/lib/api";
 import { useNavigate } from "react-router";
 
 export default function OnboardingPage() {

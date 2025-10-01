@@ -33,7 +33,7 @@ import { foodUpdateSchema } from "../schemas/foodSchema";
 import { Upload, X, ImagePlus } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import useSWR from "swr";
-import apiService from "@/lib/api";
+import apiService from "@/pages/detail/components/lib/api";
 
 export default function EditFoodDialog({
     open,

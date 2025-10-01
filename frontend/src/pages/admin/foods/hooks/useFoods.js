@@ -2,7 +2,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
-import apiService from "@/lib/api";
+import apiService from "@/pages/detail/components/lib/api";
 
 export const useFoods = () => {
     const [pageIndex, setPageIndex] = useState(0);

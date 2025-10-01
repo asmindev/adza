@@ -7,7 +7,7 @@ import {
     CardContent,
 } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
-import { getAllThemeColors } from "@/lib/theme";
+import { getAllThemeColors } from "@/pages/detail/components/lib/theme";
 
 export default function CurrentThemeInfo({ currentTheme }) {
     const themeColors = getAllThemeColors();

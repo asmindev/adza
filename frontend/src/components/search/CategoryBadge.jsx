@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/pages/detail/components/lib/utils";
 
 export default function CategoryBadge({ category, onClick, isActive }) {
     const handleClick = () => {

@@ -15,7 +15,7 @@ import {
     getCurrentTheme,
     setDarkMode,
     setTheme,
-} from "@/lib/theme";
+} from "@/pages/detail/components/lib/theme";
 import ThemeSelector from "./ThemeSelector";
 import DarkModeSelector from "./DarkModeSelector";
 import CurrentThemeInfo from "./CurrentThemeInfo";

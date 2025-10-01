@@ -79,23 +79,23 @@ const menuGroups = [
             },
         ],
     },
-    {
-        label: "Analitik & Laporan",
-        items: [
-            {
-                title: "Statistik",
-                url: "/dashboard/stats",
-                icon: BarChart3,
-                description: "Lihat analitik data",
-            },
-            {
-                title: "Aktivitas",
-                url: "/dashboard/activity",
-                icon: Activity,
-                description: "Monitor aktivitas sistem",
-            },
-        ],
-    },
+    // {
+    //     label: "Analitik & Laporan",
+    //     items: [
+    //         {
+    //             title: "Statistik",
+    //             url: "/dashboard/stats",
+    //             icon: BarChart3,
+    //             description: "Lihat analitik data",
+    //         },
+    //         {
+    //             title: "Aktivitas",
+    //             url: "/dashboard/activity",
+    //             icon: Activity,
+    //             description: "Monitor aktivitas sistem",
+    //         },
+    //     ],
+    // },
     {
         label: "Sistem",
         items: [

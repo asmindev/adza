@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import {
     fetchWithToken,
     useUpdateProfile as useUpdateProfileAPI,
-} from "@/lib/api";
+} from "@/pages/detail/components/lib/api";
 import { UserContext } from "@/contexts/UserContextDefinition";
 
 // Custom hook untuk fetch profile data

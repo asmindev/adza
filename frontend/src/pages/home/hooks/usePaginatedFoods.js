@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { apiService } from "@/lib/api";
+import { apiService } from "@/pages/detail/components/lib/api";
 
 /**
  * Hook untuk mengelola pagination data makanan menggunakan API pagination

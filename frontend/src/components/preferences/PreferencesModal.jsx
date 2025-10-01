@@ -20,8 +20,8 @@ import {
     SheetFooter,
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { apiService } from "@/lib/api";
+import { cn } from "@/pages/detail/components/lib/utils";
+import { apiService } from "@/pages/detail/components/lib/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import useSWR, { mutate } from "swr";
 

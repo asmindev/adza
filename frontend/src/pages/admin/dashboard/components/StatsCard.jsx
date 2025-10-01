@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn } from "@/pages/detail/components/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 export default function StatsCard({
@@ -32,8 +32,8 @@ export default function StatsCard({
         } else {
             return (
                 <div className="flex items-center text-gray-500">
-                    <Minus className="h-4 w-4 mr-1" />
-                    <span>0%</span>
+                    {/* <Minus className="h-4 w-4 mr-1" />
+                    <span>0%</span> */}
                 </div>
             );
         }

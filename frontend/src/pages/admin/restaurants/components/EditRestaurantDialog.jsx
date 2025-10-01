@@ -26,7 +26,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { toast } from "sonner";
 import LocationPicker from "@/components/map/LocationPicker";
 import { editRestaurantSchema } from "../schemas/restaurantSchema";
-import apiService from "@/lib/api";
+import apiService from "@/pages/detail/components/lib/api";
 
 export default function EditRestaurantDialog({
     open,

@@ -1,6 +1,6 @@
 import React from "react";
 import useSWR from "swr";
-import { apiService } from "../../lib/api";
+import { apiService } from "../detail/components/lib/api";
 import FoodCard from "@/components/food/FoodCard";
 
 export default function Popular() {

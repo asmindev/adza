@@ -26,7 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Star } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { UserContext } from "@/contexts/UserContextDefinition";
-import { useSubmitReview } from "@/lib/api";
+import { useSubmitReview } from "@/pages/detail/components/lib/api";
 
 export default function FormReviews({ foodId, onReviewSubmitted }) {
     const [open, setOpen] = useState(false);

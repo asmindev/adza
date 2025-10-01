@@ -7,7 +7,7 @@ import {
     setDarkMode as setLibDarkMode,
     getCurrentDarkMode,
     getSystemDarkMode,
-} from "@/lib/theme";
+} from "@/pages/detail/components/lib/theme";
 
 const ThemeContext = createContext(null);
 

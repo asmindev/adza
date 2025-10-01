@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/pages/detail/components/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 

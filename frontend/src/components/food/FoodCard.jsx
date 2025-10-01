@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Heart, Star, MapPin } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/pages/detail/components/lib/utils";
 import { Separator } from "../ui/separator";
 
 export default function FoodCard({ food, onToggleFavorite }) {

@@ -9,7 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { getAllThemeColors } from "@/lib/theme";
+import { getAllThemeColors } from "@/pages/detail/components/lib/theme";
 
 export default function ThemeSelector({
     currentTheme,
