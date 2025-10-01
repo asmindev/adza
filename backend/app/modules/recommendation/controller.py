@@ -54,9 +54,9 @@ def get_recommendations():
         # Configure hybrid scoring
         rec_system.enable_hybrid_scoring(enable_hybrid)
 
-        logger.info(
-            f"Hybrid scoring: {'enabled' if enable_hybrid else 'disabled'}, alpha={alpha}"
-        )
+        # logger.info(
+        #     f"Hybrid scoring: {'enabled' if enable_hybrid else 'disabled'}, alpha={alpha}"
+        # )
 
         # Generate recommendations using the new API with scores
         recommendations, predicted_scores = rec_system.recommend_with_scores(
@@ -65,30 +65,7 @@ def get_recommendations():
 
         if recommendations is None or len(recommendations) == 0:
             logger.warning(f"User {user_id} tidak ditemukan atau tidak ada rekomendasi")
-            # Fallback to popular foods using the data processor
-            popular_food_ids = rec_system.data_processor.get_popular_foods(top_n=limit)
-            logger.info(f"Generated {len(popular_food_ids)} popular foods as fallback")
-
-            if popular_food_ids:
-                # Import utility functions
-                from .utils import get_food_details_batch, format_foods_response
-
-                # Get complete food details for fallback
-                foods_data = get_food_details_batch(popular_food_ids)
-                fallback_scores = {food_id: 3.5 for food_id in popular_food_ids}
-                formatted_foods = format_foods_response(foods_data, fallback_scores)
-
-                return ResponseHelper.success(
-                    data={
-                        "recommendations": formatted_foods,
-                        "fallback": True,
-                        "hybrid_info": rec_system.get_hybrid_info(),
-                        "system_stats": rec_system.get_system_stats(),
-                        "message": "Menggunakan makanan populer karena tidak ada rekomendasi personal",
-                    }
-                )
-            else:
-                return ResponseHelper.not_found("No recommendations available")
+            return ResponseHelper.not_found("No recommendations found")
 
         # Import utility functions
         from .utils import get_food_details_batch, format_foods_response

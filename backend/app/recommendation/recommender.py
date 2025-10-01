@@ -511,21 +511,6 @@ class Recommendations:
             user_context = self._get_user_context(user_id)
             exclude_foods = user_context["rated_foods"]
 
-            # Handle new users with few ratings (fallback doesn't have predicted scores)
-            if user_context["is_new_user"]:
-                logger.info(
-                    f"New user detected ({user_context['rating_count']} ratings), using fallback"
-                )
-                fallback_foods = self._get_fallback_recommendations(
-                    user_id, top_n, exclude_foods
-                )
-                # PERBAIKAN: Fallback scores dynamic pakai global_mean
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
-                return fallback_foods, fallback_scores
-
             # Create local dataset with similar users - PERBAIKAN: Sama seperti recommend, default cosine
             try:
                 sub_ratings_df, sub_pivot_matrix = (
@@ -538,77 +523,31 @@ class Recommendations:
                 )
 
                 if sub_pivot_matrix.empty:
-                    logger.warning("Empty pivot matrix, using fallback recommendations")
-                    fallback_foods = self._get_fallback_recommendations(
-                        user_id, top_n, exclude_foods
-                    )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
-                    return fallback_foods, fallback_scores
+                    return [], {}  # Empty pivot matrix
 
             except Exception as e:
                 logger.error(f"Error creating local dataset: {e}")
-                fallback_foods = self._get_fallback_recommendations(
-                    user_id, top_n, exclude_foods
-                )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
-                return fallback_foods, fallback_scores
+                return [], {}
 
             # Train SVD model on local dataset
             try:
                 if not self.svd_model.fit(sub_pivot_matrix):
-                    logger.warning(
-                        "SVD training failed, using fallback recommendations"
-                    )
-                    fallback_foods = self._get_fallback_recommendations(
-                        user_id, top_n, exclude_foods
-                    )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
-                    return fallback_foods, fallback_scores
+                    return [], {}  # SVD training failed
 
             except Exception as e:
                 logger.error(f"Error training SVD model: {e}")
-                fallback_foods = self._get_fallback_recommendations(
-                    user_id, top_n, exclude_foods
-                )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
-                return fallback_foods, fallback_scores
+                return [], {}
 
             # Get user index in the local dataset
             try:
                 user_idx = self.data_processor.user_mapping.get(user_id)
                 if user_idx is None:
                     logger.warning(f"User {user_id} not found in local dataset mapping")
-                    fallback_foods = self._get_fallback_recommendations(
-                        user_id, top_n, exclude_foods
-                    )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
-                    return fallback_foods, fallback_scores
+                    return [], {}
 
             except Exception as e:
                 logger.error(f"Error getting user index: {e}")
-                fallback_foods = self._get_fallback_recommendations(
-                    user_id, top_n, exclude_foods
-                )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
-                return fallback_foods, fallback_scores
+                return [], {}
 
             # Get item indices to exclude
             exclude_item_indices = []
@@ -627,26 +566,11 @@ class Recommendations:
                 )
 
                 if len(recommendations) == 0:
-                    logger.warning("No SVD recommendations generated, using fallback")
-                    fallback_foods = self._get_fallback_recommendations(
-                        user_id, top_n, exclude_foods
-                    )
-                    fallback_scores = {
-                        food_id: float(self.svd_model.global_mean)
-                        for food_id in fallback_foods
-                    }
-                    return fallback_foods, fallback_scores
+                    return [], {}  # No recommendations
 
             except Exception as e:
                 logger.error(f"Error generating SVD recommendations: {e}")
-                fallback_foods = self._get_fallback_recommendations(
-                    user_id, top_n, exclude_foods
-                )
-                fallback_scores = {
-                    food_id: float(self.svd_model.global_mean)
-                    for food_id in fallback_foods
-                }
-                return fallback_foods, fallback_scores
+                return [], {}
 
             # Convert item indices back to food IDs with scores
             recommended_food_ids = []
