@@ -67,8 +67,8 @@ USERS = [
         "name": "Adza",
         "foods": [
             {
-                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
-                "name": "Nasi Goreng Udang",
+                "id": "1352f7a7-2842-4d12-ac3b-098e4ad13788",
+                "name": "Martabak Kornet Rica Rica Telur Ayam",
                 "review": {
                     "rating_details": {
                         "flavor": 4.5,
@@ -76,12 +76,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
+                    "content": "Martabak Kornet Rica Rica Telur Ayam yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
-                "name": "Bubur Ayam Kuah Kuning",
+                "id": "1e323138-efdc-4bb9-bae1-d021bf9edfce",
+                "name": "KEJU KETAN",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -89,12 +89,12 @@ USERS = [
                         "price": 3.5,
                         "place": 4.0,
                     },
-                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
+                    "content": "KEJU KETAN yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
-                "name": "Nasi Ikan Baronang Bakar + Sup",
+                "id": "7bdfae86-5901-4ac2-bb67-1e46dcb94310",
+                "name": "Martabak Kornet Tripel chesee Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -102,12 +102,12 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
+                    "content": "Martabak Kornet Tripel chesee Telur Bebek yang enak.",
                 },
             },
             {
-                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
-                "name": "Sandwich Telur Dadar+Es Teh",
+                "id": "25a21cef-d91e-49a6-8b88-35778037c49c",
+                "name": "Nasi + Udang + Sayur + Sambal",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -115,12 +115,12 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
+                    "content": "Nasi + Udang + Sayur + Sambal yang enak.",
                 },
             },
             {
-                "id": "108663d2-f89c-42a5-8d14-43817d8db1d9",
-                "name": "Pisang Bantal Strobery + Es Teh",
+                "id": "5147fc6b-8031-4252-b1a0-92e1e490cf26",
+                "name": "Nasi Biasa Ayam Bakar+tempe+sop",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -128,7 +128,7 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Pisang Bantal Strobery + Es Teh yang enak.",
+                    "content": "Nasi Biasa Ayam Bakar+tempe+sop yang enak.",
                 },
             },
         ],
@@ -140,8 +140,8 @@ USERS = [
         "name": "Osin",
         "foods": [
             {
-                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
-                "name": "Nasi Goreng Udang",
+                "id": "1352f7a7-2842-4d12-ac3b-098e4ad13788",
+                "name": "Martabak Kornet Rica Rica Telur Ayam",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -149,12 +149,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
+                    "content": "Martabak Kornet Rica Rica Telur Ayam yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
-                "name": "Bubur Ayam Kuah Kuning",
+                "id": "1e323138-efdc-4bb9-bae1-d021bf9edfce",
+                "name": "KEJU KETAN",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -162,12 +162,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
+                    "content": "KEJU KETAN yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
-                "name": "Nasi Ikan Baronang Bakar + Sup",
+                "id": "7bdfae86-5901-4ac2-bb67-1e46dcb94310",
+                "name": "Martabak Kornet Tripel chesee Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -175,12 +175,12 @@ USERS = [
                         "price": 4,
                         "place": 3,
                     },
-                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
+                    "content": "Martabak Kornet Tripel chesee Telur Bebek yang enak.",
                 },
             },
             {
-                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
-                "name": "Sandwich Telur Dadar+Es Teh",
+                "id": "25a21cef-d91e-49a6-8b88-35778037c49c",
+                "name": "Nasi + Udang + Sayur + Sambal",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -188,7 +188,7 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
+                    "content": "Nasi + Udang + Sayur + Sambal yang enak.",
                 },
             },
             {
@@ -213,8 +213,8 @@ USERS = [
         "name": "Nisa",
         "foods": [
             {
-                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
-                "name": "Nasi Goreng Udang",
+                "id": "1352f7a7-2842-4d12-ac3b-098e4ad13788",
+                "name": "Martabak Kornet Rica Rica Telur Ayam",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -222,12 +222,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
+                    "content": "Martabak Kornet Rica Rica Telur Ayam yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
-                "name": "Bubur Ayam Kuah Kuning",
+                "id": "1e323138-efdc-4bb9-bae1-d021bf9edfce",
+                "name": "KEJU KETAN",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -235,12 +235,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
+                    "content": "KEJU KETAN yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
-                "name": "Nasi Ikan Baronang Bakar + Sup",
+                "id": "7bdfae86-5901-4ac2-bb67-1e46dcb94310",
+                "name": "Martabak Kornet Tripel chesee Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -248,12 +248,12 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
+                    "content": "Martabak Kornet Tripel chesee Telur Bebek yang enak.",
                 },
             },
             {
-                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
-                "name": "Sandwich Telur Dadar+Es Teh",
+                "id": "25a21cef-d91e-49a6-8b88-35778037c49c",
+                "name": "Nasi + Udang + Sayur + Sambal",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -261,7 +261,7 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
+                    "content": "Nasi + Udang + Sayur + Sambal yang enak.",
                 },
             },
             {
@@ -286,8 +286,8 @@ USERS = [
         "name": "Anggi",
         "foods": [
             {
-                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
-                "name": "Nasi Goreng Udang",
+                "id": "1352f7a7-2842-4d12-ac3b-098e4ad13788",
+                "name": "Martabak Kornet Rica Rica Telur Ayam",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -295,12 +295,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
+                    "content": "Martabak Kornet Rica Rica Telur Ayam yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
-                "name": "Bubur Ayam Kuah Kuning",
+                "id": "1e323138-efdc-4bb9-bae1-d021bf9edfce",
+                "name": "KEJU KETAN",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -308,12 +308,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
+                    "content": "KEJU KETAN yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
-                "name": "Nasi Ikan Baronang Bakar + Sup",
+                "id": "7bdfae86-5901-4ac2-bb67-1e46dcb94310",
+                "name": "Martabak Kornet Tripel chesee Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -321,12 +321,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
+                    "content": "Martabak Kornet Tripel chesee Telur Bebek yang enak.",
                 },
             },
             {
-                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
-                "name": "Sandwich Telur Dadar+Es Teh",
+                "id": "25a21cef-d91e-49a6-8b88-35778037c49c",
+                "name": "Nasi + Udang + Sayur + Sambal",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -334,7 +334,7 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
+                    "content": "Nasi + Udang + Sayur + Sambal yang enak.",
                 },
             },
             {
@@ -351,8 +351,8 @@ USERS = [
                 },
             },
             {
-                "id": "2cf60ca5-5766-4af6-963e-3d5fd04bf511",
-                "name": "Mie Ayam Pangsit Kecil",
+                "id": "1843ba6d-00a4-4f87-8650-1593c7c34370",
+                "name": "Mie Ayam Pangsit Bakso",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -360,7 +360,7 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Mie Ayam Pangsit Kecil",
+                    "content": "Mie Ayam Pangsit Bakso",
                 },
             },
             {
@@ -385,8 +385,8 @@ USERS = [
         "name": "Ella",
         "foods": [
             {
-                "id": "005fd1de-022f-43a5-8a7f-f2677201272c",
-                "name": "Nasi Goreng Udang",
+                "id": "1352f7a7-2842-4d12-ac3b-098e4ad13788",
+                "name": "Martabak Kornet Rica Rica Telur Ayam",
                 "review": {
                     "rating_details": {
                         "flavor": 5,
@@ -394,12 +394,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Nasi Goreng Udang yang lezat dan menyegarkan.",
+                    "content": "Martabak Kornet Rica Rica Telur Ayam yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "0af18816-8f2b-42d1-94f7-2bbba515910c",
-                "name": "Bubur Ayam Kuah Kuning",
+                "id": "1e323138-efdc-4bb9-bae1-d021bf9edfce",
+                "name": "KEJU KETAN",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -407,12 +407,12 @@ USERS = [
                         "price": 4,
                         "place": 4.0,
                     },
-                    "content": "Bubur Ayam Kuah Kuning yang manis dan memuaskan.",
+                    "content": "KEJU KETAN yang manis dan memuaskan.",
                 },
             },
             {
-                "id": "073d3ef9-a31c-4190-940f-6716bf1c81c4",
-                "name": "Nasi Ikan Baronang Bakar + Sup",
+                "id": "7bdfae86-5901-4ac2-bb67-1e46dcb94310",
+                "name": "Martabak Kornet Tripel chesee Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -420,12 +420,12 @@ USERS = [
                         "price": 4,
                         "place": 3,
                     },
-                    "content": "Nasi Ikan Baronang Bakar + Sup yang enak.",
+                    "content": "Martabak Kornet Tripel chesee Telur Bebek yang enak.",
                 },
             },
             {
-                "id": "01621fdf-0a6e-42de-b2b2-3c56555d4be5",
-                "name": "Sandwich Telur Dadar+Es Teh",
+                "id": "25a21cef-d91e-49a6-8b88-35778037c49c",
+                "name": "Nasi + Udang + Sayur + Sambal",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -433,7 +433,7 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Sandwich Telur Dadar+Es Teh yang enak.",
+                    "content": "Nasi + Udang + Sayur + Sambal yang enak.",
                 },
             },
             {
@@ -450,8 +450,8 @@ USERS = [
                 },
             },
             {
-                "id": "1b96cd25-0497-44a5-b49e-94f39152b2eb",
-                "name": "Krabby Patty Daging Crispy Telur +Es Teh",
+                "id": "f2b8881d-f892-4114-b1ba-0da3bda4141c",
+                "name": "BEEF BULGOGI",
                 "review": {
                     "rating_details": {
                         "flavor": 5,
@@ -459,12 +459,12 @@ USERS = [
                         "price": 4,
                         "place": 5,
                     },
-                    "content": "Krabby Patty Daging Crispy Telur +Es Teh yang lezat.",  # Add content here
+                    "content": "BEEF BULGOGI Teh yang lezat.",  # Add content here
                 },
             },
             {
-                "id": "1bccc096-e344-41ee-8af8-5c61891fcd48",
-                "name": "Ikan Palumara",
+                "id": "7a4d2518-c57e-4b81-b37b-309ed5ca4e78",
+                "name": "Mie Goreng Bakso + Telur",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -472,7 +472,7 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Ikan Palumara",  # Add content here
+                    "content": "Mie Goreng Bakso + Telur",  # Add content here
                 },
             },
         ],
@@ -484,8 +484,8 @@ USERS = [
         "name": "Sarah",
         "foods": [
             {
-                "id": "031d3011-b79a-40b1-a7b6-bbb0d7455ab8",
-                "name": "Nasi Lalapan Ayam Crispy",
+                "id": "6665468b-9e7e-4ab1-80b5-61af85753917",
+                "name": "Ayam Sambal Bajak",
                 "review": {
                     "rating_details": {
                         "flavor": 5,
@@ -493,12 +493,12 @@ USERS = [
                         "price": 5.0,
                         "place": 4.0,
                     },
-                    "content": "Nasi Lalapan Ayam Crispy",
+                    "content": "Ayam Sambal Bajak yang lezat dan menyegarkan.",
                 },
             },
             {
-                "id": "38d2f7a1-3cfa-49e9-888a-5ed04d19c77e",
-                "name": "Pisang Goreng Keju + Es Teh",
+                "id": "035a735d-bf9d-4263-9432-dc0c41457511",
+                "name": "Lontong Pecel Tempe Tahu Bacem",
                 "review": {
                     "rating_details": {
                         "flavor": 4.0,
@@ -506,12 +506,12 @@ USERS = [
                         "price": 5,
                         "place": 4,
                     },
-                    "content": "Pisang Goreng Keju + Es Teh dan besar porsinya",
+                    "content": "Lontong Pecel Tempe Tahu Bacem dan besar porsinya",
                 },
             },
             {
-                "id": "08169f56-ec70-43b7-9968-8ded814082ce",
-                "name": "Nasi Ikan Lele Tepung",
+                "id": "2e077903-805e-43ca-9864-60d991a75eb0",
+                "name": "Martabak Kornet Rica+Moza Full Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 4,
@@ -519,7 +519,7 @@ USERS = [
                         "price": 4,
                         "place": 4,
                     },
-                    "content": "Nasi Ikan Lele Tepung yang lezat.",
+                    "content": "Martabak Kornet Rica+Moza Full Telur Bebek yang lezat.",
                 },
             },
         ],
@@ -531,8 +531,8 @@ USERS = [
         "name": "Aci",
         "foods": [
             {
-                "id": "01790273-110f-4f9b-9467-2a8bc5df11d6",
-                "name": "Gado gado",
+                "id": "55601544-4e29-4518-a9d5-ad1134ca54b4",
+                "name": "Martabak Sapi Tripel chesee Telur Ayam",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -540,12 +540,12 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Gado gado yang lezat.",
+                    "content": "Martabak Sapi Tripel chesee Telur Ayam yang lezat.",
                 },
             },
             {
-                "id": "6ca7186c-1a2e-43f6-babc-19ffb21c5cfd",
-                "name": "Pisang Goreng Topping Greentea Keju + Es Teh",
+                "id": "4f74e939-5439-4c4b-9f30-a985ef67855b",
+                "name": "Nasi Pecel + Telur + Es Teh",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -553,13 +553,13 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Pisang Goreng Topping Greentea Keju + Es Teh",
+                    "content": "Nasi Pecel + Telur + Es Teh yang lezat.",
                 },
             },
             #
             {
-                "id": "03dfb969-f5ee-450e-bbb4-03c28cc257ca",
-                "name": "Iced Coffee Float",
+                "id": "5321c047-3c42-4bcd-88f9-9004bc7d418b",
+                "name": "Martabak Sapi Mozarella Telur Bebek",
                 "review": {
                     "rating_details": {
                         "flavor": 5.0,
@@ -567,7 +567,7 @@ USERS = [
                         "price": 5,
                         "place": 5,
                     },
-                    "content": "Iced Coffee Float yang lezat.",
+                    "content": "Martabak Sapi Mozarella Telur Bebek yang lezat.",
                 },
             },
         ],
