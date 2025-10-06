@@ -7,17 +7,20 @@ Kumpulan dokumentasi dan tools untuk pengujian evaluasi model SVD recommendation
 ## 📂 File-File yang Tersedia
 
 ### 1. **test_model_evaluation.py** 🧪
+
 Script utama untuk menjalankan full evaluation model SVD dengan train-test split.
 
 **Fitur:**
-- Load data dari database
-- Create user-item matrix
-- Train-test split (80/20) per-user
-- Train SVD model dengan 12 latent factors
-- Evaluate dengan metrik: MAE, RMSE, NDCG@10, Coverage
-- Sample predictions & recommendations
+
+-   Load data dari database
+-   Create user-item matrix
+-   Train-test split (80/20) per-user
+-   Train SVD model dengan 12 latent factors
+-   Evaluate dengan metrik: MAE, RMSE, NDCG@10, Coverage
+-   Sample predictions & recommendations
 
 **Cara menjalankan:**
+
 ```bash
 source .venv/bin/activate
 python simulate/test_model_evaluation.py
@@ -26,15 +29,18 @@ python simulate/test_model_evaluation.py
 ---
 
 ### 2. **debug_predictions.py** 🔍
+
 Script untuk debugging detail prediksi model.
 
 **Fitur:**
-- Analisis user/item factors
-- Breakdown calculation prediksi
-- Check bias values
-- Detailed prediction breakdown
+
+-   Analisis user/item factors
+-   Breakdown calculation prediksi
+-   Check bias values
+-   Detailed prediction breakdown
 
 **Cara menjalankan:**
+
 ```bash
 python simulate/debug_predictions.py
 ```
@@ -42,16 +48,19 @@ python simulate/debug_predictions.py
 ---
 
 ### 3. **ringkasan_alur_pengujian.py** 📋
+
 Ringkasan text-based alur pengujian model (8 steps).
 
 **Isi:**
-- Overview pengujian
-- Step-by-step explanation
-- Metrik evaluasi
-- Technical improvements
-- Hasil akhir
+
+-   Overview pengujian
+-   Step-by-step explanation
+-   Metrik evaluasi
+-   Technical improvements
+-   Hasil akhir
 
 **Cara menjalankan:**
+
 ```bash
 python simulate/ringkasan_alur_pengujian.py
 ```
@@ -59,15 +68,18 @@ python simulate/ringkasan_alur_pengujian.py
 ---
 
 ### 4. **diagram_alur_visual.py** 🎨
+
 Diagram visual ASCII art untuk alur pengujian.
 
 **Isi:**
-- Flowchart visual
-- Formula prediksi
-- Perbandingan bias dampening
-- Interpretasi metrik
+
+-   Flowchart visual
+-   Formula prediksi
+-   Perbandingan bias dampening
+-   Interpretasi metrik
 
 **Cara menjalankan:**
+
 ```bash
 python simulate/diagram_alur_visual.py
 ```
@@ -75,16 +87,19 @@ python simulate/diagram_alur_visual.py
 ---
 
 ### 5. **ALUR_PENGUJIAN_MODEL.md** 📖
+
 Dokumentasi lengkap dalam format Markdown.
 
 **Isi:**
-- Diagram alur detail
-- Penjelasan setiap step
-- Formula matematika
-- Key concepts
-- Best practices
+
+-   Diagram alur detail
+-   Penjelasan setiap step
+-   Formula matematika
+-   Key concepts
+-   Best practices
 
 **Cara membaca:**
+
 ```bash
 cat simulate/ALUR_PENGUJIAN_MODEL.md
 # atau buka di text editor/VS Code
@@ -95,7 +110,7 @@ cat simulate/ALUR_PENGUJIAN_MODEL.md
 ## 🔄 Alur Pengujian (Ringkas)
 
 ```
-DATABASE → Load Data → Pivot Matrix → Train/Test Split 
+DATABASE → Load Data → Pivot Matrix → Train/Test Split
     ↓
 Train SVD → Predict Test → Evaluate Metrics → Results
 ```
@@ -137,28 +152,32 @@ Train SVD → Predict Test → Evaluate Metrics → Results
 ## 🎯 Key Metrics
 
 ### MAE (Mean Absolute Error)
-- **Formula:** `mean(|predicted - actual|)`
-- **Result:** 0.365 bintang
-- **Artinya:** Model rata-rata meleset 0.37 bintang
-- **Threshold:** < 0.5 = Excellent ⭐⭐⭐⭐⭐
+
+-   **Formula:** `mean(|predicted - actual|)`
+-   **Result:** 0.365 bintang
+-   **Artinya:** Model rata-rata meleset 0.37 bintang
+-   **Threshold:** < 0.5 = Excellent ⭐⭐⭐⭐⭐
 
 ### RMSE (Root Mean Squared Error)
-- **Formula:** `sqrt(mean((predicted - actual)²))`
-- **Result:** 0.450 bintang
-- **Artinya:** Penalize error besar, nilai konsisten
-- **Threshold:** < 0.7 = Excellent ⭐⭐⭐⭐⭐
+
+-   **Formula:** `sqrt(mean((predicted - actual)²))`
+-   **Result:** 0.450 bintang
+-   **Artinya:** Penalize error besar, nilai konsisten
+-   **Threshold:** < 0.7 = Excellent ⭐⭐⭐⭐⭐
 
 ### NDCG@10 (Normalized DCG)
-- **Formula:** `DCG@10 / IDCG@10`
-- **Result:** 0.984 (98.4%)
-- **Artinya:** Ranking quality hampir sempurna!
-- **Threshold:** > 0.8 = Excellent ⭐⭐⭐⭐⭐
+
+-   **Formula:** `DCG@10 / IDCG@10`
+-   **Result:** 0.984 (98.4%)
+-   **Artinya:** Ranking quality hampir sempurna!
+-   **Threshold:** > 0.8 = Excellent ⭐⭐⭐⭐⭐
 
 ---
 
 ## 🔧 Technical Improvements
 
 ### 1. Bias Dampening (Shrinkage)
+
 ```python
 # Problem: bias terlalu besar → prediksi > 5.0
 user_bias *= 0.7  # Kurangi 30%
@@ -166,10 +185,12 @@ item_bias *= 0.7  # Kurangi 30%
 ```
 
 **Hasil:**
-- ❌ Sebelum: Semua prediksi 5.000 (overfitting)
-- ✅ Sesudah: Variasi 4.659-4.965 (realistic)
+
+-   ❌ Sebelum: Semua prediksi 5.000 (overfitting)
+-   ✅ Sesudah: Variasi 4.659-4.965 (realistic)
 
 ### 2. CSR Sparse Matrix
+
 ```python
 if sparsity > 0.8:
     sparse_matrix = csr_matrix(training_matrix)
@@ -177,13 +198,15 @@ if sparsity > 0.8:
 ```
 
 **Benefit:**
-- Hemat memori (hanya simpan non-zero)
-- Lebih cepat untuk data sparse
+
+-   Hemat memori (hanya simpan non-zero)
+-   Lebih cepat untuk data sparse
 
 ### 3. Per-User Train-Test Split
-- Setiap user berkontribusi ke test set
-- Evaluasi lebih representative
-- Model generalize ke semua user
+
+-   Setiap user berkontribusi ke test set
+-   Evaluasi lebih representative
+-   Model generalize ke semua user
 
 ---
 
@@ -212,20 +235,22 @@ python simulate/debug_predictions.py
 ## 📝 Catatan Penting
 
 ### Formula Prediksi Akhir:
+
 ```python
-prediction = global_mean 
+prediction = global_mean
            + (user_bias × 0.7)      # dampening
-           + (item_bias × 0.7)      # dampening  
+           + (item_bias × 0.7)      # dampening
            + dot(user_vector, item_vector)
-           
+
 # Clipped to [1.0, 5.0]
 ```
 
 ### Kapan Model Perlu Re-evaluasi?
-- ✅ Ada data baru (ratings bertambah signifikan)
-- ✅ Performance drop di production
-- ✅ Perubahan pada algoritma
-- ✅ Tuning hyperparameters
+
+-   ✅ Ada data baru (ratings bertambah signifikan)
+-   ✅ Performance drop di production
+-   ✅ Perubahan pada algoritma
+-   ✅ Tuning hyperparameters
 
 ---
 
@@ -241,11 +266,11 @@ Jika ada pertanyaan atau masalah:
 
 ## ✅ Checklist Before Production
 
-- [x] Model trained successfully
-- [x] Evaluation metrics excellent (MAE < 0.5, NDCG > 0.8)
-- [x] No overfitting (bias dampening works)
-- [x] Efficient for sparse data (CSR optimization)
-- [x] Sample predictions verified
-- [x] Recommendations diverse (not all 5.0)
+-   [x] Model trained successfully
+-   [x] Evaluation metrics excellent (MAE < 0.5, NDCG > 0.8)
+-   [x] No overfitting (bias dampening works)
+-   [x] Efficient for sparse data (CSR optimization)
+-   [x] Sample predictions verified
+-   [x] Recommendations diverse (not all 5.0)
 
 **Status: 🎉 READY FOR PRODUCTION!**

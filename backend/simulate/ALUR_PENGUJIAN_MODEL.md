@@ -1,6 +1,7 @@
 # 🧪 ALUR PENGUJIAN MODEL SVD - DOKUMENTASI LENGKAP
 
 ## 📋 Ringkasan
+
 Script ini melakukan **pengujian evaluasi model SVD** untuk sistem rekomendasi menggunakan metode **train-test split** dan berbagai metrik evaluasi.
 
 ---
@@ -220,6 +221,7 @@ Script ini melakukan **pengujian evaluasi model SVD** untuk sistem rekomendasi m
 ## 📊 METRIK EVALUASI DETAIL
 
 ### 1. **MAE (Mean Absolute Error)**
+
 ```
 Formula: Σ|predicted - actual| / n
 
@@ -239,6 +241,7 @@ Result: MAE = 0.365
 ```
 
 ### 2. **RMSE (Root Mean Squared Error)**
+
 ```
 Formula: √(Σ(predicted - actual)² / n)
 
@@ -257,6 +260,7 @@ Result: RMSE = 0.450
 ```
 
 ### 3. **NDCG@10 (Normalized Discounted Cumulative Gain)**
+
 ```
 Formula: DCG@k / IDCG@k
 
@@ -281,6 +285,7 @@ Result: NDCG@10 = 0.984
 ```
 
 ### 4. **Coverage**
+
 ```
 Formula: count(predictions ≥ threshold) / total_items
 
@@ -298,6 +303,7 @@ Result: Coverage = 154.3%
 ## 🔑 KEY CONCEPTS
 
 ### **Bias Dampening (Shrinkage)**
+
 ```python
 # Problem: Bias terlalu besar → prediksi melewati batas
 user_bias = user_mean - global_mean  # Bisa sangat besar
@@ -311,6 +317,7 @@ item_bias *= 0.7  # Kurangi 30%
 ```
 
 ### **CSR Sparse Matrix Optimization**
+
 ```python
 # Untuk data dengan sparsity > 80%
 if sparsity > 0.8:
@@ -324,6 +331,7 @@ else:
 ```
 
 ### **Train-Test Split Strategy**
+
 ```
 Kenapa per-user random split?
 ✓ Setiap user berkontribusi ke test set
@@ -379,9 +387,9 @@ python simulate/debug_predictions.py
 
 Script ini memberikan **evaluasi komprehensif** terhadap model SVD dengan:
 
-✅ **Akurasi Prediksi** (MAE, RMSE) - Seberapa akurat prediksi rating  
-✅ **Kualitas Ranking** (NDCG) - Seberapa baik mengurutkan rekomendasi  
-✅ **Coverage** - Seberapa banyak items bisa direkomendasi  
-✅ **Visualisasi** - Sample predictions & recommendations  
+✅ **Akurasi Prediksi** (MAE, RMSE) - Seberapa akurat prediksi rating
+✅ **Kualitas Ranking** (NDCG) - Seberapa baik mengurutkan rekomendasi
+✅ **Coverage** - Seberapa banyak items bisa direkomendasi
+✅ **Visualisasi** - Sample predictions & recommendations
 
 Model saat ini: **PRODUCTION READY** dengan performa excellent! 🎉

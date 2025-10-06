@@ -28,7 +28,7 @@ STEP 3: TRAIN-TEST SPLIT
     ├─ Test ratio: 20%
     ├─ Training: 322 ratings (81%)
     └─ Test: 75 ratings (19%)
-    
+
     Kenapa per-user?
     → Setiap user berkontribusi ke test
     → Evaluasi lebih representative
@@ -42,31 +42,31 @@ STEP 4: TRAIN SVD MODEL
     │   └─ item_factors: 35×12
     ├─ Explained variance: 82.7%
     └─ Use CSR sparse matrix (efficient)
-    
+
     Prediction Formula:
-    pred = global_mean + (user_bias × 0.7) + (item_bias × 0.7) 
+    pred = global_mean + (user_bias × 0.7) + (item_bias × 0.7)
            + dot(user_vector, item_vector)
-           
+
     Bias Dampening (0.7) → Prevent overfitting
 
 STEP 5: EVALUATE ON TEST SET
     Metrik yang dihitung:
-    
+
     1. MAE (Mean Absolute Error)
        ├─ Formula: mean(|predicted - actual|)
        ├─ Result: 0.365
        └─ Artinya: Error rata-rata 0.37 bintang
-    
+
     2. RMSE (Root Mean Squared Error)
        ├─ Formula: sqrt(mean((predicted - actual)²))
        ├─ Result: 0.450
        └─ Artinya: Penalize error besar, nilai konsisten
-    
+
     3. NDCG@10 (Normalized DCG)
        ├─ Formula: DCG / IDCG
        ├─ Result: 0.984
        └─ Artinya: Ranking quality hampir sempurna!
-    
+
     4. Coverage
        ├─ Formula: count(pred ≥ 3.0) / n_items
        └─ Result: 154.3%
@@ -76,21 +76,21 @@ STEP 6: INTERPRET RESULTS
     ├─ MAE < 0.5    → ⭐⭐⭐⭐⭐ Excellent
     ├─ RMSE < 0.7   → ⭐⭐⭐⭐⭐ Excellent
     └─ NDCG > 0.8   → ⭐⭐⭐⭐⭐ Excellent
-    
+
     Overall: 🎉 EXCELLENT - Production Ready!
 
 STEP 7: SAMPLE PREDICTIONS
     Verifikasi dengan sample user:
-    
+
     Food Index  Actual    Predicted   Error
     ----------------------------------------
     1           4.12      4.031       0.089
-    
+
     → Prediksi akurat!
 
 STEP 8: GENERATE RECOMMENDATIONS
     Top-10 recommendations untuk sample user:
-    
+
     Rank  Food Index  Predicted Rating
     ------------------------------------
     1     28          4.965
@@ -99,7 +99,7 @@ STEP 8: GENERATE RECOMMENDATIONS
     4     34          4.790
     5     31          4.790
     ...
-    
+
     → Variasi rating menunjukkan model tidak overfit
     → Sebelum perbaikan: semua 5.000 (overfitting!)
     → Setelah bias dampening: variasi 4.6-5.0 ✓
@@ -112,12 +112,12 @@ MAE (Mean Absolute Error):
     • Mudah dipahami: rata-rata selisih dalam bintang
     • 0.365 = model rata-rata meleset ~0.4 bintang
     • Threshold: <0.5 = Excellent
-    
+
 RMSE (Root Mean Squared Error):
     • Penalize error besar lebih keras
     • Jika RMSE >> MAE → ada outlier predictions
     • Di sini: RMSE (0.45) ≈ MAE (0.365) → konsisten ✓
-    
+
 NDCG@10 (Normalized Discounted Cumulative Gain):
     • Mengukur RANKING quality, bukan accuracy
     • 0.984 = 98.4% perfect ranking!

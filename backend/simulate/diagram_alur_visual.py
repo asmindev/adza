@@ -158,12 +158,12 @@ DIAGRAM ALUR PENGUJIAN MODEL SVD - VISUAL SEDERHANA
 ═══════════════════════════════════════════════════
 
 📐 FORMULA PREDIKSI:
-   
-   prediction = global_mean 
+
+   prediction = global_mean
               + (user_bias × 0.7)      ← dampening
               + (item_bias × 0.7)      ← dampening
               + dot(user_vector, item_vector)
-              
+
    Clipped to [1.0, 5.0]
 
 
@@ -179,7 +179,7 @@ DIAGRAM ALUR PENGUJIAN MODEL SVD - VISUAL SEDERHANA
    │      = 5.462                           │
    │      → clip to 5.0 (OVERFITTING!)     │
    └────────────────────────────────────────┘
-   
+
    Dengan dampening (×0.7):
    ┌────────────────────────────────────────┐
    │ user_bias = 0.712 × 0.7 = 0.498       │
@@ -203,7 +203,7 @@ DIAGRAM ALUR PENGUJIAN MODEL SVD - VISUAL SEDERHANA
    │                                        │
    │ < 0.5 → ⭐⭐⭐⭐⭐ EXCELLENT                │
    └────────────────────────────────────────┘
-   
+
    RMSE (Root Mean Squared Error)
    ┌────────────────────────────────────────┐
    │ √(Σ (predicted - actual)² / n)         │
@@ -214,7 +214,7 @@ DIAGRAM ALUR PENGUJIAN MODEL SVD - VISUAL SEDERHANA
    │ RMSE ≈ MAE → konsisten ✓               │
    │ < 0.7 → ⭐⭐⭐⭐⭐ EXCELLENT                │
    └────────────────────────────────────────┘
-   
+
    NDCG@10 (Normalized DCG)
    ┌────────────────────────────────────────┐
    │ DCG@10 / IDCG@10                       │
@@ -229,13 +229,13 @@ DIAGRAM ALUR PENGUJIAN MODEL SVD - VISUAL SEDERHANA
 ✅ KESIMPULAN:
 
    Model SVD dengan 12 latent factors:
-   
+
    ✓ Akurat (MAE 0.365)
    ✓ Konsisten (RMSE 0.450)
    ✓ Ranking excellent (NDCG 0.984)
    ✓ Tidak overfit (bias dampening works!)
    ✓ Efficient (CSR sparse matrix)
-   
+
    STATUS: 🎉 PRODUCTION READY!
 
 """
