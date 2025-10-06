@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Tuple, Dict, Optional
 from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import ndcg_score
 from sklearn.preprocessing import StandardScaler
 from scipy.sparse import csr_matrix
 import warnings
@@ -105,7 +106,7 @@ class LocalSVDModel:
 
     def fit(self, pivot_matrix: pd.DataFrame) -> bool:
         """
-        Train SVD model on pivot matrix
+        Train SVD model on pivot matrix with CSR optimization for sparse data
 
         Args:
             pivot_matrix: User-item pivot matrix
@@ -130,10 +131,13 @@ class LocalSVDModel:
                 f"sparsity: {self.sparsity:.3f}"
             )
 
+            # Store rating matrix untuk smart re-ranking
+            self.rating_matrix = pivot_matrix.values.astype(np.float32)
+
             # Prepare matrix
             centered_matrix, original_matrix = self._prepare_matrix(pivot_matrix)
 
-            # PERBAIKAN: Auto-adjust n_components berdasarkan sparsity untuk akurasi lebih baik
+            # Auto-adjust n_components berdasarkan sparsity untuk akurasi lebih baik
             max_components = min(self.n_components, min(self.n_users, self.n_items) - 1)
             if self.sparsity > 0.95:
                 max_components = min(
@@ -170,15 +174,22 @@ class LocalSVDModel:
                     training_matrix, nan=0.0, posinf=0.0, neginf=0.0
                 )
 
-                # Fit the model
-                user_factors = self.svd_model.fit_transform(training_matrix)
+                # OPTIMIZATION: Use CSR sparse matrix for very sparse data
+                if self.sparsity > 0.8:
+                    logger.info("Using CSR sparse matrix for efficiency")
+                    sparse_matrix = csr_matrix(training_matrix)
+                    user_factors = self.svd_model.fit_transform(sparse_matrix)
+                else:
+                    # For denser matrices, use dense array
+                    user_factors = self.svd_model.fit_transform(training_matrix)
+
                 item_factors = self.svd_model.components_.T
 
                 self.user_factors = user_factors
                 self.item_factors = item_factors
                 self.is_fitted = True
 
-                # PERBAIKAN: Early stopping jika explained variance rendah
+                # Early stopping jika explained variance rendah
                 explained_var = self.svd_model.explained_variance_ratio_.sum()
                 if explained_var < 0.5:
                     logger.warning(
@@ -201,7 +212,7 @@ class LocalSVDModel:
         self, user_idx: int, item_idx: int, common_items: int = 0
     ) -> float:
         """
-        Predict rating for specific user-item pair - PERBAIKAN: Tambah confidence berdasarkan common_items
+        Predict rating for specific user-item pair with balanced bias control
 
         Args:
             user_idx: User index
@@ -225,13 +236,21 @@ class LocalSVDModel:
             user_vector = self.user_factors[user_idx]
             item_vector = self.item_factors[item_idx]
 
-            # Dot product of latent factors
-            prediction = np.dot(user_vector, item_vector)
+            # Dot product of latent factors (interaction term)
+            interaction = np.dot(user_vector, item_vector)
 
-            # Add biases back
+            # Calculate biases with dampening to prevent extreme values
             user_bias = self.user_means[user_idx] - self.global_mean
             item_bias = self.item_means[item_idx] - self.global_mean
-            prediction += self.global_mean + user_bias + item_bias
+
+            # PERBAIKAN: Dampen extreme biases to prevent clipping issues
+            # Apply shrinkage: reduce bias magnitude by 30% for better generalization
+            bias_shrinkage = 0.7
+            user_bias *= bias_shrinkage
+            item_bias *= bias_shrinkage
+
+            # Build prediction: global_mean + biases + interaction
+            prediction = self.global_mean + user_bias + item_bias + interaction
 
             # PERBAIKAN: Weight by confidence jika common_items diketahui (untuk pola rating akurat)
             if common_items > 0:
@@ -296,22 +315,22 @@ class LocalSVDModel:
         user_idx: int,
         top_n: int = 10,
         exclude_items: List[int] = None,
-        min_rating: float = 4.0,
+        min_rating: float = 3.0,
     ) -> List[Tuple[int, float]]:
         """
-        Get top-N recommendations for user
+        Get top-N recommendations for user based on predicted ratings
 
         Args:
             user_idx: User index
             top_n: Number of recommendations to return
             exclude_items: List of item indices to exclude
-            min_rating: Minimum predicted rating threshold
+            min_rating: Minimum predicted rating threshold (default: 3.0)
 
         Returns:
-            List[Tuple[int, float]]: List of (item_idx, predicted_rating) tuples
+            List[Tuple[int, float]]: List of (item_idx, predicted_rating) tuples sorted by rating descending
         """
         try:
-            # Get all predictions for user
+            # Get all predictions for user (already sorted by rating descending)
             predictions = self.predict_for_user(user_idx, exclude_items)
 
             # Filter by minimum rating
@@ -320,16 +339,19 @@ class LocalSVDModel:
                 for item_idx, rating in predictions
                 if rating >= min_rating
             ]
+
+            if not filtered_predictions:
+                logger.warning(
+                    f"No predictions above min_rating={min_rating} for user {user_idx}"
+                )
+                return []
+
             logger.info(
-                f"\n\nFiltered predictions======================================================: {filtered_predictions}\n\n"
+                f"Filtered predictions (min_rating={min_rating}): {len(filtered_predictions)} items"
             )
-            user_avg = self.user_means[user_idx]
-            filtered_predictions = [
-                (i, max(1.0, r - (user_avg - r) * 0.2)) for i, r in filtered_predictions
-            ]  # Dampen low preds
-            return sorted(filtered_predictions, key=lambda x: x[1], reverse=True)[
-                :top_n
-            ]
+
+            # Return top N recommendations (already sorted by predicted rating)
+            return filtered_predictions[:top_n]
 
         except Exception as e:
             logger.error(f"Error getting top recommendations: {e}")
@@ -337,13 +359,13 @@ class LocalSVDModel:
 
     def evaluate_model(self, test_matrix: pd.DataFrame) -> Dict[str, float]:
         """
-        Evaluate model performance on test data - PERBAIKAN: Fix bug exclude_items undefined
+        Evaluate model performance on test data with NDCG
 
         Args:
             test_matrix: Test user-item matrix
 
         Returns:
-            Dict[str, float]: Evaluation metrics
+            Dict[str, float]: Evaluation metrics including NDCG
         """
         try:
             if not self.is_fitted:
@@ -353,14 +375,35 @@ class LocalSVDModel:
             predictions = []
             actuals = []
 
+            # For NDCG calculation - per user
+            all_ndcg_scores = []
+
             # Get predictions for test data
             for i in range(min(test_matrix.shape[0], self.n_users)):
+                user_predictions = []
+                user_actuals = []
+
                 for j in range(min(test_matrix.shape[1], self.n_items)):
                     actual_rating = test_matrix.iloc[i, j]
                     if actual_rating > 0:  # Only evaluate on known ratings
                         predicted_rating = self.predict_user_item(i, j)
                         predictions.append(predicted_rating)
                         actuals.append(actual_rating)
+                        user_predictions.append(predicted_rating)
+                        user_actuals.append(actual_rating)
+
+                # Calculate NDCG for this user if they have ratings
+                if len(user_predictions) > 1:
+                    try:
+                        # NDCG requires 2D arrays
+                        ndcg = ndcg_score(
+                            [user_actuals],
+                            [user_predictions],
+                            k=min(10, len(user_predictions)),
+                        )
+                        all_ndcg_scores.append(ndcg)
+                    except Exception as e:
+                        logger.debug(f"Could not calculate NDCG for user {i}: {e}")
 
             if len(predictions) == 0:
                 logger.warning("No test predictions to evaluate")
@@ -374,7 +417,10 @@ class LocalSVDModel:
             mse = np.mean((predictions - actuals) ** 2)
             rmse = np.sqrt(mse)
 
-            # PERBAIKAN: Coverage berdasarkan actual recommended items / total
+            # Average NDCG across users
+            avg_ndcg = np.mean(all_ndcg_scores) if all_ndcg_scores else 0.0
+
+            # Coverage berdasarkan actual recommended items / total
             n_recommendable = len([p for p in predictions if p >= 3.0])
             coverage = n_recommendable / self.n_items if self.n_items > 0 else 0.0
 
@@ -382,12 +428,15 @@ class LocalSVDModel:
                 "mae": float(mae),
                 "mse": float(mse),
                 "rmse": float(rmse),
+                "ndcg": float(avg_ndcg),
                 "coverage": float(coverage),
                 "n_predictions": len(predictions),
+                "n_users_evaluated": len(all_ndcg_scores),
             }
 
             logger.info(
-                f"Model evaluation: MAE={mae:.3f}, RMSE={rmse:.3f}, Coverage={coverage:.3f}"
+                f"Model evaluation: MAE={mae:.3f}, RMSE={rmse:.3f}, "
+                f"NDCG@10={avg_ndcg:.3f}, Coverage={coverage:.3f}"
             )
             return metrics
 

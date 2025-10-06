@@ -31,11 +31,15 @@ class RecommendationConfig:
     DEFAULT_TOP_RATED_LIMIT = 10
 
     # SVD Model parameters
-    SVD_N_FACTORS = 100
+    SVD_N_FACTORS = 12
     SVD_N_EPOCHS = 20
     SVD_RANDOM_STATE = 42
 
+    # Recommendation threshold
+    MIN_RATING_THRESHOLD = 3.0  # Minimum predicted rating threshold
+
     # Create model directory if it doesn't exist
+
     @staticmethod
     def initialize():
         os.makedirs(RecommendationConfig.MODEL_PATH, exist_ok=True)

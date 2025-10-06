@@ -7,11 +7,23 @@ from app.utils.response import ResponseHelper
 
 recommendation_blueprint = Blueprint("recommendation", __name__)
 
+# Initialize recommendation system singleton
+_recommender = None
+
+
+def get_recommender():
+    """Get or create recommender instance"""
+    global _recommender
+    if _recommender is None:
+        _recommender = Recommendations()
+        RecommendationConfig.initialize()
+    return _recommender
+
 
 @recommendation_blueprint.route("/recommendation", methods=["GET"])
 @token_required
 def get_recommendations():
-    """Get personalized food recommendations using hybrid collaborative filtering"""
+    """Get personalized food recommendations using SVD collaborative filtering"""
     # Get user_id from the request context from jwt token
     user_id = g.user_id
 
@@ -23,14 +35,11 @@ def get_recommendations():
     limit = request.args.get(
         "limit", default=RecommendationConfig.DEFAULT_RECOMMENDATIONS, type=int
     )
-    alpha = request.args.get(
-        "alpha", default=RecommendationConfig.DEFAULT_FOOD_RESTAURANT_ALPHA, type=float
-    )
-    enable_hybrid = (
-        request.args.get("hybrid", default="true", type=str).lower() == "true"
+    include_scores = (
+        request.args.get("include_scores", default="false", type=str).lower() == "true"
     )
 
-    logger.debug(f"Parameter: limit={limit}, alpha={alpha}, hybrid={enable_hybrid}")
+    logger.debug(f"Parameter: limit={limit}, include_scores={include_scores}")
 
     # Validate limit using config values
     if (
@@ -41,146 +50,107 @@ def get_recommendations():
             f"Limit must be between {RecommendationConfig.MIN_RECOMMENDATIONS} and {RecommendationConfig.MAX_RECOMMENDATIONS}"
         )
 
-    # Validate alpha parameter (0.0 to 1.0)
-    if not (0.0 <= alpha <= 1.0):
-        return ResponseHelper.validation_error(
-            "Alpha parameter must be between 0.0 and 1.0"
-        )
-
     try:
-        # Initialize recommendation system with hybrid scoring
-        rec_system = Recommendations(alpha=alpha)
-
-        # Configure hybrid scoring
-        rec_system.enable_hybrid_scoring(enable_hybrid)
-
-        # logger.info(
-        #     f"Hybrid scoring: {'enabled' if enable_hybrid else 'disabled'}, alpha={alpha}"
-        # )
-
-        # Generate recommendations using the new API with scores
-        recommendations, predicted_scores = rec_system.recommend_with_scores(
-            user_id=user_id, top_n=limit
-        )
-
-        if recommendations is None or len(recommendations) == 0:
-            logger.warning(f"User {user_id} tidak ditemukan atau tidak ada rekomendasi")
-            return ResponseHelper.not_found("No recommendations found")
+        # Get recommender instance
+        recommender = get_recommender()
 
         # Import utility functions
         from .utils import get_food_details_batch, format_foods_response
 
-        # Get complete food details for recommendations
-        foods_data = get_food_details_batch(recommendations)
-        if not foods_data:
-            logger.warning("Failed to get food details for recommendations")
-            return ResponseHelper.not_found("No food details found")
+        if include_scores:
+            # Get recommendations with predicted ratings
+            detailed_recommendations = recommender.recommend_with_scores(
+                user_id=user_id, top_n=limit
+            )
 
-        # Format response with predicted ratings
-        formatted_foods = format_foods_response(foods_data, predicted_scores)
+            if not detailed_recommendations:
+                logger.warning(f"No recommendations found for user {user_id}")
+                return ResponseHelper.success(
+                    data={
+                        "recommendations": [],
+                        "count": 0,
+                    }
+                )
 
-        # Get additional information about the recommendation process
-        hybrid_info = rec_system.get_hybrid_info()
-        system_stats = rec_system.get_system_stats()
+            # Extract food IDs
+            recommended_food_ids = [rec["food_id"] for rec in detailed_recommendations]
 
-        logger.info(
-            f"Mengembalikan {len(recommendations)} rekomendasi untuk user {user_id}"
-        )
-        logger.info(f"Hybrid info: {hybrid_info}")
-        logger.info(
-            f"Restaurant coverage: {system_stats.get('hybrid_coverage', 0)*100:.1f}%"
-        )
+            # Get complete food details for recommendations
+            foods_data = get_food_details_batch(recommended_food_ids)
+            if not foods_data:
+                logger.warning("Failed to get food details for recommendations")
+                return ResponseHelper.success(
+                    data={
+                        "recommendations": [],
+                        "count": 0,
+                    }
+                )
 
-        return ResponseHelper.success(
-            data={
-                "recommendations": formatted_foods,
-                "fallback": False,
-                "hybrid_info": hybrid_info,
-                "system_stats": system_stats,
-            }
-        )
+            # Format response and merge with predicted ratings
+            formatted_foods = format_foods_response(foods_data)
+
+            # Create food_id to index mapping for easy lookup
+            food_id_map = {food["id"]: food for food in formatted_foods}
+
+            # Enrich with predicted ratings
+            enriched_recommendations = []
+            for rec in detailed_recommendations:
+                food_id = rec["food_id"]
+                if food_id in food_id_map:
+                    food_data = food_id_map[food_id].copy()
+                    food_data["predicted_rating"] = rec["predicted_rating"]
+                    food_data["rank"] = rec["rank"]
+                    enriched_recommendations.append(food_data)
+
+            logger.info(
+                f"Mengembalikan {len(enriched_recommendations)} rekomendasi dengan predicted ratings untuk user {user_id}"
+            )
+
+            return ResponseHelper.success(
+                data={
+                    "recommendations": enriched_recommendations,
+                    "count": len(enriched_recommendations),
+                }
+            )
+
+        else:
+            # Legacy mode: only food IDs without scores
+            recommended_food_ids = recommender.recommend(user_id=user_id, top_n=limit)
+
+            if not recommended_food_ids:
+                logger.warning(f"No recommendations found for user {user_id}")
+                return ResponseHelper.success(
+                    data={
+                        "recommendations": [],
+                        "count": 0,
+                    }
+                )
+
+            # Get complete food details for recommendations
+            foods_data = get_food_details_batch(recommended_food_ids)
+            if not foods_data:
+                logger.warning("Failed to get food details for recommendations")
+                return ResponseHelper.success(
+                    data={
+                        "recommendations": [],
+                        "count": 0,
+                    }
+                )
+
+            # Format response
+            formatted_foods = format_foods_response(foods_data)
+
+            logger.info(
+                f"Mengembalikan {len(recommended_food_ids)} rekomendasi untuk user {user_id}"
+            )
+
+            return ResponseHelper.success(
+                data={
+                    "recommendations": formatted_foods,
+                    "count": len(recommended_food_ids),
+                }
+            )
 
     except Exception as e:
         logger.error(f"Error getting recommendations for user {user_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to get recommendations")
-
-
-# before : top-rated
-@recommendation_blueprint.route("/popular", methods=["GET"])
-def get_popular():
-    """Get popular foods based on user ratings"""
-    logger.info("GET /popular - Mengambil makanan populer berdasarkan rating pengguna")
-    try:
-        # Import utility function
-        from .utils import get_food_details_batch, format_foods_response
-
-        # Get top-rated foods using the data processor
-        rec_system_top = Recommendations()
-        top_rated_food_ids = rec_system_top.data_processor.get_popular_foods(
-            top_n=RecommendationConfig.DEFAULT_TOP_RATED_LIMIT
-        )
-        if not top_rated_food_ids:
-            logger.info("Tidak ada makanan teratas ditemukan")
-            return ResponseHelper.not_found("No top-rated foods found")
-
-        # Get complete food details
-        foods_data = get_food_details_batch(top_rated_food_ids)
-        if not foods_data:
-            logger.warning("Failed to get food details for popular foods")
-            return ResponseHelper.not_found("No food details found")
-
-        # Format response as required
-        formatted_foods = format_foods_response(foods_data)
-
-        return ResponseHelper.success(data=formatted_foods)
-
-    except Exception as e:
-        logger.error(f"Error getting top-rated foods: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to get top-rated foods")
-
-
-@recommendation_blueprint.route("/hybrid-info", methods=["GET"])
-def get_hybrid_info():
-    """Get information about the hybrid scoring system"""
-    logger.info("GET /hybrid-info - Mengambil informasi hybrid scoring system")
-    try:
-        # Get alpha parameter from query (optional)
-        alpha = request.args.get(
-            "alpha",
-            default=RecommendationConfig.DEFAULT_FOOD_RESTAURANT_ALPHA,
-            type=float,
-        )
-
-        # Validate alpha parameter
-        if not (0.0 <= alpha <= 1.0):
-            return ResponseHelper.validation_error(
-                "Alpha parameter must be between 0.0 and 1.0"
-            )
-
-        # Initialize recommendation system
-        rec_system = Recommendations(alpha=alpha)
-
-        # Get hybrid info and system stats
-        hybrid_info = rec_system.get_hybrid_info()
-        system_stats = rec_system.get_system_stats()
-
-        # Get rating statistics from data processor
-        rating_stats = rec_system.data_processor.get_rating_statistics()
-
-        return ResponseHelper.success(
-            data={
-                "hybrid_info": hybrid_info,
-                "system_stats": system_stats,
-                "rating_statistics": rating_stats,
-                "config": {
-                    "default_alpha": RecommendationConfig.DEFAULT_FOOD_RESTAURANT_ALPHA,
-                    "min_recommendations": RecommendationConfig.MIN_RECOMMENDATIONS,
-                    "max_recommendations": RecommendationConfig.MAX_RECOMMENDATIONS,
-                    "default_recommendations": RecommendationConfig.DEFAULT_RECOMMENDATIONS,
-                },
-            }
-        )
-
-    except Exception as e:
-        logger.error(f"Error getting hybrid info: {str(e)}")
-        return ResponseHelper.internal_server_error("Failed to get hybrid info")

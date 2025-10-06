@@ -391,54 +391,6 @@ class LocalDataProcessor:
             logger.error(f"Error getting user rated foods: {e}")
             return []
 
-    def get_popular_foods(
-        self, top_n: int = 20, exclude_foods: List[str] = None
-    ) -> List[str]:
-        """
-        Get most popular foods (most rated) as fallback recommendations
-
-        Args:
-            top_n: Number of popular foods to return
-            exclude_foods: Foods to exclude from results
-
-        Returns:
-            List[str]: List of popular food IDs
-        """
-        try:
-            # Load data if not already loaded
-            if self.ratings_df is None:
-                if self.use_hybrid_scoring:
-                    self.ratings_df = self.load_hybrid_ratings_from_db()
-                else:
-                    self.ratings_df = self.load_ratings_from_db()
-
-                if self.ratings_df is None or len(self.ratings_df) == 0:
-                    logger.warning("No ratings data available for popular foods")
-                    return []
-
-            exclude_foods = exclude_foods or []
-
-            # Count ratings per food
-            food_counts = self.ratings_df["food_id"].value_counts()
-
-            # Filter out excluded foods
-            if exclude_foods:
-                food_counts = food_counts.drop(exclude_foods, errors="ignore")
-
-            # Get top N popular foods
-            popular_foods = []
-            for i, (food_id, count) in enumerate(food_counts.items()):
-                if i >= top_n:
-                    break
-                popular_foods.append(str(food_id))
-
-            logger.info(f"Retrieved {len(popular_foods)} popular foods")
-            return popular_foods
-
-        except Exception as e:
-            logger.error(f"Error getting popular foods: {e}")
-            return []
-
     def load_hybrid_ratings_from_db(self) -> pd.DataFrame:
         """
         Load hybrid ratings data combining food and restaurant ratings
