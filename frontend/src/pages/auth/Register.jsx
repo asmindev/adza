@@ -8,7 +8,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Mail, User, Lock, UserPlus } from "lucide-react";
+import {
+    Loader2,
+    Mail,
+    User,
+    Lock,
+    UserPlus,
+    Eye,
+    EyeOff,
+    AlertCircle,
+    CheckCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 // Define Zod validation schema
@@ -36,6 +46,8 @@ const registerSchema = z
 export default function Register() {
     const { user } = useContext(UserContext);
     const navigate = useNavigate();
+    const [showPassword, setShowPassword] = React.useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
     // Redirect if already logged in
     if (user?.email) {
@@ -103,35 +115,41 @@ export default function Register() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-cover bg-center bg-[url('https://akcdn.detik.net.id/community/media/visual/2022/02/03/masakan-indonesia.jpeg?w=1000&q=100')] p-4">
-            {/* Full page overlay */}
-            <div className="absolute inset-0 bg-black/30"></div>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 p-4">
+            {/* Background Image Overlay */}
+            <div
+                className="absolute inset-0 bg-cover bg-center opacity-10"
+                style={{
+                    backgroundImage: `url('https://akcdn.detik.net.id/community/media/visual/2022/02/03/masakan-indonesia.jpeg?w=1000&q=100')`,
+                }}
+            />
 
-            {/* Register Form - Modern Glassmorphism Card */}
-            <Card className="w-full max-w-md z-10 bg-white/10 backdrop-blur-md border-white/20 shadow-xl">
-                <CardHeader className="text-center pb-6">
-                    <div className="inline-block p-4 bg-orange-500/10 backdrop-blur-sm rounded-full mb-3 border border-orange-500/30 mx-auto">
-                        <UserPlus className="text-orange-500 w-8 h-8" />
+            <Card className="relative z-10 w-full max-w-lg shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                <CardHeader className="text-center space-y-4 pb-8">
+                    <div className="mx-auto w-16 h-16 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                        <UserPlus className="w-8 h-8 text-white" />
                     </div>
-                    <CardTitle className="text-2xl font-bold text-white">
-                        Daftar Akun Baru
-                    </CardTitle>
-                    <p className="text-sm text-gray-200 mt-2">
-                        Bergabunglah untuk menjelajahi rekomendasi makanan
-                        terbaik di Kendari
-                    </p>
+                    <div className="space-y-2">
+                        <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
+                            Daftar Akun Baru
+                        </CardTitle>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            Bergabunglah untuk menjelajahi rekomendasi makanan
+                            terbaik di Kendari
+                        </p>
+                    </div>
                 </CardHeader>
 
                 <CardContent className="space-y-6">
                     <form
-                        className="space-y-4"
+                        className="space-y-5"
                         onSubmit={handleSubmit(onSubmit)}
                     >
                         {/* Name Field */}
                         <div className="space-y-2">
                             <Label
                                 htmlFor="name"
-                                className="flex items-center gap-2 text-sm font-medium text-white"
+                                className="text-sm font-semibold text-gray-700 flex items-center gap-2"
                             >
                                 <User className="w-4 h-4" />
                                 Nama Lengkap
@@ -139,12 +157,13 @@ export default function Register() {
                             <Input
                                 id="name"
                                 type="text"
-                                placeholder="Masukkan nama lengkap"
-                                className="bg-white/10 border-white/30 text-white placeholder-gray-300 backdrop-blur-sm focus-visible:border-orange-300 focus-visible:ring-orange-300/50"
+                                placeholder="Masukkan nama lengkap Anda"
+                                className="h-11 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
                                 {...register("name")}
                             />
                             {errors.name && (
-                                <p className="text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.name.message}
                                 </p>
                             )}
@@ -154,7 +173,7 @@ export default function Register() {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="username"
-                                className="flex items-center gap-2 text-sm font-medium text-white"
+                                className="text-sm font-semibold text-gray-700 flex items-center gap-2"
                             >
                                 <User className="w-4 h-4" />
                                 Username
@@ -162,12 +181,13 @@ export default function Register() {
                             <Input
                                 id="username"
                                 type="text"
-                                placeholder="Masukkan username"
-                                className="bg-white/10 border-white/30 text-white placeholder-gray-300 backdrop-blur-sm focus-visible:border-orange-300 focus-visible:ring-orange-300/50"
+                                placeholder="Masukkan username Anda"
+                                className="h-11 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
                                 {...register("username")}
                             />
                             {errors.username && (
-                                <p className="text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.username.message}
                                 </p>
                             )}
@@ -177,7 +197,7 @@ export default function Register() {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="email"
-                                className="flex items-center gap-2 text-sm font-medium text-white"
+                                className="text-sm font-semibold text-gray-700 flex items-center gap-2"
                             >
                                 <Mail className="w-4 h-4" />
                                 Email
@@ -185,12 +205,13 @@ export default function Register() {
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="Masukkan alamat email"
-                                className="bg-white/10 border-white/30 text-white placeholder-gray-300 backdrop-blur-sm focus-visible:border-orange-300 focus-visible:ring-orange-300/50"
+                                placeholder="Masukkan alamat email Anda"
+                                className="h-11 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
                                 {...register("email")}
                             />
                             {errors.email && (
-                                <p className="text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.email.message}
                                 </p>
                             )}
@@ -200,20 +221,36 @@ export default function Register() {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="password"
-                                className="flex items-center gap-2 text-sm font-medium text-white"
+                                className="text-sm font-semibold text-gray-700 flex items-center gap-2"
                             >
                                 <Lock className="w-4 h-4" />
                                 Password
                             </Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                placeholder="Masukkan password"
-                                className="bg-white/10 border-white/30 text-white placeholder-gray-300 backdrop-blur-sm focus-visible:border-orange-300 focus-visible:ring-orange-300/50"
-                                {...register("password")}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Masukkan password Anda"
+                                    className="h-11 pr-10 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
+                                    {...register("password")}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowPassword(!showPassword)
+                                    }
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                             {errors.password && (
-                                <p className="text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.password.message}
                                 </p>
                             )}
@@ -223,20 +260,42 @@ export default function Register() {
                         <div className="space-y-2">
                             <Label
                                 htmlFor="confirmPassword"
-                                className="flex items-center gap-2 text-sm font-medium text-white"
+                                className="text-sm font-semibold text-gray-700 flex items-center gap-2"
                             >
                                 <Lock className="w-4 h-4" />
                                 Konfirmasi Password
                             </Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                placeholder="Masukkan ulang password"
-                                className="bg-white/10 border-white/30 text-white placeholder-gray-300 backdrop-blur-sm focus-visible:border-orange-300 focus-visible:ring-orange-300/50"
-                                {...register("confirmPassword")}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="confirmPassword"
+                                    type={
+                                        showConfirmPassword
+                                            ? "text"
+                                            : "password"
+                                    }
+                                    placeholder="Masukkan ulang password Anda"
+                                    className="h-11 pr-10 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
+                                    {...register("confirmPassword")}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowConfirmPassword(
+                                            !showConfirmPassword
+                                        )
+                                    }
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                             {errors.confirmPassword && (
-                                <p className="text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.confirmPassword.message}
                                 </p>
                             )}
@@ -245,40 +304,40 @@ export default function Register() {
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 disabled:opacity-70 transition-colors"
+                            className="w-full h-11 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70"
                         >
                             {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                <div className="flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
                                     Mendaftar...
-                                </>
+                                </div>
                             ) : (
-                                <>
-                                    <UserPlus className="w-4 h-4 mr-2" />
+                                <div className="flex items-center gap-2">
+                                    <UserPlus className="w-4 h-4" />
                                     Daftar
-                                </>
+                                </div>
                             )}
                         </Button>
                     </form>
 
                     {/* Login Link */}
-                    <div className="relative">
+                    <div className="relative pt-4">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-white/20"></div>
+                            <div className="w-full border-t border-gray-200" />
                         </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white/10 backdrop-blur-sm text-white rounded-md">
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-3 text-gray-500 font-medium">
                                 atau
                             </span>
                         </div>
                     </div>
 
                     <div className="text-center">
-                        <p className="text-sm text-gray-200">
+                        <p className="text-sm text-gray-600">
                             Sudah memiliki akun?{" "}
                             <Link
                                 to="/login"
-                                className="font-medium text-orange-300 hover:text-orange-200 transition-colors"
+                                className="font-semibold text-orange-600 hover:text-orange-700 transition-colors"
                             >
                                 Masuk sekarang
                             </Link>

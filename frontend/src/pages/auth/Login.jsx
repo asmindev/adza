@@ -4,6 +4,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate, Link } from "react-router";
 import { UserContext } from "@/contexts/UserContextDefinition";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+    CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, LogIn, AlertCircle, Salad } from "lucide-react";
 
 // Define Zod validation schema
 const loginSchema = z.object({
@@ -13,6 +24,7 @@ const loginSchema = z.object({
 
 const Login = () => {
     const [serverError, setServerError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const { login } = useContext(UserContext);
     const navigate = useNavigate();
 
@@ -45,179 +57,152 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-cover bg-center bg-[url('https://akcdn.detik.net.id/community/media/visual/2022/02/03/masakan-indonesia.jpeg?w=1000&q=100')]">
-            {/* Full page overlay */}
-            <div className="absolute inset-0 bg-black/30"></div>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-orange-50 p-4">
+            {/* Background Image Overlay */}
+            <div
+                className="absolute inset-0 bg-cover bg-center opacity-10"
+                style={{
+                    backgroundImage: `url('https://akcdn.detik.net.id/community/media/visual/2022/02/03/masakan-indonesia.jpeg?w=1000&q=100')`,
+                }}
+            />
 
-            {/* Login Form - Glassmorphism */}
-            <div className="w-full max-w-md z-10 px-8 py-12 bg-black/10 sm:bg-white/10 sm:rounded-2xl sm:shadow-lg backdrop-blur-sm sm:backdrop-blur-md sm:border border-white/20">
-                <div className="text-center mb-10">
-                    <div className="inline-block p-4 bg-orange-500/10 backdrop-blur-sm rounded-full mb-3 border border-orange-500/30">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-orange-500 size-24"
-                        >
-                            <path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z" />
-                            <path d="M7 21h10" />
-                            <path d="M19.5 12 22 6" />
-                            <path d="M16.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.73 1.62" />
-                            <path d="M11.25 3c.27.1.8.53.74 1.36-.05.83-.93 1.2-.98 2.02-.06.78.33 1.24.72 1.62" />
-                            <path d="M6.25 3c.27.1.8.53.75 1.36-.06.83-.93 1.2-1 2.02-.05.78.34 1.24.74 1.62" />
-                        </svg>
+            <Card className="relative z-10 w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
+                <CardHeader className="text-center space-y-4 pb-8">
+                    <div className="mx-auto w-16 h-16 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                        <Salad
+                            strokeWidth={1.2}
+                            className="size-12c text-white"
+                        />
                     </div>
-                    <h2 className="text-3xl font-bold text-white">
-                        Selamat Datang
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-200">
-                        Masuk untuk menjelajahi rekomendasi makanan di kota
-                        Kendari
-                    </p>
-                </div>
+                    <div className="space-y-2">
+                        <CardTitle className="text-3xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
+                            Selamat Datang
+                        </CardTitle>
+                        <p className="text-gray-600 text-sm leading-relaxed">
+                            Masuk untuk menjelajahi rekomendasi makanan terbaik
+                            di Kendari
+                        </p>
+                    </div>
+                </CardHeader>
 
-                {serverError && (
-                    <div className="mb-6 rounded-md bg-red-400/20 backdrop-blur-sm p-4 border border-red-500/50">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <svg
-                                    className="h-5 w-5 text-red-300"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                            </div>
-                            <div className="ml-3">
-                                <h3 className="text-sm font-medium text-white">
-                                    {serverError}
-                                </h3>
-                            </div>
+                <CardContent className="space-y-6">
+                    {serverError && (
+                        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
+                            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-red-700 font-medium">
+                                {serverError}
+                            </p>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-                    <div>
-                        <label
-                            htmlFor="username"
-                            className="block text-sm font-medium text-white"
-                        >
-                            Username
-                        </label>
-                        <div className="mt-1">
-                            <input
-                                placeholder="Username"
+                    <form
+                        onSubmit={handleSubmit(onSubmit)}
+                        className="space-y-5"
+                    >
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="username"
+                                className="text-sm font-semibold text-gray-700"
+                            >
+                                Username
+                            </Label>
+                            <Input
                                 id="username"
                                 type="text"
-                                autoComplete="username"
-                                className="block w-full rounded-md border border-white/30 bg-white/10 py-3 px-4 text-white placeholder-gray-300 backdrop-blur-sm focus:border-orange-300 focus:ring-orange-300"
+                                placeholder="Masukkan username Anda"
+                                className="h-11 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
                                 {...register("username")}
                             />
                             {errors.username && (
-                                <p className="mt-2 text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.username.message}
                                 </p>
                             )}
                         </div>
-                    </div>
 
-                    <div>
-                        <label
-                            htmlFor="password"
-                            className="block text-sm font-medium text-white"
-                        >
-                            Password
-                        </label>
-                        <div className="mt-1">
-                            <input
-                                id="password"
-                                type="password"
-                                placeholder="Password"
-                                autoComplete="current-password"
-                                className="block w-full rounded-md border border-white/30 bg-white/10 py-3 px-4 text-white placeholder-gray-300 backdrop-blur-sm focus:border-orange-300 focus:ring-orange-300"
-                                {...register("password")}
-                            />
+                        <div className="space-y-2">
+                            <Label
+                                htmlFor="password"
+                                className="text-sm font-semibold text-gray-700"
+                            >
+                                Password
+                            </Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Masukkan password Anda"
+                                    className="h-11 pr-10 border-gray-200 focus:border-orange-400 focus:ring-orange-400/20 transition-all duration-200"
+                                    {...register("password")}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowPassword(!showPassword)
+                                    }
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
                             {errors.password && (
-                                <p className="mt-2 text-sm text-red-300">
+                                <p className="text-sm text-red-600 font-medium flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
                                     {errors.password.message}
                                 </p>
                             )}
                         </div>
-                    </div>
 
-                    <div>
-                        <button
+                        <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="group relative flex w-full justify-center rounded-md bg-orange-500 py-3 px-4 text-sm font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-300 focus:ring-offset-2 disabled:opacity-70 transition-colors"
+                            className="w-full h-11 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70"
                         >
                             {isSubmitting ? (
-                                <>
-                                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                        <svg
-                                            className="h-5 w-5 animate-spin text-white"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                            ></path>
-                                        </svg>
-                                    </span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                     Memproses...
-                                </>
+                                </div>
                             ) : (
-                                "Masuk"
+                                <div className="flex items-center gap-2">
+                                    <LogIn className="w-4 h-4" />
+                                    Masuk
+                                </div>
                             )}
-                        </button>
-                    </div>
-                </form>
+                        </Button>
+                    </form>
+                </CardContent>
 
-                <div className="mt-6">
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-white/20"></div>
+                <CardFooter className="pt-6">
+                    <div className="w-full text-center space-y-4">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-3 text-gray-500 font-medium">
+                                    atau
+                                </span>
+                            </div>
                         </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white/10 backdrop-blur-sm text-white rounded-md">
-                                atau
-                            </span>
-                        </div>
-                    </div>
 
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-200">
+                        <p className="text-sm text-gray-600">
                             Belum memiliki akun?{" "}
                             <Link
                                 to="/register"
-                                className="font-medium text-orange-300 hover:text-orange-200"
+                                className="font-semibold text-orange-600 hover:text-orange-700 transition-colors"
                             >
                                 Daftar sekarang
                             </Link>
                         </p>
                     </div>
-                </div>
-            </div>
+                </CardFooter>
+            </Card>
         </div>
     );
 };
