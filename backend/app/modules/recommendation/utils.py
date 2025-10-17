@@ -126,6 +126,80 @@ def get_food_details_batch(food_ids: List[str]) -> List[Dict[str, Any]]:
         return []
 
 
+def get_popular_foods_data(
+    limit: int = 10, min_ratings: int = 5
+) -> List[Dict[str, Any]]:
+    """
+    Get popular foods based on rating count and total rating score
+
+    Args:
+        limit: Maximum number of foods to return
+        min_ratings: Minimum number of ratings required
+
+    Returns:
+        List of food dictionaries with popularity metrics
+    """
+    try:
+        # Query foods with their rating statistics
+        popular_query = (
+            db.session.query(
+                Food.id,
+                Food.name,
+                Food.description,
+                Food.price,
+                Food.restaurant_id,
+                func.avg(FoodRating.rating).label("average_rating"),
+                func.count(FoodRating.id).label("rating_count"),
+                (func.avg(FoodRating.rating) * func.count(FoodRating.id)).label(
+                    "total_rating_score"
+                ),
+            )
+            .outerjoin(FoodRating, Food.id == FoodRating.food_id)
+            .group_by(Food.id)
+            .having(func.count(FoodRating.id) >= min_ratings)
+            .order_by(
+                (
+                    func.avg(FoodRating.rating) * func.count(FoodRating.id)
+                ).desc(),  # Total rating score
+                func.count(FoodRating.id).desc(),  # Rating count as secondary sort
+                func.avg(FoodRating.rating).desc(),  # Average rating as tertiary sort
+            )
+            .limit(limit)
+        )
+
+        popular_foods = popular_query.all()
+
+        if not popular_foods:
+            logger.info(f"No popular foods found with min_ratings={min_ratings}")
+            return []
+
+        # Convert to list of dictionaries
+        result = []
+        for food in popular_foods:
+            food_dict = {
+                "id": food.id,
+                "name": food.name,
+                "description": food.description,
+                "price": food.price,
+                "restaurant_id": food.restaurant_id,
+                "average_rating": (
+                    float(food.average_rating) if food.average_rating else 0.0
+                ),
+                "rating_count": int(food.rating_count),
+                "total_rating_score": (
+                    float(food.total_rating_score) if food.total_rating_score else 0.0
+                ),
+            }
+            result.append(food_dict)
+
+        logger.info(f"Retrieved {len(result)} popular foods")
+        return result
+
+    except Exception as e:
+        logger.error(f"Error fetching popular foods: {e}")
+        return []
+
+
 def format_foods_response(
     foods_data: List[Dict[str, Any]], predictions: Optional[Dict[str, float]] = None
 ) -> List[Dict[str, Any]]:

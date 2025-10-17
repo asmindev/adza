@@ -154,3 +154,86 @@ def get_recommendations():
     except Exception as e:
         logger.error(f"Error getting recommendations for user {user_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to get recommendations")
+
+
+@recommendation_blueprint.route("/popular", methods=["GET"])
+def get_popular_foods():
+    """Get popular foods based on rating count and total ratings"""
+    try:
+        # Get query parameters
+        limit = request.args.get("limit", default=10, type=int)
+        min_ratings = request.args.get("min_ratings", default=5, type=int)
+
+        # Validate limit
+        if limit < 1 or limit > 50:
+            return ResponseHelper.validation_error("Limit must be between 1 and 50")
+
+        logger.info(
+            f"GET /popular - Getting popular foods with limit={limit}, min_ratings={min_ratings}"
+        )
+
+        # Import utility functions
+        from .utils import (
+            get_popular_foods_data,
+            format_foods_response,
+            get_food_details_batch,
+        )
+
+        # Get popular foods data
+        popular_foods_data = get_popular_foods_data(
+            limit=limit, min_ratings=min_ratings
+        )
+
+        if not popular_foods_data:
+            logger.info("No popular foods found")
+            return ResponseHelper.success(
+                data={
+                    "popular_foods": [],
+                    "count": 0,
+                }
+            )
+
+        # Extract food IDs and popularity metrics
+        food_ids = [food["id"] for food in popular_foods_data]
+        popularity_metrics = {
+            food["id"]: {
+                "rating_count": food["rating_count"],
+                "average_rating": food["average_rating"],
+                "total_rating_score": food["total_rating_score"],
+            }
+            for food in popular_foods_data
+        }
+
+        # Get complete food details
+        foods_data = get_food_details_batch(food_ids)
+        if not foods_data:
+            logger.warning("Failed to get food details for popular foods")
+            return ResponseHelper.success(
+                data={
+                    "popular_foods": [],
+                    "count": 0,
+                }
+            )
+
+        # Format response
+        formatted_foods = format_foods_response(foods_data)
+
+        # Add popularity metrics to each food
+        for food in formatted_foods:
+            metrics = popularity_metrics.get(food["id"], {})
+            food["rating_count"] = metrics.get("rating_count", 0)
+            food["average_rating"] = metrics.get("average_rating", 0.0)
+            food["total_rating_score"] = metrics.get("total_rating_score", 0.0)
+
+        logger.info(f"Returning {len(formatted_foods)} popular foods")
+
+        return ResponseHelper.success(
+            data={
+                "popular_foods": formatted_foods,
+                "count": len(formatted_foods),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting popular foods: {str(e)}")
+        return ResponseHelper.internal_server_error("Failed to get popular foods")
