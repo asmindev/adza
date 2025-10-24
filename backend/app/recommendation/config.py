@@ -4,7 +4,8 @@ Recommendation System Configuration
 
 import os
 import time
-from app.utils import training_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 
 # Configuration class to hold all constants and paths

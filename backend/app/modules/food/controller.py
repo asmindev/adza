@@ -1,7 +1,8 @@
 from flask import Blueprint, request, send_from_directory, current_app, g
 import json
 from app.modules.food.service import FoodService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from app.utils.response import ResponseHelper
 from app.utils.auth import has_login, token_required, admin_required
 

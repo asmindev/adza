@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.modules.rating.models import FoodRating, RestaurantRating
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from sqlalchemy import func
 
 

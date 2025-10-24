@@ -1,6 +1,7 @@
 from app.modules.restaurant.models import Restaurant
 from app.extensions import db
-from app.utils import db_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 
 class RestaurantRepository:

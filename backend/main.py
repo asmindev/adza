@@ -1,5 +1,7 @@
 from app import create_app
-from app.utils import app_logger as logger
+from app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Create the application instance
 app = create_app()

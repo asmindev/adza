@@ -3,7 +3,8 @@ from app.modules.user.models import User
 from app.modules.user.validators import UserValidator, UserBusinessRules
 from app.modules.user.data_service import UserDataService
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.utils import db_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from app.utils.jwt_utils import generate_token
 from typing import Dict, Any, Optional
 

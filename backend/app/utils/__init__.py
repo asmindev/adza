@@ -1,11 +1,4 @@
-from app.utils.logger import (
-    get_logger,
-    app_logger,
-    recommendation_logger,
-    training_logger,
-    api_logger,
-    db_logger,
-)
+from app.utils.logger import get_logger
 from app.utils.response import (
     success_response,
     error_response,
@@ -20,11 +13,6 @@ from app.utils.response import (
 
 __all__ = [
     "get_logger",
-    "app_logger",
-    "recommendation_logger",
-    "training_logger",
-    "api_logger",
-    "db_logger",
     "success_response",
     "error_response",
     "paginated_response",

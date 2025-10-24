@@ -5,7 +5,8 @@ from app.modules.rating.repository import (
 from app.modules.rating.models import FoodRating, RestaurantRating
 from app.modules.rating.validators import RatingValidator
 from app.modules.rating.data_service import RatingDataService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from typing import Dict, Any, List, Optional
 
 

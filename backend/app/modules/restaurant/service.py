@@ -1,7 +1,8 @@
 from app.modules.restaurant.repository import RestaurantRepository
 from app.modules.restaurant.validators import RestaurantValidator
 from app.modules.restaurant.data_service import RestaurantDataService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 
 class RestaurantService:

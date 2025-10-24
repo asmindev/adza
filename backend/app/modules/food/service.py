@@ -1,7 +1,8 @@
 from app.modules.food.repository import FoodRepository
 from app.modules.food.models import Food
 from app.modules.food.data_service import FoodDataService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 import os
 import uuid
 from typing import List, Dict, Optional, Any, Union, Text

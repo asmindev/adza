@@ -4,7 +4,8 @@ from app.modules.restaurant.models import Restaurant
 from app.modules.food.models import Food
 from app.modules.rating.models import FoodRating
 from sqlalchemy import func
-from app.utils import db_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 
 class DashboardService:

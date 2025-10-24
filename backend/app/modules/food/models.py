@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from flask import current_app, url_for
 import uuid
-from app.utils import db_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 
 class Food(db.Model):

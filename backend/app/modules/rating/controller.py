@@ -1,6 +1,7 @@
 from flask import Blueprint, request, g
 from app.modules.rating.service import FoodRatingService, RestaurantRatingService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from app.utils.response import ResponseHelper
 from app.utils.auth import token_required
 

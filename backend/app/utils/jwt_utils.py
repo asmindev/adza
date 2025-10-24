@@ -3,7 +3,8 @@ import datetime
 from flask import current_app
 import os
 from dotenv import load_dotenv
-from app.utils import app_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 load_dotenv()
 

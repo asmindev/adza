@@ -2,7 +2,8 @@ from app.modules.review.repository import ReviewRepository
 from app.modules.review.models import Review
 from app.modules.user.repository import UserRepository
 from app.modules.food.repository import FoodRepository
-from app.utils import db_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 import math
 
 

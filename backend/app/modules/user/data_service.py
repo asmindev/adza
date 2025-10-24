@@ -5,7 +5,8 @@ This handles data aggregation and business logic related to user data presentati
 
 from app.modules.user.models import User
 from app.modules.user.repository import UserRepository
-from app.utils import db_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from typing import Dict, Any, List, Optional
 
 

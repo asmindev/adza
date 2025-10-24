@@ -1,8 +1,10 @@
 from functools import wraps
 from flask import request, g
 from app.utils.jwt_utils import decode_token
-from app.utils import api_logger as logger
+from app.utils import get_logger
 from app.utils.response import ResponseHelper
+
+logger = get_logger(__name__)
 
 
 def has_login(f):

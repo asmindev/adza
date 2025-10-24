@@ -7,7 +7,8 @@ and complex business data logic.
 """
 
 from app.modules.restaurant.repository import RestaurantRepository
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 
 
 class RestaurantDataService:

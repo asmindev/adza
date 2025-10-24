@@ -1,7 +1,8 @@
 from flask import Blueprint, request, g
 from app.recommendation.recommender import Recommendations
 from app.recommendation.config import RecommendationConfig
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from app.utils.auth import token_required
 from app.utils.response import ResponseHelper
 

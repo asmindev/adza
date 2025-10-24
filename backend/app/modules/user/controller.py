@@ -1,7 +1,8 @@
 from flask import Blueprint, request, g
 from app.modules.user.service import UserService
 from app.modules.category.service import UserFavoriteCategoryService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from app.utils.response import ResponseHelper
 from app.utils.auth import (
     token_required,

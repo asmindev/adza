@@ -458,6 +458,7 @@ class LocalSVDModel:
             info = {
                 "fitted": True,
                 "n_components": self.svd_model.n_components,
+                "n_factors": self.svd_model.n_components,  # Alias for consistency
                 "n_users": self.n_users,
                 "n_items": self.n_items,
                 "sparsity": self.sparsity,
@@ -465,6 +466,11 @@ class LocalSVDModel:
                 "explained_variance_ratio": self.svd_model.explained_variance_ratio_.sum(),
                 "total_explained_variance": float(
                     self.svd_model.explained_variance_ratio_.sum()
+                ),
+                "singular_values": (
+                    self.svd_model.singular_values_.tolist()
+                    if hasattr(self.svd_model, "singular_values_")
+                    else []
                 ),
             }
 

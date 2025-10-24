@@ -1,6 +1,7 @@
 from flask import Blueprint
 from app.modules.dashboard.service import DashboardService
-from app.utils import api_logger as logger
+from app.utils import get_logger
+logger = get_logger(__name__)
 from app.utils.response import ResponseHelper
 
 dashboard_blueprint = Blueprint("dashboard", __name__)

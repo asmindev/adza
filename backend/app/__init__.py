@@ -2,12 +2,15 @@ from flask import Flask
 from flask_cors import CORS
 import os
 from dotenv import load_dotenv
-from app.utils import app_logger as logger
+from app.utils import get_logger
 from app.extensions import init_app, db
 from app.modules import register_blueprints
 
 # Load environment variables
 load_dotenv()
+
+# Initialize logger
+logger = get_logger(__name__)
 
 
 def create_app():
