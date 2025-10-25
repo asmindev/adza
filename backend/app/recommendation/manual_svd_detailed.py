@@ -760,7 +760,7 @@ def calculate_evaluation_metrics(
     sample_table.add_column("Squared Error", justify="right", style="red", width=18)
 
     sample_size = min(10, len(actual_ratings))
-    for i in range(sample_size):
+    for i in range(len(actual_ratings)):
         error = abs(actual_ratings[i] - predicted_ratings[i])
         squared_error = (actual_ratings[i] - predicted_ratings[i]) ** 2
 
