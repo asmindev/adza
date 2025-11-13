@@ -176,6 +176,33 @@ class RecommendationService:
             logger.error(f"Error getting food details: {e}")
             return []
 
+    def refresh_data(self) -> Any:
+        """
+        Force refresh recommendation data from database
+        Use this after new ratings are added
+
+        Returns:
+            Dict[str, any]: Response with refresh status
+        """
+        try:
+            logger.info("Refreshing recommendation data from database...")
+            success = self.recommender.force_reload_data()
+
+            if success:
+                stats = self.recommender.get_system_stats()
+                return success_response(
+                    {
+                        "message": "Recommendation data refreshed successfully",
+                        "stats": stats,
+                    }
+                )
+            else:
+                return error_response("Failed to refresh recommendation data", 500)
+
+        except Exception as e:
+            logger.error(f"Error refreshing recommendation data: {e}")
+            return error_response(f"Failed to refresh data: {str(e)}", 500)
+
 
 # Create singleton instance
 recommendation_service = RecommendationService()

@@ -43,7 +43,7 @@ class Recommendations:
         self.svd_model = LocalSVDModel()
         self.is_initialized = False
         self.last_data_load = 0
-        self.cache_duration = 3600  # 1 hour cache
+        self.cache_duration = 0
         self.use_hybrid_scoring = True
 
         # Performance tracking

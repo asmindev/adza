@@ -1219,7 +1219,7 @@ def main():
 
         with app.app_context():
             # Find user "adza" in database
-            target_username = "adza"
+            target_username = "test"
 
             console.print(f"\n[cyan]🔍 Searching for user: {target_username}...[/cyan]")
 

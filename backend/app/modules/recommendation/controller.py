@@ -2,6 +2,7 @@ from flask import Blueprint, request, g
 from app.recommendation.recommender import Recommendations
 from app.recommendation.config import RecommendationConfig
 from app.utils import get_logger
+
 logger = get_logger(__name__)
 from app.utils.auth import token_required
 from app.utils.response import ResponseHelper
@@ -155,6 +156,41 @@ def get_recommendations():
     except Exception as e:
         logger.error(f"Error getting recommendations for user {user_id}: {str(e)}")
         return ResponseHelper.internal_server_error("Failed to get recommendations")
+
+
+@recommendation_blueprint.route("/refresh", methods=["POST"])
+@token_required
+def refresh_recommendation_data():
+    """Force refresh recommendation data from database (admin only or after rating)"""
+    user_id = g.user_id
+
+    logger.info(f"POST /refresh - User {user_id} requesting data refresh")
+
+    try:
+        # Get recommender instance
+        recommender = get_recommender()
+
+        # Force reload data
+        success = recommender.force_reload_data()
+
+        if success:
+            stats = recommender.get_system_stats()
+            logger.info(f"Data refreshed successfully for user {user_id}")
+            return ResponseHelper.success(
+                data={
+                    "message": "Recommendation data refreshed successfully",
+                    "stats": stats,
+                }
+            )
+        else:
+            logger.error(f"Failed to refresh data for user {user_id}")
+            return ResponseHelper.internal_server_error(
+                "Failed to refresh recommendation data"
+            )
+
+    except Exception as e:
+        logger.error(f"Error refreshing recommendation data: {str(e)}")
+        return ResponseHelper.internal_server_error("Failed to refresh data")
 
 
 @recommendation_blueprint.route("/popular", methods=["GET"])
