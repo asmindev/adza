@@ -2,6 +2,7 @@ import React, { useState } from "react";
 
 // Import sections
 import FoodPageHeader from "./components/FoodPageHeader";
+import FoodStatsCards from "./components/FoodStatsCards";
 import FoodListSection from "./sections/FoodListSection";
 import FoodDialogsSection from "./sections/FoodDialogsSection";
 import { useFoods } from "./hooks/useFoods";
@@ -21,6 +22,7 @@ export default function FoodsPage() {
         pageIndex,
         pageSize,
         setPageIndex,
+        handlePageSizeChange,
         searchTerm,
         handleSearch,
         sorting,
@@ -32,6 +34,9 @@ export default function FoodsPage() {
         <div className="space-y-6">
             <FoodPageHeader onAddFood={() => setIsAddDialogOpen(true)} />
 
+            {/* Statistics Cards */}
+            <FoodStatsCards />
+
             <FoodListSection
                 foods={foods}
                 totalCount={totalCount}
@@ -40,6 +45,7 @@ export default function FoodsPage() {
                 pageIndex={pageIndex}
                 pageSize={pageSize}
                 setPageIndex={setPageIndex}
+                handlePageSizeChange={handlePageSizeChange}
                 searchTerm={searchTerm}
                 handleSearch={handleSearch}
                 sorting={sorting}

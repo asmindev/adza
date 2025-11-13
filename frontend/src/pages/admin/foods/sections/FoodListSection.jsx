@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router";
 import {
     Card,
     CardContent,
@@ -8,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import FoodSearchBar from "../components/FoodSearchBar";
 import FoodTable from "../components/FoodTable";
+import PageSizeSelector from "../components/PageSizeSelector";
 import { createFoodColumns } from "../components/FoodTableColumns";
 
 export default function FoodListSection({
@@ -18,6 +20,7 @@ export default function FoodListSection({
     pageIndex,
     pageSize,
     setPageIndex,
+    handlePageSizeChange,
     searchTerm,
     handleSearch,
     sorting,
@@ -25,8 +28,14 @@ export default function FoodListSection({
     setDeleteFoodId,
     setEditFoodData,
 }) {
+    const navigate = useNavigate();
+
     // Create table columns with delete and edit handlers
-    const columns = createFoodColumns(setDeleteFoodId, setEditFoodData);
+    const columns = createFoodColumns(
+        setDeleteFoodId,
+        setEditFoodData,
+        navigate
+    );
 
     return (
         <Card>
@@ -36,10 +45,16 @@ export default function FoodListSection({
                     Kelola koleksi makanan Anda. Anda dapat melihat, mengedit,
                     atau menghapus makanan.
                 </CardDescription>
-                <FoodSearchBar
-                    searchTerm={searchTerm}
-                    onSearch={handleSearch}
-                />
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mt-4">
+                    <FoodSearchBar
+                        searchTerm={searchTerm}
+                        onSearch={handleSearch}
+                    />
+                    <PageSizeSelector
+                        pageSize={pageSize}
+                        onPageSizeChange={handlePageSizeChange}
+                    />
+                </div>
             </CardHeader>
             <CardContent>
                 <FoodTable

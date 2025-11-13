@@ -35,6 +35,10 @@ class FoodDataService:
             ratings_data = FoodDataService._get_food_ratings_aggregated(food)
             food_data["ratings"] = ratings_data
 
+            # Add detailed rating statistics (for admin use)
+            rating_details = FoodDataService._get_food_rating_details(food)
+            food_data["rating_details"] = rating_details
+
             # Add aggregated reviews data
             reviews_data = FoodDataService._get_food_reviews_aggregated(food)
             food_data["reviews"] = reviews_data
@@ -157,6 +161,126 @@ class FoodDataService:
         except Exception as e:
             logger.error(f"Error getting ratings summary for food {food.id}: {str(e)}")
             return {"average": 0.0, "count": 0}
+
+    @staticmethod
+    def _get_food_rating_details(food: Food) -> Dict[str, Any]:
+        """
+        Get detailed rating statistics aggregated from all users
+        This includes breakdown by criteria (flavor, serving, price, place)
+        For admin use only - contains sensitive aggregated data
+        """
+        try:
+            ratings = getattr(food, "ratings", None)
+            if not ratings:
+                return {
+                    "total_ratings": 0,
+                    "average_overall": 0.0,
+                    "criteria_breakdown": {
+                        "flavor": {"average": 0.0, "count": 0},
+                        "serving": {"average": 0.0, "count": 0},
+                        "price": {"average": 0.0, "count": 0},
+                        "place": {"average": 0.0, "count": 0},
+                    },
+                    "rating_distribution": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+                }
+
+            # Collect all ratings and rating_details
+            overall_ratings = []
+            flavor_ratings = []
+            serving_ratings = []
+            price_ratings = []
+            place_ratings = []
+            rating_distribution = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}
+
+            try:
+                for rating in ratings:
+                    if hasattr(rating, "rating") and hasattr(rating, "rating_details"):
+                        # Overall rating
+                        overall_ratings.append(rating.rating)
+
+                        # Count for distribution (rounded to nearest integer)
+                        rating_rounded = str(round(rating.rating))
+                        if rating_rounded in rating_distribution:
+                            rating_distribution[rating_rounded] += 1
+
+                        # Detailed criteria ratings
+                        rating_details = rating.rating_details
+                        if isinstance(rating_details, dict):
+                            if "flavor" in rating_details:
+                                flavor_ratings.append(rating_details["flavor"])
+                            if "serving" in rating_details:
+                                serving_ratings.append(rating_details["serving"])
+                            if "price" in rating_details:
+                                price_ratings.append(rating_details["price"])
+                            if "place" in rating_details:
+                                place_ratings.append(rating_details["place"])
+
+            except Exception as e:
+                logger.warning(f"Error iterating ratings for food {food.id}: {str(e)}")
+                return {
+                    "total_ratings": 0,
+                    "average_overall": 0.0,
+                    "criteria_breakdown": {
+                        "flavor": {"average": 0.0, "count": 0},
+                        "serving": {"average": 0.0, "count": 0},
+                        "price": {"average": 0.0, "count": 0},
+                        "place": {"average": 0.0, "count": 0},
+                    },
+                    "rating_distribution": rating_distribution,
+                }
+
+            # Calculate averages
+            avg_overall = (
+                round(sum(overall_ratings) / len(overall_ratings), 2)
+                if overall_ratings
+                else 0.0
+            )
+            avg_flavor = (
+                round(sum(flavor_ratings) / len(flavor_ratings), 2)
+                if flavor_ratings
+                else 0.0
+            )
+            avg_serving = (
+                round(sum(serving_ratings) / len(serving_ratings), 2)
+                if serving_ratings
+                else 0.0
+            )
+            avg_price = (
+                round(sum(price_ratings) / len(price_ratings), 2)
+                if price_ratings
+                else 0.0
+            )
+            avg_place = (
+                round(sum(place_ratings) / len(place_ratings), 2)
+                if place_ratings
+                else 0.0
+            )
+
+            return {
+                "total_ratings": len(overall_ratings),
+                "average_overall": avg_overall,
+                "criteria_breakdown": {
+                    "flavor": {"average": avg_flavor, "count": len(flavor_ratings)},
+                    "serving": {"average": avg_serving, "count": len(serving_ratings)},
+                    "price": {"average": avg_price, "count": len(price_ratings)},
+                    "place": {"average": avg_place, "count": len(place_ratings)},
+                },
+                "rating_distribution": rating_distribution,
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting rating details for food {food.id}: {str(e)}")
+            return {
+                "total_ratings": 0,
+                "average_overall": 0.0,
+                "criteria_breakdown": {
+                    "flavor": {"average": 0.0, "count": 0},
+                    "serving": {"average": 0.0, "count": 0},
+                    "price": {"average": 0.0, "count": 0},
+                    "place": {"average": 0.0, "count": 0},
+                },
+                "rating_distribution": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+            }
 
     @staticmethod
     def _get_food_reviews_aggregated(food: Food) -> Dict[str, Any]:

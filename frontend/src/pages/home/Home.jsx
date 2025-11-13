@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext } from "react";
 
 import {
     ANIMATION_VARIANTS,
@@ -13,11 +13,17 @@ import {
 import { SearchSection } from "./components/SearchSection";
 import { HeroSection } from "./components/HeroSection";
 import { FoodCollectionSection } from "./components/FoodSection";
+import { SectionLoading } from "./components/SectionLoading";
 import { usePaginatedFoods } from "./hooks/usePaginatedFoods";
 import { useInfiniteScroll } from "./hooks/useInfiniteScroll";
+import { useRecommendations } from "./hooks/useRecommendations";
+import { usePopularFoods } from "./hooks/usePopularFoods";
+import { UserContext } from "@/contexts/UserContextDefinition";
 
 export default function Home() {
     const [searchQuery, setSearchQuery] = useState("");
+    const { isAuthenticated } = useContext(UserContext);
+    const isLoggedIn = isAuthenticated();
 
     const { foods, error, loading, hasMore, loadMore } = usePaginatedFoods(
         PAGINATION_CONSTANTS.DEFAULT_LIMIT,
@@ -30,6 +36,20 @@ export default function Home() {
         threshold: PAGINATION_CONSTANTS.LOAD_MORE_THRESHOLD,
         throttleDelay: PAGINATION_CONSTANTS.THROTTLE_DELAY,
     });
+
+    // Fetch recommendations only if logged in
+    const {
+        recommendations,
+        loading: recommendationsLoading,
+        error: recommendationsError,
+    } = useRecommendations(isLoggedIn, 8);
+
+    // Fetch popular foods
+    const {
+        popularFoods,
+        loading: popularLoading,
+        error: popularError,
+    } = usePopularFoods(8, 5);
 
     // Event handlers
     const onToggleFavorite = useCallback((foodId) => {
@@ -46,10 +66,6 @@ export default function Home() {
         return <ErrorState error={error} />;
     }
 
-    // if (loading && (!foods || foods.length === 0)) {
-    //     return <LoadingState />;
-    // }
-
     // Main render
     return (
         <div className="min-h-screen">
@@ -63,17 +79,108 @@ export default function Home() {
                 isLoading={loading}
             />
 
-            {/* Food Collection Section */}
-            {foods && foods.length > 0 ? (
-                <FoodCollectionSection
-                    foods={foods}
-                    containerVariants={ANIMATION_VARIANTS.container}
-                    onToggleFavorite={onToggleFavorite}
-                    isLoadingMore={isLoadingMore}
-                />
-            ) : !loading ? (
-                <EmptyState />
-            ) : null}
+            {/* If user is logged in, show: Recommendations -> Popular -> All Foods */}
+            {isLoggedIn ? (
+                <>
+                    {/* Recommendations Section */}
+                    {recommendationsLoading ? (
+                        <SectionLoading title="Rekomendasi untuk Anda" />
+                    ) : recommendationsError ? (
+                        <div className="container mx-auto px-4 py-4">
+                            <p className="text-red-500 dark:text-red-400">
+                                Gagal memuat rekomendasi
+                            </p>
+                        </div>
+                    ) : recommendations && recommendations.length > 0 ? (
+                        <FoodCollectionSection
+                            foods={recommendations}
+                            containerVariants={ANIMATION_VARIANTS.container}
+                            onToggleFavorite={onToggleFavorite}
+                            isLoadingMore={false}
+                            title="Rekomendasi untuk Anda"
+                            subtitle="Makanan yang dipersonalisasi berdasarkan preferensi Anda"
+                            showDivider={true}
+                            viewAllLink="/recommendations"
+                        />
+                    ) : null}
+
+                    {/* Popular Foods Section */}
+                    {popularLoading ? (
+                        <SectionLoading title="Makanan Populer" />
+                    ) : popularError ? (
+                        <div className="container mx-auto px-4 py-4">
+                            <p className="text-red-500 dark:text-red-400">
+                                Gagal memuat makanan populer
+                            </p>
+                        </div>
+                    ) : popularFoods && popularFoods.length > 0 ? (
+                        <FoodCollectionSection
+                            foods={popularFoods}
+                            containerVariants={ANIMATION_VARIANTS.container}
+                            onToggleFavorite={onToggleFavorite}
+                            isLoadingMore={false}
+                            title="Makanan Populer"
+                            subtitle="Makanan favorit yang banyak disukai"
+                            showDivider={true}
+                        />
+                    ) : null}
+
+                    {/* All Foods Section */}
+                    {foods && foods.length > 0 ? (
+                        <FoodCollectionSection
+                            foods={foods}
+                            containerVariants={ANIMATION_VARIANTS.container}
+                            onToggleFavorite={onToggleFavorite}
+                            isLoadingMore={isLoadingMore}
+                            title="Semua Makanan"
+                            subtitle="Jelajahi semua makanan yang tersedia"
+                            showDivider={false}
+                        />
+                    ) : !loading ? (
+                        <EmptyState />
+                    ) : null}
+                </>
+            ) : (
+                <>
+                    {/* If not logged in, show: Popular -> All Foods */}
+                    {/* Popular Foods Section */}
+                    {popularLoading ? (
+                        <SectionLoading title="Makanan Populer" />
+                    ) : popularError ? (
+                        <div className="container mx-auto px-4 py-4">
+                            <p className="text-red-500 dark:text-red-400">
+                                Gagal memuat makanan populer
+                            </p>
+                        </div>
+                    ) : popularFoods && popularFoods.length > 0 ? (
+                        <FoodCollectionSection
+                            foods={popularFoods}
+                            containerVariants={ANIMATION_VARIANTS.container}
+                            onToggleFavorite={onToggleFavorite}
+                            isLoadingMore={false}
+                            title="Makanan Populer"
+                            subtitle="Makanan favorit yang banyak disukai"
+                            showDivider={true}
+                            viewAllLink="/popular"
+                        />
+                    ) : null}
+
+                    {/* All Foods Section */}
+                    {foods && foods.length > 0 ? (
+                        <FoodCollectionSection
+                            foods={foods}
+                            containerVariants={ANIMATION_VARIANTS.container}
+                            onToggleFavorite={onToggleFavorite}
+                            isLoadingMore={isLoadingMore}
+                            title="Semua Makanan"
+                            subtitle="Jelajahi semua makanan yang tersedia"
+                            showDivider={false}
+                        />
+                    ) : !loading ? (
+                        <EmptyState />
+                    ) : null}
+                </>
+            )}
         </div>
     );
 }

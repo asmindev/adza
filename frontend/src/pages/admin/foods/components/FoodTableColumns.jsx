@@ -13,9 +13,23 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
 
-export const createFoodColumns = (setDeleteFoodId, setEditFoodData) => [
+export const createFoodColumns = (
+    setDeleteFoodId,
+    setEditFoodData,
+    navigate,
+    pageIndex = 0,
+    pageSize = 10
+) => [
+    {
+        accessorKey: "no",
+        header: "No",
+        cell: ({ row }) => {
+            const rowIndex = row.index;
+            const number = pageIndex * pageSize + rowIndex + 1;
+            return <div className="w-12 text-center font-medium">{number}</div>;
+        },
+    },
     {
         accessorKey: "name",
         header: "Makanan",
@@ -53,7 +67,10 @@ export const createFoodColumns = (setDeleteFoodId, setEditFoodData) => [
         cell: ({ row }) => (
             <div className="space-y-1 w-32">
                 <div className="flex items-center">
-                    <Store className="size-15 mr-1" />
+                    <Store
+                        className="min-w-[20px] min-h-[20px] mr-1 opacity-60"
+                        strokeWidth={1.5}
+                    />
                     <span className="font-medium truncate">
                         {row.original.restaurant?.name || "Tidak ada restoran"}
                     </span>
@@ -116,11 +133,9 @@ export const createFoodColumns = (setDeleteFoodId, setEditFoodData) => [
                         Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                        onClick={() => {
-                            toast.info(
-                                "Fitur lihat detail akan segera tersedia"
-                            );
-                        }}
+                        onClick={() =>
+                            navigate(`/dashboard/foods/${row.original.id}`)
+                        }
                     >
                         Lihat Detail
                     </DropdownMenuItem>

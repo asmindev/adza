@@ -1,5 +1,6 @@
 import UserProfile from "@/pages/profile/UserProfile";
 import FoodsPage from "@/pages/admin/foods/FoodsPage";
+import FoodDetailPage from "@/pages/admin/foods/FoodDetailPage";
 import DashboardLayout from "@/layout/AdminLayout";
 import UsersPage from "@/pages/admin/users/UsersPage";
 import DashboardPage from "@/pages/admin/dashboard/DashboardPage";
@@ -22,6 +23,10 @@ const ADMIN_ROUTES = [
             {
                 path: "foods",
                 Component: FoodsPage,
+            },
+            {
+                path: "foods/:id",
+                Component: FoodDetailPage,
             },
             {
                 path: "users",

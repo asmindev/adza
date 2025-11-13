@@ -1,4 +1,5 @@
 import React from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import FoodCard from "@/components/food/FoodCard";
 
@@ -11,9 +12,52 @@ export function FoodCollectionSection({
     containerVariants,
     onToggleFavorite,
     isLoadingMore,
+    title,
+    subtitle,
+    showDivider = true,
+    viewAllLink,
 }) {
     return (
         <div className="container mx-auto px-4 py-8">
+            {/* Section Title */}
+            {title && (
+                <div className="mb-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                                {title}
+                            </h2>
+                            {subtitle && (
+                                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                                    {subtitle}
+                                </p>
+                            )}
+                        </div>
+                        {viewAllLink && (
+                            <a
+                                href={viewAllLink}
+                                className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium text-sm md:text-base flex items-center gap-1 transition-colors"
+                            >
+                                Lihat Semua
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 5l7 7-7 7"
+                                    />
+                                </svg>
+                            </a>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Food Grid */}
             <FoodGrid
                 foods={foods}
@@ -23,6 +67,11 @@ export function FoodCollectionSection({
 
             {/* Loading More Indicator */}
             {isLoadingMore && <LoadingMoreIndicator />}
+
+            {/* Divider */}
+            {showDivider && (
+                <div className="mt-8 border-b border-gray-200 dark:border-gray-700"></div>
+            )}
         </div>
     );
 }
@@ -31,7 +80,7 @@ export function FoodCollectionSection({
  * Food Grid Component
  * Menampilkan grid layout untuk food cards
  */
-export function FoodGrid({ foods, containerVariants, onToggleFavorite }) {
+function FoodGrid({ foods, containerVariants, onToggleFavorite }) {
     return (
         <motion.div
             className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
@@ -54,7 +103,7 @@ export function FoodGrid({ foods, containerVariants, onToggleFavorite }) {
  * Loading More Indicator Component
  * Menampilkan indikator loading saat memuat data tambahan
  */
-export function LoadingMoreIndicator() {
+function LoadingMoreIndicator() {
     return (
         <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>

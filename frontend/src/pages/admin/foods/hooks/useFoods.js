@@ -6,7 +6,7 @@ import apiService from "@/pages/detail/components/lib/api";
 
 export const useFoods = () => {
     const [pageIndex, setPageIndex] = useState(0);
-    const [pageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
     const [sorting, setSorting] = useState([]);
 
@@ -47,6 +47,12 @@ export const useFoods = () => {
         setPageIndex(0); // Reset to first page on new search
     };
 
+    // Handle page size change
+    const handlePageSizeChange = (newPageSize) => {
+        setPageSize(newPageSize);
+        setPageIndex(0); // Reset to first page when changing page size
+    };
+
     // Handle refresh after operations
     const refreshData = () => {
         mutate();
@@ -63,6 +69,7 @@ export const useFoods = () => {
         pageIndex,
         pageSize,
         setPageIndex,
+        handlePageSizeChange,
 
         // Search
         searchTerm,

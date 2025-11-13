@@ -1,6 +1,7 @@
 from app.extensions import db
 from app.modules.food.models import Food, FoodImage
 from app.utils import get_logger
+
 logger = get_logger(__name__)
 
 
@@ -58,10 +59,16 @@ class FoodRepository:
             if favorite_category_ids:
                 # Filter foods by restaurants that have user's favorite categories
                 # Join with restaurant_categories to get restaurants with favorite categories
-                query = query.join(
-                    restaurant_categories,
-                    Restaurant.id == restaurant_categories.c.restaurant_id,
-                ).filter(restaurant_categories.c.category_id.in_(favorite_category_ids))
+                query = (
+                    query.join(
+                        restaurant_categories,
+                        Restaurant.id == restaurant_categories.c.restaurant_id,
+                    )
+                    .filter(
+                        restaurant_categories.c.category_id.in_(favorite_category_ids)
+                    )
+                    .distinct()  # Add distinct to avoid duplicate rows from multiple categories
+                )
                 logger.info(
                     f"Menerapkan filter kategori favorit untuk user: {user_id} dengan {len(favorite_category_ids)} kategori"
                 )
@@ -70,8 +77,8 @@ class FoodRepository:
                     f"User {user_id} belum memiliki kategori favorit, menampilkan semua makanan"
                 )
 
-        # Get total count for pagination
-        total_count = query.count()
+        # Get total count for pagination (use distinct count if there was a join)
+        total_count = query.distinct(Food.id).count()
 
         # Apply pagination with proper ordering
         foods = query.order_by(Food.created_at.desc()).paginate(
@@ -95,14 +102,15 @@ class FoodRepository:
     def get_by_id(food_id):
         logger.debug(f"Mencari makanan dengan ID: {food_id}")
 
-        # Import Restaurant here to avoid circular imports
+        # Import Restaurant and FoodRating here to avoid circular imports
         from app.modules.restaurant.models import Restaurant
+        from app.modules.rating.models import FoodRating
+        from sqlalchemy.orm import joinedload
 
-        # Join with restaurant to get restaurant data as well
+        # Join with restaurant and eager load ratings with user data
         food = (
-            Food.query.join(
-                Restaurant, Food.restaurant_id == Restaurant.id, isouter=True
-            )
+            Food.query.options(joinedload(Food.ratings).joinedload(FoodRating.user))
+            .join(Restaurant, Food.restaurant_id == Restaurant.id, isouter=True)
             .filter(Food.id == food_id)
             .first()
         )

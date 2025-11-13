@@ -2,13 +2,13 @@ import RootLayout from "@/layout/RootLayout";
 import Login from "@/pages/auth/Login";
 import FoodDetailPage from "@/pages/detail/FoodDetailPage";
 import Home from "@/pages/home/Home";
-import Recommendation from "@/pages/recommendation/page";
+import Recommendations from "@/pages/recommendations";
 import RouteNavigationPage from "@/pages/navigation/RouteNavigationPage";
 import UserProfile from "@/pages/profile/UserProfile";
 import RestaurantDetail from "@/pages/restaurants/detail/RestaurantDetail";
 import RestaurantDetailPage from "@/pages/restaurants/detail/RestaurantDetailPage";
 import RestaurantsPage from "@/pages/restaurants/RestaurantsPage";
-import Popular from "@/pages/popular/page";
+import Popular from "@/pages/popular";
 import onboardingMiddleware from "@/middleware/onboarding_middleware";
 import OnboardingPage from "@/pages/onboarding/page";
 import Register from "@/pages/auth/Register";
@@ -64,7 +64,7 @@ const REGULAR_ROUTES = [
                 Component: RouteNavigationPage,
             },
 
-            { path: "recommendation", Component: Recommendation },
+            { path: "recommendations", Component: Recommendations },
             { path: "popular", Component: Popular },
             { path: "preferences", Component: OnboardingPage },
         ],

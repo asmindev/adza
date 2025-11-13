@@ -1,7 +1,9 @@
 from flask import Blueprint, request, send_from_directory, current_app, g
 import json
 from app.modules.food.service import FoodService
+from app.modules.food.stats_service import FoodStatsService
 from app.utils import get_logger
+
 logger = get_logger(__name__)
 from app.utils.response import ResponseHelper
 from app.utils.auth import has_login, token_required, admin_required
@@ -125,13 +127,17 @@ def get_foods():
 
         logger.info(f"Pagination params: page={page}, limit={limit}, search={search}")
 
-        # Get user ID if logged in
+        # Get user ID and role if logged in
         user_id = g.user_id if hasattr(g, "user_id") else None
+        user_role = g.user_role if hasattr(g, "user_role") else None
 
         # Determine if we should use user preferences
-        use_user_preferences = user_id and not search
+        # Admin users always see all foods without filtering
+        use_user_preferences = user_id and not search and user_role != "admin"
 
-        if use_user_preferences:
+        if user_role == "admin":
+            logger.info(f"Admin user - showing all foods without filtering")
+        elif use_user_preferences:
             logger.info(f"Using user preferences for user {user_id}")
         elif search:
             logger.info(f"Search mode - ignoring user preferences")
@@ -143,7 +149,7 @@ def get_foods():
             page=page,
             limit=limit,
             search=search,
-            user_id=user_id if use_user_preferences else None,
+            user_id=user_id if use_user_preferences and user_role == "admin" else None,
         )
 
         foods = result["items"]
@@ -173,11 +179,42 @@ def get_foods():
         return ResponseHelper.internal_server_error("Failed to retrieve foods")
 
 
+@food_blueprint.route("/foods/stats", methods=["GET"])
+@has_login
+def get_food_statistics():
+    """
+    Get food statistics (total, new foods in 7 days, average rating, etc.)
+
+    Returns:
+        JSON response with food statistics
+    """
+    logger.info("GET /foods/stats - Retrieving food statistics")
+
+    try:
+        stats = FoodStatsService.get_food_statistics()
+
+        logger.info(f"Successfully retrieved food statistics")
+        return ResponseHelper.success(
+            data=stats, message="Food statistics retrieved successfully"
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to retrieve food statistics: {str(e)}")
+        return ResponseHelper.internal_server_error(
+            "Failed to retrieve food statistics"
+        )
+
+
 @food_blueprint.route("/foods/<string:food_id>", methods=["GET"])
 @has_login
 def get_food_detail(food_id):
     """
     Get detailed information about a specific food item.
+
+    If user is admin:
+        - Returns full details including rating_details (aggregated rating data)
+    If user is regular user or not logged in:
+        - Returns standard details without rating_details
 
     Args:
         food_id (str): Food ID
@@ -199,8 +236,11 @@ def get_food_detail(food_id):
             f"Successfully retrieved food detail: {food_detail.get('name', 'Unknown')}"
         )
 
-        # Add user rating if logged in
+        # Get user info
         user_id = g.user_id if hasattr(g, "user_id") else None
+        user_role = g.user_role if hasattr(g, "user_role") else None
+
+        # Add user rating if logged in
         if user_id:
             user_rating = FoodService.get_user_rating(user_id, food_id)
             # Add user rating to the response structure
@@ -213,6 +253,15 @@ def get_food_detail(food_id):
             if "ratings" not in food_detail:
                 food_detail["ratings"] = {}
             food_detail["ratings"]["user_rating"] = 0
+
+        # If user is NOT admin, remove rating_details from response
+        if user_role != "admin":
+            # Remove rating_details if present (sensitive aggregated data)
+            if "rating_details" in food_detail:
+                del food_detail["rating_details"]
+                logger.debug(f"Removed rating_details for non-admin user")
+        else:
+            logger.debug(f"Including rating_details for admin user")
 
         return ResponseHelper.success(data=food_detail)
 

@@ -120,6 +120,7 @@ export const apiService = {
             apiClient.get(
                 `/api/v1/foods?page=${page}&limit=${limit}&search=${search}`
             ),
+        getStats: () => apiClient.get("/api/v1/foods/stats"),
         getRecommendation: () => apiClient.get("/api/v1/recommendation"),
         getPopular: () => apiClient.get("/api/v1/popular"),
         getById: (id) => apiClient.get(`/api/v1/foods/${id}`),

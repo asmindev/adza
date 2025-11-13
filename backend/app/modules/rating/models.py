@@ -68,9 +68,19 @@ class FoodRating(db.Model):
         super(FoodRating, self).__init__(**kwargs)
 
     def to_dict(self):
+        # Include user data if relationship is loaded
+        user_data = None
+        if hasattr(self, "user") and self.user:
+            user_data = {
+                "id": self.user.id,
+                "name": self.user.name,
+                "email": self.user.email,
+            }
+
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "user": user_data,
             "food_id": self.food_id,
             "rating": self.rating,
             "rating_details": self.rating_details,
