@@ -93,14 +93,14 @@ export default function Home() {
                         </div>
                     ) : recommendations && recommendations.length > 0 ? (
                         <FoodCollectionSection
-                            foods={recommendations}
+                            foods={recommendations.slice(0, 8)}
                             containerVariants={ANIMATION_VARIANTS.container}
                             onToggleFavorite={onToggleFavorite}
                             isLoadingMore={false}
                             title="Rekomendasi untuk Anda"
                             subtitle="Makanan yang dipersonalisasi berdasarkan preferensi Anda"
                             showDivider={true}
-                            viewAllLink="/recommendations"
+                            viewAllLink="/recommendation"
                         />
                     ) : null}
 
@@ -115,13 +115,14 @@ export default function Home() {
                         </div>
                     ) : popularFoods && popularFoods.length > 0 ? (
                         <FoodCollectionSection
-                            foods={popularFoods}
+                            foods={popularFoods.slice(0, 8)}
                             containerVariants={ANIMATION_VARIANTS.container}
                             onToggleFavorite={onToggleFavorite}
                             isLoadingMore={false}
                             title="Makanan Populer"
                             subtitle="Makanan favorit yang banyak disukai"
                             showDivider={true}
+                            viewAllLink="/popular"
                         />
                     ) : null}
 
@@ -154,7 +155,7 @@ export default function Home() {
                         </div>
                     ) : popularFoods && popularFoods.length > 0 ? (
                         <FoodCollectionSection
-                            foods={popularFoods}
+                            foods={popularFoods.slice(0, 8)}
                             containerVariants={ANIMATION_VARIANTS.container}
                             onToggleFavorite={onToggleFavorite}
                             isLoadingMore={false}

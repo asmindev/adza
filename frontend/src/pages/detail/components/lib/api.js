@@ -122,7 +122,10 @@ export const apiService = {
             ),
         getStats: () => apiClient.get("/api/v1/foods/stats"),
         getRecommendation: () => apiClient.get("/api/v1/recommendation"),
-        getPopular: () => apiClient.get("/api/v1/popular"),
+        getPopular: (limit = 10, minRatings = 5) =>
+            apiClient.get(
+                `/api/v1/popular?limit=${limit}&min_ratings=${minRatings}`
+            ),
         getById: (id) => apiClient.get(`/api/v1/foods/${id}`),
         create: (data) => {
             // kalau ada images, maka gunakan formData

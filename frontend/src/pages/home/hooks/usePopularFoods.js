@@ -18,7 +18,10 @@ export function usePopularFoods(limit = 10, minRatings = 5) {
             setError(null);
 
             try {
-                const response = await apiService.foods.getPopular();
+                const response = await apiService.foods.getPopular(
+                    limit,
+                    minRatings
+                );
                 const data = response.data;
 
                 if (data.error) {

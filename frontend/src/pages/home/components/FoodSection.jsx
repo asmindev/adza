@@ -2,6 +2,7 @@ import React from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import FoodCard from "@/components/food/FoodCard";
+import { Link } from "react-router";
 
 /**
  * Food Collection Section Component
@@ -34,8 +35,9 @@ export function FoodCollectionSection({
                             )}
                         </div>
                         {viewAllLink && (
-                            <a
-                                href={viewAllLink}
+                            <Link
+                                // href={viewAllLink}
+                                to={viewAllLink}
                                 className="text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium text-sm md:text-base flex items-center gap-1 transition-colors"
                             >
                                 Lihat Semua
@@ -52,7 +54,7 @@ export function FoodCollectionSection({
                                         d="M9 5l7 7-7 7"
                                     />
                                 </svg>
-                            </a>
+                            </Link>
                         )}
                     </div>
                 </div>

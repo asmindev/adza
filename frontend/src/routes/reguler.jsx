@@ -2,7 +2,6 @@ import RootLayout from "@/layout/RootLayout";
 import Login from "@/pages/auth/Login";
 import FoodDetailPage from "@/pages/detail/FoodDetailPage";
 import Home from "@/pages/home/Home";
-import Recommendations from "@/pages/recommendations";
 import RouteNavigationPage from "@/pages/navigation/RouteNavigationPage";
 import UserProfile from "@/pages/profile/UserProfile";
 import RestaurantDetail from "@/pages/restaurants/detail/RestaurantDetail";
@@ -14,6 +13,7 @@ import OnboardingPage from "@/pages/onboarding/page";
 import Register from "@/pages/auth/Register";
 import auth, { profileLoader } from "@/middleware/authenticated_middleware";
 import NotFound from "@/pages/NotFound";
+import Recommendation from "@/pages/recommendation/page";
 
 const REGULAR_ROUTES = [
     {
@@ -64,7 +64,7 @@ const REGULAR_ROUTES = [
                 Component: RouteNavigationPage,
             },
 
-            { path: "recommendations", Component: Recommendations },
+            { path: "recommendation", Component: Recommendation },
             { path: "popular", Component: Popular },
             { path: "preferences", Component: OnboardingPage },
         ],

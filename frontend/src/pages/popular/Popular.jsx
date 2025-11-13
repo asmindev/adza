@@ -1,9 +1,6 @@
 import React, { useCallback } from "react";
 import { useNavigate } from "react-router";
-import {
-    ANIMATION_VARIANTS,
-    handleToggleFavorite,
-} from "../home/utils";
+import { ANIMATION_VARIANTS, handleToggleFavorite } from "../home/utils";
 import { EmptyState, ErrorState } from "../home/components/StateComponents";
 import { FoodCollectionSection } from "../home/components/FoodSection";
 import { SectionLoading } from "../home/components/SectionLoading";
@@ -12,11 +9,7 @@ import { usePopularFoods } from "../home/hooks/usePopularFoods";
 export default function Popular() {
     const navigate = useNavigate();
 
-    const {
-        popularFoods,
-        loading,
-        error,
-    } = usePopularFoods(50, 5); // Fetch more items for full page
+    const { popularFoods, loading, error } = usePopularFoods(50, 5); // Fetch more items for full page
 
     const onToggleFavorite = useCallback((foodId) => {
         handleToggleFavorite(foodId);
