@@ -84,7 +84,6 @@ export default function Recommendation() {
                     </p>
                 </div>
             </div>
-
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 {foodItems.length > 0 ? (
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

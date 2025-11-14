@@ -44,23 +44,23 @@ export const createRestaurantColumns = (
             </div>
         ),
     },
-    {
-        accessorKey: "rating.average",
-        header: "Rating",
-        cell: ({ row }) => (
-            <div className="flex items-center space-x-2">
-                <div className="flex items-center">
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1" />
-                    <span className="font-medium">
-                        {row.original.rating?.average?.toFixed(1) || "N/A"}
-                    </span>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                    ({row.original.rating?.total || 0} review)
-                </span>
-            </div>
-        ),
-    },
+    // {
+    //     accessorKey: "rating.average",
+    //     header: "Rating",
+    //     cell: ({ row }) => (
+    //         <div className="flex items-center space-x-2">
+    //             <div className="flex items-center">
+    //                 <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 mr-1" />
+    //                 <span className="font-medium">
+    //                     {row.original.rating?.average?.toFixed(1) || "N/A"}
+    //                 </span>
+    //             </div>
+    //             <span className="text-sm text-muted-foreground">
+    //                 ({row.original.rating?.total || 0} review)
+    //             </span>
+    //         </div>
+    //     ),
+    // },
     {
         accessorKey: "categories",
         header: "Kategori",

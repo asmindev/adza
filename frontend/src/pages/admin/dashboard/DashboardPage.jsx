@@ -52,25 +52,11 @@ export default function DashboardPage() {
             {/* Dashboard Header */}
             <DashboardHeader />
 
-            <Tabs defaultValue="overview" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="overview">Ikhtisar</TabsTrigger>
-                    <TabsTrigger value="actions">Tindakan Cepat</TabsTrigger>
-                </TabsList>
+            {/* Stats Section */}
+            <StatsSection stats={stats} />
 
-                <TabsContent value="overview" className="space-y-4">
-                    {/* Stats Section */}
-                    <StatsSection stats={stats} />
-
-                    {/* Charts Section */}
-                    <ChartsSection isLoading={isLoading} stats={stats} />
-                </TabsContent>
-
-                <TabsContent value="actions" className="space-y-4">
-                    {/* Quick Actions Section */}
-                    <QuickActionsSection />
-                </TabsContent>
-            </Tabs>
+            {/* Charts Section */}
+            <ChartsSection isLoading={isLoading} stats={stats} />
         </div>
     );
 }
