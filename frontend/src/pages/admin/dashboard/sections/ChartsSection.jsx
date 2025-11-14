@@ -11,7 +11,7 @@ import { TrendingUp } from "lucide-react";
 
 export default function ChartsSection({ isLoading, stats }) {
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="w-full">
             <Card className="col-span-2">
                 <CardHeader>
                     <CardTitle>Makanan Terpopuler</CardTitle>
@@ -24,7 +24,7 @@ export default function ChartsSection({ isLoading, stats }) {
                 </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
                 <CardHeader>
                     <CardTitle>Rating Tertinggi</CardTitle>
                     <CardDescription>
@@ -73,7 +73,7 @@ export default function ChartsSection({ isLoading, stats }) {
                         </div>
                     )}
                 </CardContent>
-            </Card>
+            </Card> */}
         </div>
     );
 }
